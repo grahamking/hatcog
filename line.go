@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
     "os"
+    "io"
+    "time"
     "log"
 )
 
@@ -19,7 +21,12 @@ type Line struct {
 	Content string
 }
 
+// Maps nicks to color
+var colorMap = make(map[string]string)
+
+// Logs raw IRC messages
 var rawLog *log.Logger;
+
 func init() {
     var logfile *os.File;
     logfile, _ = os.Create("/tmp/goirc.log");
@@ -27,20 +34,33 @@ func init() {
 }
 
 func (self *Line) HasDisplay() bool {
-	return *isRaw || !strings.Contains(SYS_COMMANDS, self.Command)
+	return !strings.Contains(SYS_COMMANDS, self.Command)
 }
 
 func (self *Line) String() string {
-	if *isRaw {
-		return self.raw
-	}
 
-	var output string = ""
+    var now *time.Time
+    var output string
+
+    now = time.LocalTime()
+
+    // see http://golang.org/src/pkg/time/format.go?s=7285:7328#L17
+    output = now.Format("15:04")
+
 	if self.User != "" {
-		output += "< " + self.User + "> "
+        username := Lpad(15, self.User)
+        // TODO: if self.User == conn.nick username=bold(username)
+        username = colorfullUser(username)
+        output += " " + username + " "
 	}
 	output += self.Content
-	return output
+
+    output += "\n"
+    return output
+}
+
+func (self *Line) Display(out io.Writer) {
+    out.Write( []uint8(self.String()) )
 }
 
 func ParseLine(data string) Line {
@@ -92,3 +112,14 @@ func ParseLine(data string) Line {
 
 	return line
 }
+
+func colorfullUser(nick string) string {
+
+    if colorMap[nick] == "" {
+        nextColorIndex := len(colorMap) % len(UserColors)
+        colorMap[nick] = UserColors[nextColorIndex]
+    }
+
+    return Color(colorMap[nick], nick)
+}
+

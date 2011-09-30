@@ -54,11 +54,7 @@ func (self *Connection) SendRaw(msg string) {
 	var full = msg + "\n"
 	var err os.Error
 
-    rawLog.Println(" --> ", msg);
-
-    if *isRaw {
-        log.Print(full)
-    }
+    rawLog.Println(" -->", msg);
 
 	_, err = self.socket.Write([]byte(full))
 	if err != nil {
@@ -91,8 +87,8 @@ func (self *Connection) doMsg(content string) {
 	self.SendMessage(content)
 
 	// Display for ourselves
-	msg := "< " + self.nick + "> " + content
-	fmt.Println(msg)
+    line := Line{User: self.nick, Content: content}
+    line.Display(os.Stdout)
 }
 
 // Read IRC messages from the connection and send to stdout
@@ -125,7 +121,7 @@ func (self *Connection) Consume() {
 func (self *Connection) act(line Line) {
 
     if line.HasDisplay() {
-        fmt.Println(line.String())
+        line.Display(os.Stdout)
     }
 
     // TODO
@@ -155,7 +151,7 @@ func (self *Connection) act(line Line) {
 
     } else if line.Command == RPL_NAMREPLY {
         fmt.Print("Users currently in ", self.channel, ": ")
-        fmt.Println(line.String())
+        fmt.Println(line.Content)
 
     } else if line.Command == NICK {
         if line.User == self.nick {
