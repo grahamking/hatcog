@@ -3,9 +3,9 @@ package main
 import (
 	"net"
 	"os"
+    "io"
 	"log"
 	"time"
-	"fmt"
 )
 
 const (
@@ -21,9 +21,10 @@ type Connection struct {
 	channel string
 	nick    string
 	name    string
+    output  io.Writer
 }
 
-func NewConnection(server string, nick string, name string, channel string) *Connection {
+func NewConnection(server string, nick string, name string, channel string, output io.Writer) *Connection {
 
 	var socket net.Conn
 	var err os.Error
@@ -33,7 +34,7 @@ func NewConnection(server string, nick string, name string, channel string) *Con
 	}
 	time.Sleep(ONE_SECOND_NS)
 
-	conn := Connection{socket, channel, nick, name}
+	conn := Connection{socket, channel, nick, name, output}
 	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
 	conn.SendRaw("NICK " + nick)
 	time.Sleep(ONE_SECOND_NS)
@@ -41,6 +42,11 @@ func NewConnection(server string, nick string, name string, channel string) *Con
 	conn.SendRaw("JOIN " + channel)
 
 	return &conn
+}
+
+// Write a message to output, usually Stdout
+func (self *Connection) display(msg string) {
+    self.output.Write([]byte(msg + "\r\n"))
 }
 
 // Send a regular (non-system command) IRC message
@@ -141,28 +147,28 @@ func (self *Connection) act(line Line) {
             } else if len(line.Args) != 0 {
                 self.channel = line.Args[0]
             }
-            fmt.Println("Now talking on", self.channel)
+            self.display("Now talking on " + self.channel)
         } else {
-            fmt.Println("User joined channel:", line.User)
+            self.display("User joined channel: " + line.User)
         }
 
     } else if line.Command == PING {
         self.SendRaw("PONG goirc");
 
     } else if line.Command == RPL_NAMREPLY {
-        fmt.Print("Users currently in ", self.channel, ": ")
-        fmt.Println(line.Content)
+        self.display("Users currently in " + self.channel + ": ")
+        self.display(line.Content)
 
     } else if line.Command == NICK {
         if line.User == self.nick {
             self.nick = line.Content
-            fmt.Println("You are now know as", self.nick)
+            self.display("You are now know as" + self.nick)
         } else {
-            fmt.Println(line.User, "is now know as", line.Content)
+            self.display(line.User + "is now know as" + line.Content)
         }
     }
 }
 
-func (self *Connection) Close() {
-	self.socket.Close()
+func (self *Connection) Close() os.Error {
+	return self.socket.Close()
 }

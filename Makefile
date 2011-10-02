@@ -10,7 +10,8 @@ GOFILES=\
 	connection.go\
 	line.go\
 	user_side.go\
-	util.go
+	util.go\
+	term.go
 
 include ${GOROOT}/src/Make.cmd
 

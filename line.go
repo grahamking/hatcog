@@ -55,7 +55,7 @@ func (self *Line) String() string {
 	}
 	output += self.Content
 
-    output += "\n"
+    output += "\n\r"
     return output
 }
 

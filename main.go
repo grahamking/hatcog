@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	//"bitbucket.org/binet/go-readline"
+    "fmt"
 )
 
 const (
@@ -19,32 +19,33 @@ var channel = flag.String("channel", "#test", "Channel to connect to");
 /*
  * main
  */
-
 func main() {
 
 	flag.Parse()
-	//flag.Usage()
 
+    // Set terminal to raw mode, listen for keyboard input
+    var term *Terminal = NewTerminal()
+    defer func() {
+        term.Close()
+    }()
+    term.Raw()
+
+    // IRC connection to remote server
     var conn *Connection
-    conn = NewConnection(*server, *nick, FULL_NAME, *channel)
+    conn = NewConnection(*server, *nick, FULL_NAME, *channel, term)
 	defer conn.Close()
 
-    // Internal listener for user input
+    // Gathers all inputs and sends to IRC server
 	go listenInternal(conn)
+
+    // Internal listener for user input from socket
+	go listenInternalSocket()
+	fmt.Println("Use 'netcat 127.0.0.1 " + INTERNAL_PORT + "' to connect for writes")
+
+    // Internal listener for user input from keyboard
+    go listenInternalKeys(term)
 
     // External (IRC server) consume
 	conn.Consume()
 }
 
-/*
-func read() string {
-	var ps1 string
-	var prompt, line *string
-
-	ps1 = ">> "
-	prompt = &ps1
-
-	line = readline.ReadLine(prompt)
-	return *line
-}
-*/
