@@ -35,6 +35,8 @@ func main() {
     conn = NewConnection(*server, *nick, FULL_NAME, *channel, term)
 	defer conn.Close()
 
+    term.Channel = *channel
+
     // Gathers all inputs and sends to IRC server
 	go listenInternal(conn)
 
@@ -43,7 +45,7 @@ func main() {
 	fmt.Println("Use 'netcat 127.0.0.1 " + INTERNAL_PORT + "' to connect for writes")
 
     // Internal listener for user input from keyboard
-    go listenInternalKeys(term)
+    go term.ListenInternalKeys()
 
     // External (IRC server) consume
 	conn.Consume()

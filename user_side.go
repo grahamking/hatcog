@@ -65,8 +65,7 @@ func listenInternalSocket() {
 
 }
 
-var input = make([]byte, 256)
-var inputIndex = 0
+var input = make([]byte, 0)
 
 // Listen for keypresses
 func listenInternalKeys(term *Terminal) {
@@ -76,13 +75,14 @@ func listenInternalKeys(term *Terminal) {
             panic("Bye")
         }
 
-        input[inputIndex] = char
-        inputIndex++
+        input = append(input, char)
+        term.Write([]byte(highlight(string(input))))
+        term.Write([]byte("\r"))
 
         if char == 13 {    // Enter
 
             inputChannel <- input
-            input = make([]byte, 256)
+            input = make([]byte, 0)
         }
 
     }

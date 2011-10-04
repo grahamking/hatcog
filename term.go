@@ -14,6 +14,7 @@ const (
 type Terminal struct {
     orig_termios termios
     data []byte
+    Channel string
 }
 
 func NewTerminal() *Terminal {
@@ -72,6 +73,32 @@ Implements Closer interface.
 */
 func (self *Terminal) Close() os.Error {
     return setTermios(&self.orig_termios)
+}
+
+// Listen for keypresses, display them
+func (self *Terminal) ListenInternalKeys() {
+
+    var input = make([]byte, 0)
+    var msg string
+
+    for {
+        char := self.Read()
+        if char == 'q' {
+            panic("Bye")
+        }
+
+        input = append(input, char)
+
+        msg = highlight(" [" + self.Channel + "] " + string(input) + "\r")
+        self.Write([]byte(msg))
+
+        if char == 13 {    // Enter
+
+            inputChannel <- input
+            input = make([]byte, 0)
+        }
+
+    }
 }
 
 // termios types
