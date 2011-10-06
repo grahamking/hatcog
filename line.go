@@ -19,6 +19,7 @@ type Line struct {
 	Command string
 	Args    []string
 	Content string
+    isAction bool
 }
 
 // Maps nicks to color
@@ -41,6 +42,7 @@ func (self *Line) String() string {
 
     var now *time.Time
     var output string
+    var username string
 
     now = time.LocalTime()
 
@@ -48,12 +50,20 @@ func (self *Line) String() string {
     output = now.Format("15:04")
 
 	if self.User != "" {
-        username := Lpad(15, self.User)
-        // TODO: if self.User == conn.nick username=bold(username)
-        username = colorfullUser(username)
+
+        // TODO: if self.User == conn.nick: username=bold(username)
+        username = colorfullUser(self.User)
+
+        if self.isAction {
+            username = Lpad(23, "* " + username)
+        } else {
+            username = Lpad(23, username)
+        }
+
         output += " " + username + " "
 	}
-	output += self.Content
+
+    output += self.Content
 
     output += "\n\r"
     return output
@@ -67,8 +77,8 @@ func ParseLine(data string) Line {
 
 	var line Line
 	var prefix, command, trailing, user, host, raw string
-	var args []string = make([]string, 10)
-	var parts []string = make([]string, 3)
+	var args, parts []string
+    var isAction bool
 
 	data = sane(data)
 
@@ -94,12 +104,19 @@ func ParseLine(data string) Line {
 		data = parts[0]
 		args = strings.Split(data, " ")
 
-		trailing = parts[1]
+		trailing = sane(parts[1])
 	} else {
 		args = strings.Split(data, " ")
 	}
 	command = args[0]
 	args = args[1:len(args)]
+
+    isAction = false
+    if strings.HasPrefix(trailing, "ACTION") {
+        // Received a /me line
+        trailing = strings.SplitN(trailing, " ", 2)[1]
+        isAction = true
+    }
 
 	line = Line{
 		raw:     raw,
@@ -108,6 +125,7 @@ func ParseLine(data string) Line {
 		Command: command,
 		Args:    args,
 		Content: trailing,
+        isAction: isAction,
 	}
 
 	return line

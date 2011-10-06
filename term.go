@@ -15,6 +15,7 @@ type Terminal struct {
     orig_termios termios
     data []byte
     Channel string
+    input []byte
 }
 
 func NewTerminal() *Terminal {
@@ -25,6 +26,7 @@ func NewTerminal() *Terminal {
     return &Terminal{
         orig_termios: orig_termios,
         data: make([]byte, 1),
+        input: make([]byte, 0),
     }
 }
 
@@ -56,17 +58,17 @@ func (self *Terminal) Read() uint8 {
 
 // Write to Stdout. Implements Writer.
 func (self *Terminal) Write(msg []byte) (int, os.Error) {
+    bytesWritten, err := self.rawWrite(msg)
+    self.displayInput()
+    return bytesWritten, err
+}
+
+// Output bytes to Stdout
+func (self *Terminal) rawWrite(msg []byte) (int, os.Error) {
     bytesWritten, errNo := syscall.Write(TTY_FD, msg)
     err := os.NewError(syscall.Errstr(errNo))
     return bytesWritten, err
 }
-
-/*
-func (self *Terminal) Writeln(msg string) {
-    self.Write(msg)
-    self.Write("\n\r")
-}
-*/
 
 /* Restore terminal settings to what they were at startup.
 Implements Closer interface.
@@ -78,27 +80,39 @@ func (self *Terminal) Close() os.Error {
 // Listen for keypresses, display them
 func (self *Terminal) ListenInternalKeys() {
 
-    var input = make([]byte, 0)
-    var msg string
-
     for {
         char := self.Read()
-        if char == 'q' {
-            panic("Bye")
+
+        if char == 0x7f {       // Unicode backspace
+            var newInput = make([]byte, len(self.input) - 1)
+            copy(newInput, self.input)
+            self.input = newInput
+
+        } else {
+            self.input = append(self.input, char)
         }
 
-        input = append(input, char)
-
-        msg = highlight(" [" + self.Channel + "] " + string(input) + "\r")
-        self.Write([]byte(msg))
+        self.displayInput()
 
         if char == 13 {    // Enter
 
-            inputChannel <- input
-            input = make([]byte, 0)
+            inputChannel <- self.input
+            self.input = make([]byte, 0)
         }
 
     }
+}
+
+// Show input so far
+func (self *Terminal) displayInput() {
+
+    if len(self.input) == 0 {
+        return
+    }
+
+    msg := highlight("\r [" + self.Channel + "] " + string(self.input))
+    msg += "                   \r"
+    self.rawWrite([]byte(msg))
 }
 
 // termios types

@@ -35,14 +35,21 @@ var UserColors = []string{RED, GREEN, ORANGE, LIGHTBLUE, YELLOW, PURPLE, CYAN, L
 - the null bytes after a character return
 - \n and \r
 - whitespace
+- Ascii char \001, which is the extended data delimiter,
+  used for example in a /me command before 'ACTION'.
+  See http://www.irchelp.org/irchelp/rfc/ctcpspec.html
 */
 func sane(data string) string {
 	parts := strings.SplitN(data, "\n", 2)
-	return strings.Trim(parts[0], " \n\r")
+	return strings.Trim(parts[0], " \n\r\001")
 }
 
 func Bold(str string) string {
 	return "\033[1m" + str + "\033[0m"
+}
+
+func Underline(str string) string {
+	return "\033[4m" + str + "\033[0m"
 }
 
 // color is one of the constants in this file

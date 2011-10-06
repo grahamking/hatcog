@@ -17,7 +17,14 @@ func listenInternal(ircConn *Connection) {
         content = sane(string(data))
 
         if isCommand(content) {
+
+            if content == "/quit" {
+                ircConn.Quit()
+                return
+            }
+
             ircConn.doCommand(content)
+
         } else {
             ircConn.doMsg(content)
         }
@@ -65,25 +72,3 @@ func listenInternalSocket() {
 
 }
 
-var input = make([]byte, 0)
-
-// Listen for keypresses
-func listenInternalKeys(term *Terminal) {
-    for {
-        char := term.Read()
-        if char == 'q' {
-            panic("Bye")
-        }
-
-        input = append(input, char)
-        term.Write([]byte(highlight(string(input))))
-        term.Write([]byte("\r"))
-
-        if char == 13 {    // Enter
-
-            inputChannel <- input
-            input = make([]byte, 0)
-        }
-
-    }
-}

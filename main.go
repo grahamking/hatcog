@@ -27,6 +27,7 @@ func main() {
     var term *Terminal = NewTerminal()
     defer func() {
         term.Close()
+        fmt.Println("Bye!")
     }()
     term.Raw()
 

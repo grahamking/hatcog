@@ -22,6 +22,7 @@ type Connection struct {
 	nick    string
 	name    string
     output  io.Writer
+    isClosing bool
 }
 
 func NewConnection(server string, nick string, name string, channel string, output io.Writer) *Connection {
@@ -34,7 +35,14 @@ func NewConnection(server string, nick string, name string, channel string, outp
 	}
 	time.Sleep(ONE_SECOND_NS)
 
-	conn := Connection{socket, channel, nick, name, output}
+    socket.SetReadTimeout(ONE_SECOND_NS)
+
+	conn := Connection{
+        socket: socket,
+        channel: channel,
+        nick: nick,
+        name: name,
+        output: output}
 	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
 	conn.SendRaw("NICK " + nick)
 	time.Sleep(ONE_SECOND_NS)
@@ -94,7 +102,7 @@ func (self *Connection) doMsg(content string) {
 
 	// Display for ourselves
     line := Line{User: self.nick, Content: content}
-    line.Display(os.Stdout)
+    line.Display(self.output)
 }
 
 // Read IRC messages from the connection and send to stdout
@@ -104,11 +112,25 @@ func (self *Connection) Consume() {
 	var index int
 	var line Line
 	var err os.Error = nil
+    var netErr net.Error
 
 	for {
+
+        if self.isClosing {
+            return
+        }
+
 		_, err = self.socket.Read(data)
+
 		if err != nil {
-			log.Fatal("Consume Error:", err)
+            netErr, _ = err.(net.Error)
+
+            // Need to timeout occasionally or we never check isClosing
+            if netErr.Timeout() == true {
+                continue
+            } else {
+			    log.Fatal("Consume Error:", err)
+            }
 		}
 
 		if data[0] == '\n' {
@@ -127,7 +149,7 @@ func (self *Connection) Consume() {
 func (self *Connection) act(line Line) {
 
     if line.HasDisplay() {
-        line.Display(os.Stdout)
+        line.Display(self.output)
     }
 
     // TODO
@@ -171,4 +193,11 @@ func (self *Connection) act(line Line) {
 
 func (self *Connection) Close() os.Error {
 	return self.socket.Close()
+}
+
+/* Close connection, return from event loop
+   Called from user_side when user types /quit
+*/
+func (self *Connection) Quit() {
+    self.isClosing = true
 }
