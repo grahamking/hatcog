@@ -27,10 +27,12 @@ func (self *Line) String() string {
 
 // Current line as json
 func (self *Line) AsJson() []byte {
-    jsonData, err  := json.Marshal(self)
+    jsonData, err := json.Marshal(self)
     if err != nil {
         log.Fatal("Error on json Marshal of " + self.Raw, err)
     }
+    // go-join expects lines to have an ending
+    jsonData = append(jsonData, '\n')
     return jsonData
 }
 
