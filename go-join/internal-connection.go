@@ -64,7 +64,7 @@ func (self *InternalConnection) Receive() {
 		}
 
 		if data[0] == '\n' {
-			term.Write(linedata[:index])
+			self.output.Write(linedata[:index])
 			index = 0
 		} else if data[0] != '\r' { // Ignore CR, because LF is next
 			linedata[index] = data[0]
