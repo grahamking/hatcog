@@ -12,13 +12,11 @@ const (
     VERSION            = "0.1"
     RAW_LOG            = "/tmp/goirc.log"
 	INTERNAL_PORT      = "8790"
-	FULL_NAME          = "Go IRC"
-    IRC_NAME_LENGTH    = 15
 )
 
-var server = flag.String("server", "127.0.0.1:6667", "IP address or hostname and optional port for IRC server to connect to")
-var nick = flag.String("nick", "goirc", "Nick name")
-var name = flag.String("name", "Go IRC", "Full name")
+var serverArg = flag.String("server", "127.0.0.1:6667", "IP address or hostname and optional port for IRC server to connect to")
+var nickArg = flag.String("nick", "goirc", "Nick name")
+var nameArg = flag.String("name", "Go IRC", "Full name")
 
 // Logs raw IRC messages
 var rawLog *log.Logger;
@@ -45,17 +43,19 @@ func main() {
 
 	flag.Parse()
 
+    nick := *nickArg    // go-connect must keep track of our nick
+
     // IRC connection to remote server
     var external *Connection
-    external = NewConnection(*server, *nick, FULL_NAME, fromServer)
+    external = NewConnection(*serverArg, nick, *nameArg, fromServer)
 	defer external.Close()
 
-    fmt.Println("Connected to IRC server " + *server)
+    fmt.Println("Connected to IRC server " + *serverArg)
 	go external.Consume()
 
     // Socket connections from go-join programs
     var internal *Internal
-    internal = NewInternal(INTERNAL_PORT, fromUser)
+    internal = NewInternal(INTERNAL_PORT, fromUser, nick)
     defer internal.Close()
 
     fmt.Println("Listening for internal connection on port " + INTERNAL_PORT)
@@ -65,6 +65,11 @@ func main() {
 
         select {
             case serverLine := <-fromServer:
+                if serverLine.Command == "NICK" && serverLine.User == nick {
+                    nick = serverLine.Content
+                    internal.Nick = nick
+                    rawLog.Println("Nick change: " + nick)
+                }
                 internal.Write(serverLine.AsJson())
 
             case userString := <-fromUser:

@@ -10,16 +10,13 @@ import (
 const (
     ONE_SECOND_NS = 1000 * 1000 * 1000
 	RPL_NAMREPLY = "353"
-    JOIN = "JOIN"
     PING = "PING"
-    NICK = "NICK"
 )
 
 type lineCallback func(line *Line)
 
 type Connection struct {
 	socket  net.Conn
-	nick    string
 	name    string
     isClosing bool
     fromServer chan *Line
@@ -40,7 +37,6 @@ func NewConnection(server string, nick string, name string, fromServer chan *Lin
 
 	conn := Connection{
         socket: socket,
-        nick: nick,
         name: name,
         fromServer: fromServer,
     }
@@ -126,44 +122,6 @@ func (self *Connection) act(line *Line) {
     }
 
     self.fromServer <- line
-
-    // TODO
-    // - JOIN is only sent the first time
-    // we connect to a channel. If we hop back
-    // it doesn't get sent because unless we /part,
-    // we are still connected. So can't rely on it
-    // to update internal state, instead
-    // need to parse the command ourselves.
-    // Or maybe server sends something else?
-    // - Record messages even if not being displayed right now.
-    // - JOIN is sent for every other user that connects too.
-
-    /*
-    if line.Command == JOIN {
-        if line.User == self.nick {
-            if len(line.Content) != 0 {
-                self.channel = line.Content
-            } else if len(line.Args) != 0 {
-                self.channel = line.Args[0]
-            }
-            self.display("Now talking on " + self.channel)
-        } else {
-            self.display("User joined channel: " + line.User)
-        }
-
-    } else if line.Command == RPL_NAMREPLY {
-        self.display("Users currently in " + self.channel + ": ")
-        self.display(line.Content)
-
-    } else if line.Command == NICK {
-        if line.User == self.nick {
-            self.nick = line.Content
-            self.display("You are now know as" + self.nick)
-        } else {
-            self.display(line.User + "is now know as" + line.Content)
-        }
-    }
-    */
 }
 
 func (self *Connection) Close() os.Error {

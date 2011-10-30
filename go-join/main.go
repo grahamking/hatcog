@@ -1,9 +1,9 @@
 package main
 
 import (
-	"flag"
     "fmt"
     "os"
+    "log"
 )
 
 const (
@@ -13,22 +13,34 @@ const (
 	RPL_NAMREPLY = "353"
     JOIN = "JOIN"
     NICK = "NICK"
+    USAGE = "Usage: go-join channel\nNote there's no # in front of the channel"
 )
-
-// IRC Channel command line param
-var channel = flag.String("channel", "#test", "Channel to connect to");
 
 var fromUser = make(chan []byte)
 var fromServer = make(chan []byte)
+
+// Logs messages from go-connect
+var rawLog *log.Logger;
+
+func init() {
+    var logfile *os.File;
+    logfile, _ = os.Create("/tmp/go-join.log");
+    rawLog = log.New(logfile, "", log.LstdFlags);
+}
 
 /*
  * main
  */
 func main() {
 
-    flag.Parse()
+    if len(os.Args) != 2 {
+        fmt.Println(USAGE)
+        os.Exit(1)
+    }
 
-    client := NewClient(*channel)
+    channel := "#" + os.Args[1]
+
+    client := NewClient(channel)
     defer func() {
         client.Close()
         fmt.Println("Bye!")
@@ -58,7 +70,7 @@ func NewClient(channel string) *Client {
     var conn *InternalConnection
     conn = NewInternalConnection(GO_HOST, channel)
 
-    return &Client{term: term, conn: conn, channel: channel, nick: "goirc"}
+    return &Client{term: term, conn: conn, channel: channel}
 }
 
 /* Main loop
@@ -79,6 +91,7 @@ func (self *Client) Run() {
 
         select {
             case serverData := <-fromServer:
+                rawLog.Println(string(serverData))
                 self.onServer(serverData)
 
             case userInput := <-fromUser:
@@ -116,7 +129,7 @@ func (self *Client) onUser(content []byte) {
             User:self.nick,
             Content:string(content),
             Channel:self.channel}
-        self.term.Write([]uint8(line.String()))
+        self.term.Write([]byte(line.String(self.nick)))
     }
 
 }
@@ -125,15 +138,14 @@ func (self *Client) onUser(content []byte) {
 func (self *Client) onServer(serverData []byte) {
 
     line := FromJson(serverData)
-    if line.Channel != self.channel {
+    if len(line.Channel) > 0 && line.Channel != self.channel {
         return
     }
 
     if line.HasDisplay() {
-        self.term.Write([]byte(line.String()))
+        self.term.Write([]byte(line.String(self.nick)))
     }
 
-    // TODO
     // - JOIN is only sent the first time
     // we connect to a channel. If we hop back
     // it doesn't get sent because unless we /part,
@@ -143,6 +155,7 @@ func (self *Client) onServer(serverData []byte) {
     // Or maybe server sends something else?
     // - Record messages even if not being displayed right now.
     // - JOIN is sent for every other user that connects too.
+
     if line.Command == JOIN {
         if line.User == self.nick {
             if len(line.Content) != 0 {
@@ -161,9 +174,9 @@ func (self *Client) onServer(serverData []byte) {
         self.display(line.Content)
 
     } else if line.Command == NICK {
-        if line.User == self.nick {
+        if len(line.User) == 0 || line.User == self.nick {
             self.nick = line.Content
-            self.display("You are now know as" + self.nick)
+            self.display("You are now know as " + self.nick)
         } else {
             self.display(line.User + "is now know as" + line.Content)
         }

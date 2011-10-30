@@ -28,7 +28,7 @@ func (self *Line) HasDisplay() bool {
 	return !strings.Contains(SYS_COMMANDS, self.Command)
 }
 
-func (self *Line) String() string {
+func (self *Line) String(nick string) string {
 
     var now *time.Time
     var output string
@@ -37,33 +37,35 @@ func (self *Line) String() string {
     now = time.LocalTime()
 
     // see http://golang.org/src/pkg/time/format.go?s=7285:7328#L17
-    output = now.Format("15:04")
+    output = now.Format("15:04") + " "
 
 	if self.User != "" {
-
-        // TODO: if self.User == conn.nick: username=bold(username)
-        username = colorfullUser(self.User)
+        username = self.User
 
         if self.IsAction {
-            username = Lpad(23, "* " + username)
+            username = Lpad(15, "* " + username)
         } else {
-            username = Lpad(23, username)
+            username = Lpad(15, username)
         }
 
-        output += " " + username + " "
+        if self.User == nick {
+            username = Bold(username)
+        } else {
+            username = colorfullUser(self.User, username)
+        }
+
+        output += username + " "
 	}
+
+    if len(self.Channel) == 0 && len(self.Args) == 1 && self.Args[0] == nick {
+        output += "[PRIVATE] "
+    }
 
     output += self.Content
 
     output += "\n\r"
     return output
 }
-
-/*
-func (self *Line) Display(out io.Writer) {
-    out.Write( []uint8(self.String()) )
-}
-*/
 
 // Take JSON and return a Line
 func FromJson(jsonStr []byte) *Line {
@@ -72,12 +74,17 @@ func FromJson(jsonStr []byte) *Line {
     return line
 }
 
-func colorfullUser(nick string) string {
+/*
+ nick: Nickname of user to look up
+ strNick: String to format into color. This usually == nick, but
+  can sometimes have a '*' in it for an action.
+*/
+func colorfullUser(nick string, strNick string) string {
 
     if colorMap[nick] == "" {
         nextColorIndex := len(colorMap) % len(UserColors)
         colorMap[nick] = UserColors[nextColorIndex]
     }
 
-    return Color(colorMap[nick], nick)
+    return Color(colorMap[nick], strNick)
 }
