@@ -12,7 +12,6 @@ const (
 
 type InternalConnection struct {
     socket net.Conn
-    Channel string
 }
 
 func NewInternalConnection(host string, channel string) *InternalConnection {
@@ -26,7 +25,7 @@ func NewInternalConnection(host string, channel string) *InternalConnection {
 
     socket.SetReadTimeout(ONE_SECOND_NS)
 
-    conn := InternalConnection{socket, channel}
+    conn := InternalConnection{socket}
     conn.Write([]byte("/join " + channel))
 
     return &conn

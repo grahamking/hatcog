@@ -4,7 +4,6 @@ import (
 	"strings"
     "json"
     "time"
-    "io"
 )
 
 const (
@@ -60,9 +59,11 @@ func (self *Line) String() string {
     return output
 }
 
+/*
 func (self *Line) Display(out io.Writer) {
     out.Write( []uint8(self.String()) )
 }
+*/
 
 // Take JSON and return a Line
 func FromJson(jsonStr []byte) *Line {

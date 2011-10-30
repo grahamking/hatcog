@@ -83,7 +83,7 @@ func (self *Terminal) ListenInternalKeys() {
     for {
         char := self.Read()
 
-        if char == 0x7f {       // Unicode backspace
+        if char == 0x7f && len(self.input) > 0 {  // 0x7f = Unicode backspace
             var newInput = make([]byte, len(self.input) - 1)
             copy(newInput, self.input)
             self.input = newInput

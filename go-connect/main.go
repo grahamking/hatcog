@@ -80,10 +80,12 @@ func doInput(content string, ircConn *Connection) {
 
     if isCommand(content) {
 
+        /*
         if content == "/quit" {
             isRunning = false
             return
         }
+        */
 
         ircConn.doCommand(content)
 
