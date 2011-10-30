@@ -96,7 +96,8 @@ func (self *Terminal) ListenInternalKeys() {
 
         if char == 13 {    // Enter
 
-            fromUser <- self.input
+            cleanInput := sane(string(self.input))
+            fromUser <- []byte(cleanInput)
             self.input = make([]byte, 0)
         }
 

@@ -35,42 +35,48 @@ func main() {
     term.Raw()
     term.Channel = *channel
     go term.ListenInternalKeys()
-    fmt.Println("Terminal set to raw, listening for keyboard input")
+    term.Write([]byte("Terminal set to raw, listening for keyboard input\n\r"))
 
     // Connect to go-connect
     var conn *InternalConnection
     conn = NewInternalConnection(GO_HOST, *channel)
     defer conn.Close()
 
-    fmt.Println("Connected to go-connect")
+    term.Write([]byte("Connected to go-connect\n\r"))
 	go conn.Consume()
 
+    var line *Line
     for isRunning {
 
         select {
             case serverData := <-fromServer:
-                // TODO: serverData is JSON, decode it and display
-                term.Write(append(serverData, '\n'))
+                line = FromJson(serverData)
+                line.Display(term)
 
             case userInput := <-fromUser:
                 doInput(userInput, conn)
+
+                // Display locally
+                line := Line{
+                    User:"me",
+                    Content:string(userInput),
+                    Channel:conn.Channel}
+                line.Display(term)
         }
     }
 
     // Internal listener for user input from socket
 	//go listenInternalSocket()
 	//fmt.Println("Use 'netcat 127.0.0.1 " + INTERNAL_PORT + "' to connect for writes")
-
-    fmt.Println("Bye")
 }
 
 // Act on user input
 func doInput(content []byte, conn *InternalConnection) {
 
-    conn.Write([]byte("#" + conn.Channel + " "))
+    conn.Write([]byte(conn.Channel + " "))
     conn.Write(content)
 
-    if string(content) == "/quit\n" {
+    if string(content) == "/quit" {
         isRunning = false
         return
     }
