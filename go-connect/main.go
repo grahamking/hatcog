@@ -95,7 +95,7 @@ func doInput(content string, ircConn *Connection) {
         ircConn.doCommand(content)
 
     } else {
-        // Input is expected to be '#channel message content ...'
+        // Input is expected to be '#channel message_content ...'
         contentParts := strings.SplitN(content, " ", 2)
         if len(contentParts) != 2 {
             // Invalid message
@@ -103,7 +103,12 @@ func doInput(content string, ircConn *Connection) {
         }
         channel := contentParts[0]
         content = contentParts[1]
-        ircConn.SendMessage(channel, content)
+
+        if strings.HasPrefix(content, "/me ") {
+            ircConn.SendAction(channel, content[4:])
+        } else {
+            ircConn.SendMessage(channel, content)
+        }
     }
 
 }

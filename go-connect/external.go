@@ -53,6 +53,12 @@ func (self *Connection) SendMessage(channel, msg string) {
 	self.SendRaw(fullmsg)
 }
 
+// Send a /me action message
+func (self *Connection) SendAction(channel, msg string) {
+    fullmsg := "PRIVMSG " + channel + " :\u0001ACTION " + msg
+    self.SendRaw(fullmsg)
+}
+
 // Send message down socket
 func (self *Connection) SendRaw(msg string) {
 	var full = msg + "\n"
@@ -70,7 +76,7 @@ func (self *Connection) SendRaw(msg string) {
 func (self *Connection) doCommand(content string) {
 
 	content = content[1:]
-	self.SendRaw(content)
+    self.SendRaw(content)
 }
 
 // Read IRC messages from the connection and send to stdout

@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     "log"
+    "strings"
 )
 
 const (
@@ -116,19 +117,28 @@ func (self *Client) onUser(content []byte) {
         return
     }
 
-    if isCommand(content) {
+    // /me is really a message pretending to be a command,
+    isMeCommand := strings.HasPrefix(string(content), "/me")
+
+    if isCommand(content) && ! isMeCommand {
         // IRC command
         self.conn.Write(content)
+
     } else {
         // Send to go-connect
         self.conn.Write([]byte(self.channel + " "))
         self.conn.Write(content)
 
+        if isMeCommand {
+            content = content[4:]
+        }
+
         // Display locally
         line := Line{
-            User:self.nick,
-            Content:string(content),
-            Channel:self.channel}
+            User: self.nick,
+            Content: string(content),
+            Channel: self.channel,
+            IsAction: isMeCommand}
         self.term.Write([]byte(line.String(self.nick)))
     }
 
@@ -158,6 +168,7 @@ func (self *Client) onServer(serverData []byte) {
 
     if line.Command == JOIN {
         if line.User == self.nick {
+            // JOIN by me not really supported, run program again
             if len(line.Content) != 0 {
                 self.channel = line.Content
             } else if len(line.Args) != 0 {
