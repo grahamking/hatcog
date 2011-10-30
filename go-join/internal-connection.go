@@ -31,19 +31,19 @@ func NewInternalConnection(
     socket.SetReadTimeout(ONE_SECOND_NS)
 
     conn := InternalConnection{socket, output}
-    conn.Send("/join " + channel)
+    conn.Write([]byte("/join " + channel))
 
     return &conn
 }
 
-// Send a message to go-connect
-func (self *InternalConnection) Send(msg string) os.Error {
-    _, err := self.socket.Write([]byte(msg))
-    return err
+// Send a message to go-connect. Implements Writer.
+func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
+    bytesWritten, err := self.socket.Write([]byte(msg))
+    return bytesWritten, err
 }
 
 // Listen for JSON messages from go-connect and output to terminal
-func (self *InternalConnection) Receive() {
+func (self *InternalConnection) Consume() {
 	var data []byte = make([]byte, 1)
 	var linedata []byte = make([]byte, 4096)
     var err os.Error
@@ -64,7 +64,7 @@ func (self *InternalConnection) Receive() {
 		}
 
 		if data[0] == '\n' {
-			self.output.Write(linedata[:index])
+            fromServer <- linedata[:index]
 			index = 0
 		} else if data[0] != '\r' { // Ignore CR, because LF is next
 			linedata[index] = data[0]

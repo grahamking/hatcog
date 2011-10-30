@@ -96,7 +96,7 @@ func (self *Terminal) ListenInternalKeys() {
 
         if char == 13 {    // Enter
 
-            inputChannel <- self.input
+            fromUser <- self.input
             self.input = make([]byte, 0)
         }
 

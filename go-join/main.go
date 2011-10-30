@@ -13,11 +13,13 @@ const (
     IRC_NAME_LENGTH    = 15
 )
 
-// IRC Channel
+// IRC Channel command line param
 var channel = flag.String("channel", "#test", "Channel to connect to");
 
-// Go comms channel
-var inputChannel = make(chan []byte)
+var isRunning = true
+
+var fromUser = make(chan []byte)
+var fromServer = make(chan []byte)
 
 /*
  * main
@@ -31,26 +33,46 @@ func main() {
         fmt.Println("Bye!")
     }()
     term.Raw()
+    term.Channel = *channel
+    go term.ListenInternalKeys()
+    fmt.Println("Terminal set to raw, listening for keyboard input")
 
     // Connect to go-connect
-
-    var conn * InternalConnection
+    var conn *InternalConnection
     conn = NewInternalConnection(GO_HOST, *channel, term)
     defer conn.Close()
 
-    term.Channel = *channel
+    fmt.Println("Connected to go-connect")
+	go conn.Consume()
 
-    // Gathers all inputs and sends to IRC server
-	//go listenInternal(conn)
+    for isRunning {
+
+        select {
+            case serverData := <-fromServer:
+                // TODO: serverData is JSON, decode it and display
+                term.Write(append(serverData, '\n'))
+
+            case userInput := <-fromUser:
+                doInput(userInput, conn)
+        }
+    }
 
     // Internal listener for user input from socket
 	//go listenInternalSocket()
 	//fmt.Println("Use 'netcat 127.0.0.1 " + INTERNAL_PORT + "' to connect for writes")
 
-    // Internal listener for user input from keyboard
-    //go term.ListenInternalKeys()
+    fmt.Println("Bye")
+}
 
-    // Listen for messages from go-connect
-	conn.Receive()
+// Act on user input
+func doInput(content []byte, conn *InternalConnection) {
+
+    conn.Write([]byte("#test "))
+    conn.Write(content)
+
+    if string(content) == "/quit" {
+        isRunning = false
+        return
+    }
 }
 

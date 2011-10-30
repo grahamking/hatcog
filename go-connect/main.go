@@ -64,13 +64,11 @@ func main() {
     for isRunning {
 
         select {
+            case serverLine := <-fromServer:
+                internal.Write(serverLine.AsJson())
 
-        case serverLine := <-fromServer:
-            internal.Write(serverLine.AsJson())
-
-        case userString := <-fromUser:
-            doInput(userString, external)
-
+            case userString := <-fromUser:
+                doInput(userString, external)
         }
     }
 
