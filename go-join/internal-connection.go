@@ -4,7 +4,6 @@ import (
     "net"
     "os"
     "log"
-    "io"
 )
 
 const (
@@ -13,13 +12,10 @@ const (
 
 type InternalConnection struct {
     socket net.Conn
-    output io.Writer
+    Channel string
 }
 
-func NewInternalConnection(
-    host string,
-    channel string,
-    output io.Writer) *InternalConnection {
+func NewInternalConnection(host string, channel string) *InternalConnection {
 
     var socket net.Conn
     var err os.Error
@@ -30,7 +26,7 @@ func NewInternalConnection(
 
     socket.SetReadTimeout(ONE_SECOND_NS)
 
-    conn := InternalConnection{socket, output}
+    conn := InternalConnection{socket, channel}
     conn.Write([]byte("/join " + channel))
 
     return &conn
@@ -42,7 +38,7 @@ func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
     return bytesWritten, err
 }
 
-// Listen for JSON messages from go-connect and output to terminal
+// Listen for JSON messages from go-connect and put on channel
 func (self *InternalConnection) Consume() {
 	var data []byte = make([]byte, 1)
 	var linedata []byte = make([]byte, 4096)

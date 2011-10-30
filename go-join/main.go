@@ -39,7 +39,7 @@ func main() {
 
     // Connect to go-connect
     var conn *InternalConnection
-    conn = NewInternalConnection(GO_HOST, *channel, term)
+    conn = NewInternalConnection(GO_HOST, *channel)
     defer conn.Close()
 
     fmt.Println("Connected to go-connect")
@@ -67,10 +67,10 @@ func main() {
 // Act on user input
 func doInput(content []byte, conn *InternalConnection) {
 
-    conn.Write([]byte("#test "))
+    conn.Write([]byte("#" + conn.Channel + " "))
     conn.Write(content)
 
-    if string(content) == "/quit" {
+    if string(content) == "/quit\n" {
         isRunning = false
         return
     }
