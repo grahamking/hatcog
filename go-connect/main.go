@@ -72,6 +72,11 @@ func main() {
                 }
                 internal.Write(serverLine.AsJson())
 
+                if serverLine.User == serverLine.Channel {
+                    // A private message
+                    doPrivateMessage(serverLine)
+                }
+
             case userString := <-fromUser:
                 doInput(userString, external)
         }
@@ -116,6 +121,14 @@ func doInput(content string, ircConn *Connection) {
 // Is 'content' an IRC command?
 func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
+}
+
+/*
+ * Open a new window in tmux for the private message.
+ */
+func doPrivateMessage(line *Line) {
+    // TODO: Write this.
+    //tmux split-window -v -p 20 './go-join bob'
 }
 
 /* Trims a string to not include junk such as:

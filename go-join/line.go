@@ -58,7 +58,7 @@ func (self *Line) String(nick string) string {
         output += username + " "
 	}
 
-    if len(self.Channel) == 0 && len(self.Args) == 1 && self.Args[0] == nick {
+    if self.Channel == self.User {
         output += "[PRIVATE] "
     }
 

@@ -58,6 +58,7 @@ func (self *Terminal) Read() uint8 {
 
 // Write to Stdout. Implements Writer.
 func (self *Terminal) Write(msg []byte) (int, os.Error) {
+    self.ClearLine()
     bytesWritten, err := self.rawWrite(msg)
     self.displayInput()
     return bytesWritten, err
@@ -68,6 +69,14 @@ func (self *Terminal) rawWrite(msg []byte) (int, os.Error) {
     bytesWritten, errNo := syscall.Write(TTY_FD, msg)
     err := os.NewError(syscall.Errstr(errNo))
     return bytesWritten, err
+}
+
+// Clear current line by writing 100 blanks and a \r
+func (self *Terminal) ClearLine() {
+    for i := 0; i < 5; i++ {
+        self.rawWrite([]byte("                     "))
+    }
+    self.rawWrite([]byte("\r"))
 }
 
 /* Restore terminal settings to what they were at startup.

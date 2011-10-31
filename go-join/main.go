@@ -176,7 +176,10 @@ func (self *Client) onUser(content []byte) {
 func (self *Client) onServer(serverData []byte) {
 
     line := FromJson(serverData)
-    if line.Command == "PRIVMSG" && line.Channel != self.channel {
+
+    isWrongChannel := line.Command == "PRIVMSG" && line.Channel != self.channel
+    isPrivateMsg := line.Channel == line.User
+    if isWrongChannel && !isPrivateMsg {
         return
     }
 
