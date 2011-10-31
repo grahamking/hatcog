@@ -4,6 +4,7 @@ import (
     "net"
     "os"
     "log"
+    "strings"
 )
 
 const (
@@ -26,7 +27,9 @@ func NewInternalConnection(host string, channel string) *InternalConnection {
     socket.SetReadTimeout(ONE_SECOND_NS)
 
     conn := InternalConnection{socket}
-    conn.Write([]byte("/join " + channel))
+    if strings.HasPrefix(channel, "#") {
+        conn.Write([]byte("/join " + channel))
+    }
 
     return &conn
 }

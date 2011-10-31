@@ -15,6 +15,7 @@ var colorMap = make(map[string]string)
 
 type Line struct {
 	Raw     string
+    Received string
 	User    string
 	Host    string
 	Command string
@@ -30,14 +31,14 @@ func (self *Line) HasDisplay() bool {
 
 func (self *Line) String(nick string) string {
 
-    var now *time.Time
     var output string
     var username string
 
-    now = time.LocalTime()
-
     // see http://golang.org/src/pkg/time/format.go?s=7285:7328#L17
-    output = now.Format("15:04") + " "
+    if len(self.Received) != 0 {
+        parsedTime, _ := time.Parse(time.RFC3339, self.Received)
+        output = parsedTime.Format("15:04") + " "
+    }
 
 	if self.User != "" {
         username = self.User

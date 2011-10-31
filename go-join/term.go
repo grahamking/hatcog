@@ -106,12 +106,16 @@ func (self *Terminal) ListenInternalKeys() {
 
 // Show input so far
 func (self *Terminal) displayInput() {
-
+    /*
     if len(self.input) == 0 {
         return
     }
-
-    msg := highlight("\r [" + self.Channel + "] " + string(self.input))
+    */
+    msg := "\r [" + self.Channel + "] "
+    if len(self.input) != 0 {
+        msg += string(self.input)
+    }
+    msg = highlight(msg)
     msg += "                   \r"
     self.rawWrite([]byte(msg))
 }

@@ -5,6 +5,8 @@ import (
     "os"
     "log"
     "strings"
+    "flag"
+    "time"
 )
 
 const (
@@ -14,8 +16,20 @@ const (
 	RPL_NAMREPLY = "353"
     JOIN = "JOIN"
     NICK = "NICK"
-    USAGE = "Usage: go-join channel\nNote there's no # in front of the channel"
+    USAGE = `
+Usage: go-join [channel|-private=nick]
+Note there's no # in front of the channel
+Examples:
+ 1. Join channel test: go-join test
+ 2. Listen for private (/query) message from bob: go-join -private=bob
+`
+
 )
+
+var userPrivate = flag.String(
+    "private",
+    "",
+    "Listen for private messages from this nick only")
 
 var fromUser = make(chan []byte)
 var fromServer = make(chan []byte)
@@ -39,7 +53,15 @@ func main() {
         os.Exit(1)
     }
 
-    channel := "#" + os.Args[1]
+    var channel string
+
+    arg := os.Args[1]
+    if strings.HasPrefix(arg, "-private") {
+        flag.Parse()
+        channel = *userPrivate
+    } else {
+        channel = "#" + arg
+    }
 
     client := NewClient(channel)
     defer func() {
@@ -86,7 +108,12 @@ func (self *Client) Run() {
 
 	go self.conn.Consume()
     self.display("Connected to go-connect")
-    self.display("Joining channel " + self.channel)
+
+    if strings.HasPrefix(self.channel, "#") {
+        self.display("Joining channel " + self.channel)
+    } else {
+        self.display("Listening for private messages from " + self.channel)
+    }
 
     for self.isRunning {
 
@@ -135,6 +162,7 @@ func (self *Client) onUser(content []byte) {
 
         // Display locally
         line := Line{
+            Received: time.LocalTime().Format(time.RFC3339),
             User: self.nick,
             Content: string(content),
             Channel: self.channel,
@@ -148,7 +176,7 @@ func (self *Client) onUser(content []byte) {
 func (self *Client) onServer(serverData []byte) {
 
     line := FromJson(serverData)
-    if len(line.Channel) > 0 && line.Channel != self.channel {
+    if line.Command == "PRIVMSG" && line.Channel != self.channel {
         return
     }
 
@@ -166,7 +194,10 @@ func (self *Client) onServer(serverData []byte) {
     // - Record messages even if not being displayed right now.
     // - JOIN is sent for every other user that connects too.
 
-    if line.Command == JOIN {
+    if line.Command == JOIN  && line.Content == self.channel {
+        self.display(line.User + " joined the channel")
+
+        /*
         if line.User == self.nick {
             // JOIN by me not really supported, run program again
             if len(line.Content) != 0 {
@@ -179,9 +210,10 @@ func (self *Client) onServer(serverData []byte) {
         } else {
             self.display("User joined channel: " + line.User)
         }
+        */
 
-    } else if line.Command == RPL_NAMREPLY {
-        self.display("Users currently in " + self.channel + ": ")
+    } else if line.Command == RPL_NAMREPLY && line.Channel == self.channel {
+        self.display("Users currently in " + line.Channel + ": ")
         self.display(line.Content)
 
     } else if line.Command == NICK {

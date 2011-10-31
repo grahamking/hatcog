@@ -4,6 +4,7 @@ import (
     "log"
 	"strings"
     "json"
+    "time"
 )
 
 const (
@@ -12,9 +13,10 @@ const (
 
 type Line struct {
 	Raw     string
+    Received string
 	User    string
 	Host    string
-	Command string
+    Command string
 	Args    []string
 	Content string
     IsAction bool
@@ -83,6 +85,11 @@ func ParseLine(data string) *Line {
         }
     }
 
+    // A /query message, fake the user as the channel
+    if len(channel) == 0 && command == "PRIVMSG" {
+        channel = user
+    }
+
     isAction = false
     if strings.HasPrefix(trailing, "ACTION") {
         // Received a /me line
@@ -92,6 +99,7 @@ func ParseLine(data string) *Line {
 
 	line = &Line{
 		Raw:     raw,
+        Received: time.LocalTime().Format(time.RFC3339),
 		User:    user,
 		Host:    host,
 		Command: command,
