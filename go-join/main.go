@@ -224,7 +224,7 @@ func (self *Client) onServer(serverData []byte) {
             self.nick = line.Content
             self.display("You are now know as " + self.nick)
         } else {
-            self.display(line.User + "is now know as" + line.Content)
+            self.display(line.User + " is now know as " + line.Content)
         }
     }
 }

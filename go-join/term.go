@@ -71,9 +71,10 @@ func (self *Terminal) rawWrite(msg []byte) (int, os.Error) {
     return bytesWritten, err
 }
 
-// Clear current line by writing 100 blanks and a \r
+// Clear current line by writing blanks and a \r
+// TODO: Need to not print beyond end of terminal line
 func (self *Terminal) ClearLine() {
-    for i := 0; i < 5; i++ {
+    for i := 0; i < 2; i++ {
         self.rawWrite([]byte("                     "))
     }
     self.rawWrite([]byte("\r"))
@@ -115,6 +116,7 @@ func (self *Terminal) ListenInternalKeys() {
 
 // Show input so far
 func (self *Terminal) displayInput() {
+    self.ClearLine()
     /*
     if len(self.input) == 0 {
         return
@@ -124,8 +126,7 @@ func (self *Terminal) displayInput() {
     if len(self.input) != 0 {
         msg += string(self.input)
     }
-    msg = highlight(msg)
-    msg += "                   \r"
+    msg = highlight(msg) + "\r"
     self.rawWrite([]byte(msg))
 }
 
