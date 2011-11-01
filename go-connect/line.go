@@ -19,7 +19,7 @@ type Line struct {
     Command string
 	Args    []string
 	Content string
-    IsAction bool
+    IsCTCP bool
     Channel string
 }
 
@@ -44,7 +44,7 @@ func ParseLine(data string) *Line {
 	var line *Line
 	var prefix, command, trailing, user, host, raw string
 	var args, parts []string
-    var isAction bool
+    var isCTCP bool
 
 	data = sane(data)
 
@@ -70,6 +70,10 @@ func ParseLine(data string) *Line {
 		data = parts[0]
 		args = strings.Split(data, " ")
 
+        // IRC CTCP uses ascii null byte
+        if parts[1][0] == '\001' {
+            isCTCP = true
+        }
 		trailing = sane(parts[1])
 	} else {
 		args = strings.Split(data, " ")
@@ -85,16 +89,20 @@ func ParseLine(data string) *Line {
         }
     }
 
-    // A /query message, fake the user as the channel
-    if len(channel) == 0 && command == "PRIVMSG" {
-        channel = user
+    if len(channel) == 0 {
+        if command == "PRIVMSG" {
+            // A /query message, fake the user as the channel
+            channel = user
+        } else if command == "JOIN" {
+            // JOIN commands say which channel in content part of msg
+            channel = trailing
+        }
     }
 
-    isAction = false
     if strings.HasPrefix(trailing, "ACTION") {
         // Received a /me line
         trailing = strings.SplitN(trailing, " ", 2)[1]
-        isAction = true
+        command = "ACTION"
     }
 
 	line = &Line{
@@ -105,7 +113,7 @@ func ParseLine(data string) *Line {
 		Command: command,
 		Args:    args,
 		Content: trailing,
-        IsAction: isAction,
+        IsCTCP:  isCTCP,
         Channel: channel,
 	}
 

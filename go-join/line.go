@@ -21,7 +21,7 @@ type Line struct {
 	Command string
 	Args    []string
 	Content string
-    IsAction bool
+    IsCTCP  bool
     Channel string
 }
 
@@ -31,8 +31,7 @@ func (self *Line) HasDisplay() bool {
 
 func (self *Line) String(nick string) string {
 
-    var output string
-    var username string
+    var output, username, content string
 
     // see http://golang.org/src/pkg/time/format.go?s=7285:7328#L17
     if len(self.Received) != 0 {
@@ -43,11 +42,11 @@ func (self *Line) String(nick string) string {
 	if self.User != "" {
         username = self.User
 
-        if self.IsAction {
-            username = Lpad(15, "* " + username)
-        } else {
-            username = Lpad(15, username)
-        }
+        //if self.Command == "ACTION" {
+        //    username = Lpad(15, "* " + username)
+        //} else {
+        username = Lpad(15, username)
+        //}
 
         if self.User == nick {
             username = Bold(username)
@@ -62,7 +61,11 @@ func (self *Line) String(nick string) string {
         output += "[PRIVATE] "
     }
 
-    output += self.Content
+    content = self.Content
+    if strings.Contains(content, nick) {
+        content = strings.Replace(content, nick, Bold(nick), -1)
+    }
+    output += content
 
     output += "\n\r"
     return output

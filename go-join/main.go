@@ -7,6 +7,7 @@ import (
     "strings"
     "flag"
     "time"
+    "exec"
 )
 
 const (
@@ -14,8 +15,9 @@ const (
     /// but in future go-connect could be remote
     GO_HOST      = "127.0.0.1:8790"
 	RPL_NAMREPLY = "353"
-    JOIN = "JOIN"
-    NICK = "NICK"
+    CHANNEL_CMDS = "PRIVMSG, PART, JOIN, " + RPL_NAMREPLY
+    NOTIFY_CMD = "/usr/bin/notify-send"
+    SOUND_CMD = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
     USAGE = `
 Usage: go-join [channel|-private=nick]
 Note there's no # in front of the channel
@@ -156,18 +158,21 @@ func (self *Client) onUser(content []byte) {
         self.conn.Write([]byte(self.channel + " "))
         self.conn.Write(content)
 
+        // Display locally
+
         if isMeCommand {
             content = content[4:]
-        }
+            self.displayAction(self.nick, string(content))
 
-        // Display locally
-        line := Line{
-            Received: time.LocalTime().Format(time.RFC3339),
-            User: self.nick,
-            Content: string(content),
-            Channel: self.channel,
-            IsAction: isMeCommand}
-        self.term.Write([]byte(line.String(self.nick)))
+        } else {
+            line := Line{
+                Received: time.LocalTime().Format(time.RFC3339),
+                User: self.nick,
+                Content: string(content),
+                Channel: self.channel,
+                IsCTCP: isMeCommand}
+            self.term.Write([]byte(line.String(self.nick)))
+        }
     }
 
 }
@@ -177,61 +182,75 @@ func (self *Client) onServer(serverData []byte) {
 
     line := FromJson(serverData)
 
-    isWrongChannel := line.Command == "PRIVMSG" && line.Channel != self.channel
+    isWrongChannel := strings.Contains(CHANNEL_CMDS, line.Command) &&
+                      line.Channel != self.channel
     isPrivateMsg := line.Channel == line.User
     if isWrongChannel && !isPrivateMsg {
         return
     }
 
-    if line.HasDisplay() {
-        self.term.Write([]byte(line.String(self.nick)))
-    }
+    switch line.Command {
 
-    // - JOIN is only sent the first time
-    // we connect to a channel. If we hop back
-    // it doesn't get sent because unless we /part,
-    // we are still connected. So can't rely on it
-    // to update internal state, instead
-    // need to parse the command ourselves.
-    // Or maybe server sends something else?
-    // - Record messages even if not being displayed right now.
-    // - JOIN is sent for every other user that connects too.
-
-    if line.Command == JOIN  && line.Content == self.channel {
-        self.display(line.User + " joined the channel")
-
-        /*
-        if line.User == self.nick {
-            // JOIN by me not really supported, run program again
-            if len(line.Content) != 0 {
-                self.channel = line.Content
-            } else if len(line.Args) != 0 {
-                self.channel = line.Args[0]
+        case "PRIVMSG":
+            self.term.Write([]byte(line.String(self.nick)))
+            if strings.Contains(line.Content, self.nick) || isPrivateMsg {
+                self.Notify(line)
             }
-            self.term.Channel = self.channel
-            self.display("Now talking on " + self.channel)
-        } else {
-            self.display("User joined channel: " + line.User)
-        }
-        */
 
-    } else if line.Command == RPL_NAMREPLY && line.Channel == self.channel {
-        self.display("Users currently in " + line.Channel + ": ")
-        self.display(line.Content)
+        case "ACTION": self.displayAction(line.User, line.Content)
 
-    } else if line.Command == NICK {
-        if len(line.User) == 0 || line.User == self.nick {
-            self.nick = line.Content
-            self.display("You are now know as " + self.nick)
-        } else {
-            self.display(line.User + " is now know as " + line.Content)
-        }
+        case "JOIN": self.display(line.User + " joined the channel")
+
+        case RPL_NAMREPLY:
+            self.display("Users currently in " + line.Channel + ": ")
+            self.display(line.Content)
+
+        case "NICK":
+            if len(line.User) == 0 || line.User == self.nick {
+                self.nick = line.Content
+                self.display("You are now know as " + self.nick)
+            } else {
+                self.display(line.User + " is now know as " + line.Content)
+            }
+
+        case "PART": self.display(line.User + " left the channel.")
+
+        case "QUIT": self.display(line.User + " has quit.")
     }
+
 }
 
 // Write string to terminal
 func (self *Client) display(msg string) {
     self.term.Write([]byte(msg + "\n\r"))
+}
+
+// Write an action to the terminal  TODO: This duplicates some of line.String
+func (self *Client) displayAction(nick, content string) {
+    var formatted string
+    if nick == self.nick {
+        formatted = Bold(" * " + nick)
+    } else {
+        formatted = colorfullUser(nick, " * " + nick)
+    }
+
+    self.display(formatted + " " + content)
+}
+
+// Alert user that someone is talking to them
+func (self *Client) Notify(line *Line) {
+
+    title := line.User
+    // Private message have Channel == User so don't repeat it
+    if line.Channel != line.User {
+        title += " " + line.Channel
+    }
+    notifyCmd := exec.Command(NOTIFY_CMD, title, line.Content)
+    notifyCmd.Run()
+
+    parts := strings.Split(SOUND_CMD, " ")
+    soundCmd := exec.Command(parts[0], parts[1:]...)
+    soundCmd.Run()
 }
 
 func (self *Client) Close() os.Error {

@@ -9,7 +9,17 @@ import (
 
 const (
     TTY_FD = 0   // STDIN_FILENO
+    _TIOCGWINSZ = 0x5413
+    _TIOCSWINSZ = 0x5414
 )
+
+// Used by GetWinsize
+type winsize struct {
+    Row    uint16
+    Col    uint16
+    Xpixel uint16
+    Ypixel uint16
+}
 
 type Terminal struct {
     orig_termios termios
@@ -72,16 +82,15 @@ func (self *Terminal) rawWrite(msg []byte) (int, os.Error) {
 }
 
 // Clear current line by writing blanks and a \r
-// TODO: Need to not print beyond end of terminal line
 func (self *Terminal) ClearLine() {
-    for i := 0; i < 2; i++ {
-        self.rawWrite([]byte("                     "))
+    for i := 0; i < TerminalWidth(); i++ {
+        self.rawWrite([]byte(" "))
     }
     self.rawWrite([]byte("\r"))
 }
 
 /* Restore terminal settings to what they were at startup.
-Implements Closer interface.
+   Implements Closer interface.
 */
 func (self *Terminal) Close() os.Error {
     return setTermios(&self.orig_termios)
@@ -117,17 +126,41 @@ func (self *Terminal) ListenInternalKeys() {
 // Show input so far
 func (self *Terminal) displayInput() {
     self.ClearLine()
-    /*
-    if len(self.input) == 0 {
-        return
-    }
-    */
+
     msg := "\r [" + self.Channel + "] "
     if len(self.input) != 0 {
-        msg += string(self.input)
+        width := TerminalWidth()
+        inputLen := len(self.input) + len(msg)
+        start := 0
+        if inputLen > width {
+            start = inputLen - width
+        }
+        msg += string(self.input[start:])
     }
     msg = highlight(msg) + "\r"
     self.rawWrite([]byte(msg))
+}
+
+// Width of the current terminal in columns
+func TerminalWidth() int {
+    sizeobj, _ := GetWinsize()
+    return int(sizeobj.Col)
+}
+
+// Gets the window size using the TIOCGWINSZ ioctl() call on the tty device.
+func GetWinsize() (*winsize, os.Error) {
+    ws := new(winsize)
+
+    r1, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+        uintptr(syscall.Stdin),
+        uintptr(_TIOCGWINSZ),
+        uintptr(unsafe.Pointer(ws)),
+    )
+
+    if int(r1) == -1 {
+        return nil, os.NewSyscallError("GetWinsize", int(errno))
+    }
+    return ws, nil
 }
 
 // termios types
