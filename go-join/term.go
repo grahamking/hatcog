@@ -83,6 +83,7 @@ func (self *Terminal) rawWrite(msg []byte) (int, os.Error) {
 
 // Clear current line by writing blanks and a \r
 func (self *Terminal) ClearLine() {
+    self.rawWrite([]byte("\r"))
     for i := 0; i < TerminalWidth(); i++ {
         self.rawWrite([]byte(" "))
     }
@@ -102,12 +103,21 @@ func (self *Terminal) ListenInternalKeys() {
     for {
         char := self.Read()
 
+        if char == 0x09 {
+            // Find previous space
+            // Match prefix against nick list
+            // Replace from previous space with match
+        }
+
         if char == 0x7f && len(self.input) > 0 {  // 0x7f = Unicode backspace
             var newInput = make([]byte, len(self.input) - 1)
             copy(newInput, self.input)
             self.input = newInput
 
-        } else {
+        }
+
+        if char >= 0x20 && char < 0x7f {
+            // Only use printable characters. See 'man ascii'
             self.input = append(self.input, char)
         }
 
@@ -127,7 +137,7 @@ func (self *Terminal) ListenInternalKeys() {
 func (self *Terminal) displayInput() {
     self.ClearLine()
 
-    msg := "\r [" + self.Channel + "] "
+    msg := Bold("\r[" + self.Channel + "] ")
     if len(self.input) != 0 {
         width := TerminalWidth()
         inputLen := len(self.input) + len(msg)
@@ -135,9 +145,15 @@ func (self *Terminal) displayInput() {
         if inputLen > width {
             start = inputLen - width
         }
-        msg += string(self.input[start:])
+        visible := string(self.input[start:])
+
+        if self.input[0] == '/' {
+            // Bold IRC commands
+            visible = Bold(visible)
+        }
+
+        msg += visible
     }
-    msg = highlight(msg) + "\r"
     self.rawWrite([]byte(msg))
 }
 

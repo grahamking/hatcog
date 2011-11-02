@@ -7,7 +7,6 @@ import (
     "strings"
     "flag"
     "time"
-    "exec"
 )
 
 const (
@@ -15,9 +14,7 @@ const (
     /// but in future go-connect could be remote
     GO_HOST      = "127.0.0.1:8790"
 	RPL_NAMREPLY = "353"
-    CHANNEL_CMDS = "PRIVMSG, PART, JOIN, " + RPL_NAMREPLY
-    NOTIFY_CMD = "/usr/bin/notify-send"
-    SOUND_CMD = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
+    CHANNEL_CMDS = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
     USAGE = `
 Usage: go-join [channel|-private=nick]
 Note there's no # in front of the channel
@@ -81,21 +78,35 @@ type Client struct {
     channel string
     isRunning bool
     nick string
+    isNames bool
+    users map[string] bool
 }
 
 // Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
 func NewClient(channel string) *Client {
+
+    // Connect to go-connect
+    var conn *InternalConnection
+    conn = NewInternalConnection(GO_HOST, channel)
+
+    if strings.HasPrefix(channel, "#") {
+        fmt.Println("Joining channel " + channel)
+    } else {
+        fmt.Println("Listening for private messages from " + channel)
+    }
 
     // Set terminal to raw mode, listen for keyboard input
     var term *Terminal = NewTerminal()
     term.Raw()
     term.Channel = channel
 
-    // Connect to go-connect
-    var conn *InternalConnection
-    conn = NewInternalConnection(GO_HOST, channel)
-
-    return &Client{term: term, conn: conn, channel: channel}
+    return &Client{
+        term: term,
+        conn: conn,
+        channel: channel,
+        isNames: true,      // Accept initial names to fill users map
+        users: make(map[string] bool),
+    }
 }
 
 /* Main loop
@@ -111,11 +122,7 @@ func (self *Client) Run() {
 	go self.conn.Consume()
     self.display("Connected to go-connect")
 
-    if strings.HasPrefix(self.channel, "#") {
-        self.display("Joining channel " + self.channel)
-    } else {
-        self.display("Listening for private messages from " + self.channel)
-    }
+    self.conn.Write([]byte("/names"))   // fill users map
 
     for self.isRunning {
 
@@ -139,11 +146,23 @@ func (self *Client) Run() {
 // Do something with user input. Usually just send to go-connect
 func (self *Client) onUser(content []byte) {
 
-    if string(content) == "/quit" {
+    if string(content) == "/test" {
+        for key, _ := range self.users {
+            self.display(key)
+        }
+        return
+    }
+
+    if sane(string(content)) == "/quit" {
         // Local quit, don't send to server
         // Currently there's no global quit
         self.isRunning = false
         return
+    }
+
+    if string(content) == "/names" {
+        // Remember we're waiting for name information
+        self.isNames = true
     }
 
     // /me is really a message pretending to be a command,
@@ -193,19 +212,26 @@ func (self *Client) onServer(serverData []byte) {
 
         case "PRIVMSG":
             self.term.Write([]byte(line.String(self.nick)))
-            if strings.Contains(line.Content, self.nick) || isPrivateMsg {
-                self.Notify(line)
-            }
 
         case "ACTION": self.displayAction(line.User, line.Content)
 
-        case "JOIN": self.display(line.User + " joined the channel")
+        case "JOIN":
+            self.display(line.User + " joined the channel")
+            self.addUser(line.User)
 
         case RPL_NAMREPLY:
-            self.display("Users currently in " + line.Channel + ": ")
-            self.display(line.Content)
+            if self.isNames {
+                self.display("Users currently in " + line.Channel + ": ")
+                self.display("  " + line.Content)
+                self.isNames = false
+                self.updateUsers(strings.Split(line.Content, " "))
+            }
 
         case "NICK":
+            if self.nick != "" && !self.users[line.User] {
+                return
+            }
+
             if len(line.User) == 0 || line.User == self.nick {
                 self.nick = line.Content
                 self.display("You are now know as " + self.nick)
@@ -213,11 +239,39 @@ func (self *Client) onServer(serverData []byte) {
                 self.display(line.User + " is now know as " + line.Content)
             }
 
-        case "PART": self.display(line.User + " left the channel.")
+            self.removeUser(line.User)
+            self.addUser(line.Content)
 
-        case "QUIT": self.display(line.User + " has quit.")
+        case "PART":
+            self.display(line.User + " left the channel.")
+            self.removeUser(line.User)
+
+        case "QUIT":
+            if !self.users[line.User] {
+                return
+            }
+            self.display(line.User + " has quit.")
+            self.removeUser(line.User)
     }
 
+}
+
+func (self *Client) addUser(user string) {
+    if strings.HasPrefix(user, "@") {
+        user = user[1:]
+    }
+    self.users[user] = true
+}
+
+func (self *Client) removeUser(user string) {
+    self.users[user] = false, false
+}
+
+func (self *Client) updateUsers(users []string) {
+    self.users = make(map[string] bool)
+    for _, user := range users {
+        self.addUser(user)
+    }
 }
 
 // Write string to terminal
@@ -235,22 +289,6 @@ func (self *Client) displayAction(nick, content string) {
     }
 
     self.display(formatted + " " + content)
-}
-
-// Alert user that someone is talking to them
-func (self *Client) Notify(line *Line) {
-
-    title := line.User
-    // Private message have Channel == User so don't repeat it
-    if line.Channel != line.User {
-        title += " " + line.Channel
-    }
-    notifyCmd := exec.Command(NOTIFY_CMD, title, line.Content)
-    notifyCmd.Run()
-
-    parts := strings.Split(SOUND_CMD, " ")
-    soundCmd := exec.Command(parts[0], parts[1:]...)
-    soundCmd.Run()
 }
 
 func (self *Client) Close() os.Error {

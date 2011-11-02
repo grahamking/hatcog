@@ -6,23 +6,26 @@ import (
     "os"
     "log"
     "strings"
+    "exec"
 )
 
 const (
     VERSION            = "0.1"
     RAW_LOG            = "/tmp/goirc.log"
-	INTERNAL_PORT      = "8790"
+    NOTIFY_CMD = "/usr/bin/notify-send"
+    SOUND_CMD = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
 )
 
 var serverArg = flag.String("server", "127.0.0.1:6667", "IP address or hostname and optional port for IRC server to connect to")
 var nickArg = flag.String("nick", "goirc", "Nick name")
 var nameArg = flag.String("name", "Go IRC", "Full name")
+var internalPort = flag.String("port", "8790", "Internal port (for go-join)")
 
 // Logs raw IRC messages
 var rawLog *log.Logger;
 
-// Should we keep running?
-var isRunning = true
+var fromServer = make(chan *Line)
+var fromUser = make(chan string)
 
 func init() {
     var logfile *os.File;
@@ -35,58 +38,91 @@ func init() {
  */
 func main() {
 
-    fromServer := make(chan *Line)
-    fromUser := make(chan string)
-
     fmt.Println("GoIRC v" + VERSION)
     fmt.Println("Logging raw IRC messages to: " + RAW_LOG)
 
 	flag.Parse()
 
-    nick := *nickArg    // go-connect must keep track of our nick
-
-    // IRC connection to remote server
-    var external *Connection
-    external = NewConnection(*serverArg, nick, *nameArg, fromServer)
-	defer external.Close()
-
-    fmt.Println("Connected to IRC server " + *serverArg)
-	go external.Consume()
-
-    // Socket connections from go-join programs
-    var internal *Internal
-    internal = NewInternal(INTERNAL_PORT, fromUser, nick)
-    defer internal.Close()
-
-    fmt.Println("Listening for internal connection on port " + INTERNAL_PORT)
-    go internal.Run()
-
-    for isRunning {
-
-        select {
-            case serverLine := <-fromServer:
-                if serverLine.Command == "NICK" && serverLine.User == nick {
-                    nick = serverLine.Content
-                    internal.Nick = nick
-                    rawLog.Println("Nick change: " + nick)
-                }
-                internal.Write(serverLine.AsJson())
-
-                if serverLine.User == serverLine.Channel {
-                    // A private message
-                    doPrivateMessage(serverLine)
-                }
-
-            case userString := <-fromUser:
-                doInput(userString, external)
-        }
-    }
+    server := NewServer(*nickArg, *serverArg, *nameArg, *internalPort)
+    defer server.Close()
+    server.Run()
 
     fmt.Println("Bye")
 }
 
+type Server struct {
+    nick string
+    external *Connection
+    internal *Internal
+    isRunning bool
+}
+
+func NewServer(nick, server, name, internalPort string) *Server {
+
+    // IRC connection to remote server
+    var external *Connection
+    external = NewConnection(server, nick, name, fromServer)
+    fmt.Println("Connected to IRC server " + server)
+
+    // Socket connections from go-join programs
+    var internal *Internal
+    internal = NewInternal(internalPort, fromUser, nick)
+
+    fmt.Println("Listening for internal connection on port " + internalPort)
+
+    return &Server{nick, external, internal, false}
+}
+
+// Main loop
+func (self *Server) Run() {
+    self.isRunning = true
+
+	go self.external.Consume()
+    go self.internal.Run()
+
+    for self.isRunning {
+
+        select {
+            case serverLine := <-fromServer:
+                self.onServer(serverLine)
+
+            case userString := <-fromUser:
+                self.onUser(userString)
+        }
+    }
+}
+
+func (self *Server) Close() os.Error {
+    self.internal.Close()
+    return self.external.Close()
+}
+
+// Act on server messages
+func (self *Server) onServer(line *Line) {
+
+    if line.Command == "NICK" && line.User == self.nick {
+        self.nick = line.Content
+        self.internal.Nick = self.nick
+        rawLog.Println("Nick change: " + self.nick)
+    }
+
+    self.internal.Write(line.AsJson())
+
+    isMsg := (line.Command == "PRIVMSG")
+    isPrivateMsg := isMsg && (line.User == line.Channel)
+
+    if (isMsg && strings.Contains(line.Content, self.nick)) || isPrivateMsg {
+        self.Notify(line)
+    }
+
+    if isPrivateMsg {
+        self.doPrivateMessage(line)
+    }
+
+}
+
 // Act on user input
-func doInput(content string, ircConn *Connection) {
+func (self *Server) onUser(content string) {
 
     if isCommand(content) {
 
@@ -97,7 +133,7 @@ func doInput(content string, ircConn *Connection) {
         }
         */
 
-        ircConn.doCommand(content)
+        self.external.doCommand(content)
 
     } else {
         // Input is expected to be '#channel message_content ...'
@@ -110,25 +146,39 @@ func doInput(content string, ircConn *Connection) {
         content = contentParts[1]
 
         if strings.HasPrefix(content, "/me ") {
-            ircConn.SendAction(channel, content[4:])
+            self.external.SendAction(channel, content[4:])
         } else {
-            ircConn.SendMessage(channel, content)
+            self.external.SendMessage(channel, content)
         }
     }
 
 }
 
+// Open a new window in tmux for the private message.
+func (self *Server) doPrivateMessage(line *Line) {
+    // TODO: Write this.
+    //tmux split-window -v -p 20 './go-join bob'
+}
+
+// Alert user that someone is talking to them
+func (self *Server) Notify(line *Line) {
+
+    title := line.User
+    // Private message have Channel == User so don't repeat it
+    if line.Channel != line.User {
+        title += " " + line.Channel
+    }
+    notifyCmd := exec.Command(NOTIFY_CMD, title, line.Content)
+    notifyCmd.Run()
+
+    parts := strings.Split(SOUND_CMD, " ")
+    soundCmd := exec.Command(parts[0], parts[1:]...)
+    soundCmd.Run()
+}
+
 // Is 'content' an IRC command?
 func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
-}
-
-/*
- * Open a new window in tmux for the private message.
- */
-func doPrivateMessage(line *Line) {
-    // TODO: Write this.
-    //tmux split-window -v -p 20 './go-join bob'
 }
 
 /* Trims a string to not include junk such as:
