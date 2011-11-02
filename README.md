@@ -1,4 +1,4 @@
-goirc is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). I'm using this to learn Go, so you probably shouldn't use it yet. It's still a bit rough.
+goirc is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). I'm using this to learn Go, so you probably shouldn't use it yet. It's still a bit rough. I don't expect it run on anything except Linux.
 
 goirc is made up of two programs: `go-connect`, which connects to your irc server, and `go-join`, which manages input/output for a single channel.
 
@@ -33,6 +33,10 @@ goirc's support for private messages is a bit manual at the moment. When you see
     ./go-join -private=<nick>
 
 when <nick> is the person who sent you the private message. You now have a special sort-of-channel just to talk to that person.
+
+## Alerts
+
+When someone says your name in a channel or sends you a private message, we try to play a sound and display a notification. You'll need to customise the sound command (in go-connect/main.go). The notification command should work as-is on Ubuntu.
 
 ## Supported commands
 
