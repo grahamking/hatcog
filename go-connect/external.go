@@ -23,7 +23,12 @@ type Connection struct {
 }
 
 
-func NewConnection(server string, nick string, name string, fromServer chan *Line) *Connection {
+func NewConnection(
+    server string,
+    nick string,
+    name string,
+    password string,
+    fromServer chan *Line) *Connection {
 
 	var socket net.Conn
 	var err os.Error
@@ -43,6 +48,10 @@ func NewConnection(server string, nick string, name string, fromServer chan *Lin
 	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
 	conn.SendRaw("NICK " + nick)
 	time.Sleep(ONE_SECOND_NS)
+
+    if password != "" {
+        conn.SendMessage("NickServ", "identify " + password)
+    }
 
 	return &conn
 }

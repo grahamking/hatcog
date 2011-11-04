@@ -7,13 +7,15 @@ import (
     "log"
     "strings"
     "exec"
+    "sort"
+    "bufio"
 )
 
 const (
     VERSION            = "0.1"
     RAW_LOG            = "/tmp/goirc.log"
-    NOTIFY_CMD = "/usr/bin/notify-send"
-    SOUND_CMD = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
+    NOTIFY_CMD         = "/usr/bin/notify-send"
+    SOUND_CMD          = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
 )
 
 var serverArg = flag.String("server", "127.0.0.1:6667", "IP address or hostname and optional port for IRC server to connect to")
@@ -21,16 +23,21 @@ var nickArg = flag.String("nick", "goirc", "Nick name")
 var nameArg = flag.String("name", "Go IRC", "Full name")
 var internalPort = flag.String("port", "8790", "Internal port (for go-join)")
 
-// Logs raw IRC messages
-var rawLog *log.Logger;
+var infoCmds sort.StringSlice
 
 var fromServer = make(chan *Line)
 var fromUser = make(chan string)
+
+// Logs raw IRC messages
+var rawLog *log.Logger;
 
 func init() {
     var logfile *os.File;
     logfile, _ = os.Create(RAW_LOG);
     rawLog = log.New(logfile, "", log.LstdFlags);
+
+    infoCmds = sort.StringSlice([]string{"001", "002", "003", "004", "372", "NOTICE"})
+    infoCmds.Sort()
 }
 
 /*
@@ -38,12 +45,20 @@ func init() {
  */
 func main() {
 
+    var password string
+    if ! isatty(os.Stdin) {
+        // Stdin is a pipe, read password
+        reader := bufio.NewReader(os.Stdin)
+        password, _ = reader.ReadString('\n')
+        password = sane(password)
+    }
+
     fmt.Println("GoIRC v" + VERSION)
     fmt.Println("Logging raw IRC messages to: " + RAW_LOG)
 
 	flag.Parse()
 
-    server := NewServer(*nickArg, *serverArg, *nameArg, *internalPort)
+    server := NewServer(*nickArg, *serverArg, *nameArg, *internalPort, password)
     defer server.Close()
     server.Run()
 
@@ -57,12 +72,16 @@ type Server struct {
     isRunning bool
 }
 
-func NewServer(nick, server, name, internalPort string) *Server {
+func NewServer(nick, server, name, internalPort, password string) *Server {
 
     // IRC connection to remote server
     var external *Connection
-    external = NewConnection(server, nick, name, fromServer)
+    external = NewConnection(server, nick, name, password, fromServer)
     fmt.Println("Connected to IRC server " + server)
+
+    if password != "" {
+        fmt.Println("Identifying with NickServ")
+    }
 
     // Socket connections from go-join programs
     var internal *Internal
@@ -107,6 +126,10 @@ func (self *Server) onServer(line *Line) {
     }
 
     self.internal.Write(line.AsJson())
+
+    if contains(infoCmds, line.Command) {
+        fmt.Println(line.Content)
+    }
 
     isMsg := (line.Command == "PRIVMSG")
     isPrivateMsg := isMsg && (line.User == line.Channel)
@@ -179,6 +202,18 @@ func (self *Server) Notify(line *Line) {
 // Is 'content' an IRC command?
 func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
+}
+
+// Does slice 'arr' contain string 'candidate'?
+func contains(arr sort.StringSlice, candidate string) bool {
+    idx := arr.Search(candidate)
+    return idx < len(arr) && arr[idx] == candidate
+}
+
+// Is given File a terminal?
+func isatty(file *os.File) bool {
+    stat, _ := file.Stat()
+    return !stat.IsFifo()
 }
 
 /* Trims a string to not include junk such as:

@@ -257,7 +257,7 @@ func (self *Client) onServer(serverData []byte) {
 }
 
 func (self *Client) addUser(user string) {
-    if strings.HasPrefix(user, "@") {
+    if strings.HasPrefix(user, "@") || strings.HasPrefix(user, "+") {
         user = user[1:]
     }
     self.users[user] = true
