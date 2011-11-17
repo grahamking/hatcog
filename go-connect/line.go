@@ -103,6 +103,9 @@ func ParseLine(data string) *Line {
         // Received a /me line
         trailing = strings.SplitN(trailing, " ", 2)[1]
         command = "ACTION"
+    } else if strings.HasPrefix(trailing, "VERSION") {
+        trailing = ""
+        command = "VERSION"
     }
 
 	line = &Line{

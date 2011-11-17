@@ -12,7 +12,7 @@ import (
 )
 
 const (
-    VERSION            = "0.1"
+    VERSION            = "GoIRC v0.2 (github.com/grahamking/goirc)"
     RAW_LOG            = "/tmp/goirc.log"
     NOTIFY_CMD         = "/usr/bin/notify-send"
     SOUND_CMD          = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
@@ -53,7 +53,7 @@ func main() {
         password = sane(password)
     }
 
-    fmt.Println("GoIRC v" + VERSION)
+    fmt.Println(VERSION)
     fmt.Println("Logging raw IRC messages to: " + RAW_LOG)
 
 	flag.Parse()

@@ -135,6 +135,9 @@ func (self *Connection) act(line *Line) {
     if line.Command == PING {
         self.SendRaw("PONG goirc");
         return
+    } else if line.Command == "VERSION" {
+        versionMsg := "NOTICE " + line.User +" :\u0001VERSION " + VERSION + "\u0001\n"
+        self.SendRaw(versionMsg)
     }
 
     self.fromServer <- line
