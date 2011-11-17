@@ -64,18 +64,19 @@ func (self *Connection) SendMessage(channel, msg string) {
 
 // Send a /me action message
 func (self *Connection) SendAction(channel, msg string) {
-    fullmsg := "PRIVMSG " + channel + " :\u0001ACTION " + msg
+    fullmsg := "PRIVMSG " + channel + " :\u0001ACTION " + msg + "\u0001"
     self.SendRaw(fullmsg)
 }
 
-// Send message down socket
+// Send message down socket. Add \n at end first.
 func (self *Connection) SendRaw(msg string) {
-	var full = msg + "\n"
+
 	var err os.Error
+    msg = msg + "\n"
 
     rawLog.Println(" -->", msg);
 
-	_, err = self.socket.Write([]byte(full))
+	_, err = self.socket.Write([]byte(msg))
 	if err != nil {
 		log.Fatal("Error writing to socket", err)
 	}

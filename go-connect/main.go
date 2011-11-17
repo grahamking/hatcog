@@ -223,9 +223,10 @@ func isatty(file *os.File) bool {
 - Ascii char \001, which is the extended data delimiter,
   used for example in a /me command before 'ACTION'.
   See http://www.irchelp.org/irchelp/rfc/ctcpspec.html
+- Null bytes: \000
 */
 func sane(data string) string {
 	parts := strings.SplitN(data, "\n", 2)
-	return strings.Trim(parts[0], " \n\r\001")
+	return strings.Trim(parts[0], " \n\r\001\000")
 }
 
