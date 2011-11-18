@@ -73,12 +73,22 @@ func (self *Internal) sendNick(internalConn net.Conn) {
     internalConn.Write(append(jsonData, '\n'))
 }
 
+// Write a message to all go-join connections
 func (self *Internal) Write(msg []byte) (int, os.Error) {
 
     for _, conn := range(self.connections) {
         conn.Write(msg)
     }
     return len(msg), nil
+}
+
+// Write a private message, which just means send only to the first connection
+func (self *Internal) WritePrivate(msg []byte) (int, os.Error) {
+    if len(self.connections) == 0 {
+        return 0, nil
+    }
+
+    return self.connections[0].Write(msg)
 }
 
 func (self *Internal) Close() os.Error {

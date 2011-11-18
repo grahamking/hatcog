@@ -125,8 +125,6 @@ func (self *Server) onServer(line *Line) {
         rawLog.Println("Nick change: " + self.nick)
     }
 
-    self.internal.Write(line.AsJson())
-
     if contains(infoCmds, line.Command) {
         fmt.Println(line.Content)
     }
@@ -134,12 +132,18 @@ func (self *Server) onServer(line *Line) {
     isMsg := (line.Command == "PRIVMSG")
     isPrivateMsg := isMsg && (line.User == line.Channel)
 
+    // Play sound and show notification?
     if (isMsg && strings.Contains(line.Content, self.nick)) || isPrivateMsg {
         self.Notify(line)
     }
 
+    // Send to go-join
+
     if isPrivateMsg {
-        self.doPrivateMessage(line)
+        self.internal.WritePrivate(line.AsJson())
+        //self.doPrivateMessage(line)
+    } else {
+        self.internal.Write(line.AsJson())
     }
 
 }
@@ -177,11 +181,13 @@ func (self *Server) onUser(content string) {
 
 }
 
+/*
 // Open a new window in tmux for the private message.
 func (self *Server) doPrivateMessage(line *Line) {
     // TODO: Write this.
     //tmux split-window -v -p 50 'go-join -private=bob'
 }
+*/
 
 // Alert user that someone is talking to them
 func (self *Server) Notify(line *Line) {
