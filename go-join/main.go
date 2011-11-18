@@ -113,6 +113,8 @@ func NewClient(channel string) *Client {
    Listen for keyboard input and socket input and be an IRC client
 */
 func (self *Client) Run() {
+    var serverData, userInput []byte
+    var ok bool
 
     self.isRunning = true
 
@@ -127,12 +129,20 @@ func (self *Client) Run() {
     for self.isRunning {
 
         select {
-            case serverData := <-fromServer:
-                rawLog.Println(string(serverData))
-                self.onServer(serverData)
+            case serverData, ok = <-fromServer:
+                if ok {
+                    rawLog.Println(string(serverData))
+                    self.onServer(serverData)
+                } else {
+                    self.isRunning = false
+                }
 
-            case userInput := <-fromUser:
-                self.onUser(userInput)
+            case userInput, ok = <-fromUser:
+                if ok {
+                    self.onUser(userInput)
+                } else {
+                    self.isRunning = false
+                }
         }
     }
 

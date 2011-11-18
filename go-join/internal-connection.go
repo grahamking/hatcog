@@ -51,6 +51,12 @@ func (self *InternalConnection) Consume() {
 
 		_, err = self.socket.Read(data)
 		if err != nil {
+            if err == os.EOF {
+                // Internal connection closed
+                close(fromServer)
+                return
+            }
+
             netErr, _ := err.(net.Error)
 
             // Need to timeout occasionally or we never check isClosing

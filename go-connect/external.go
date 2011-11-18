@@ -5,6 +5,7 @@ import (
 	"os"
 	"log"
 	"time"
+    "fmt"
 )
 
 const (
@@ -95,6 +96,7 @@ func (self *Connection) Consume() {
 	var linedata []byte = make([]byte, 4096)
 	var index int
 	var line *Line
+    var rawLine string
 	var err os.Error = nil
     var netErr net.Error
 
@@ -118,8 +120,14 @@ func (self *Connection) Consume() {
 		}
 
 		if data[0] == '\n' {
-			line = ParseLine(string(linedata[:index]))
-            self.act(line)
+            rawLine = string(linedata[:index])
+			line, err = ParseLine(rawLine)
+            if err == nil {
+                self.act(line)
+            } else {
+                rawLog.Println(err)
+                fmt.Println("Invalid line: " + rawLine)
+            }
 
 			index = 0
 		} else if data[0] != '\r' { // Ignore CR, because LF is next

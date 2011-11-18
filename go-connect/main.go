@@ -180,7 +180,7 @@ func (self *Server) onUser(content string) {
 // Open a new window in tmux for the private message.
 func (self *Server) doPrivateMessage(line *Line) {
     // TODO: Write this.
-    //tmux split-window -v -p 20 './go-join bob'
+    //tmux split-window -v -p 50 'go-join -private=bob'
 }
 
 // Alert user that someone is talking to them
