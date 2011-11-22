@@ -1,80 +1,84 @@
 package main
 
 import (
-    "net"
-    "os"
-    "log"
-    "strings"
+	"net"
+	"os"
+	"log"
+	"strings"
 )
 
 const (
-    ONE_SECOND_NS = 1000 * 1000 * 1000
+	ONE_SECOND_NS = 1000 * 1000 * 1000
 )
 
 type InternalConnection struct {
-    socket net.Conn
+	socket net.Conn
 }
 
 func NewInternalConnection(host string, channel string) *InternalConnection {
 
-    var socket net.Conn
-    var err os.Error
-    socket, err = net.Dial("tcp", host)
-    if err != nil {
-        log.Fatal("Error connection to go-connect", err)
-    }
+	var socket net.Conn
+	var err os.Error
+	socket, err = net.Dial("tcp", host)
+	if err != nil {
+		log.Fatal("Error connection to go-connect", err)
+	}
 
-    socket.SetReadTimeout(ONE_SECOND_NS)
+	socket.SetReadTimeout(ONE_SECOND_NS)
 
-    conn := InternalConnection{socket}
-    if strings.HasPrefix(channel, "#") {
-        conn.Write([]byte("/join " + channel))
-    }
+	conn := InternalConnection{socket}
+	if strings.HasPrefix(channel, "#") {
+		// Join a channel
+		conn.Write([]byte("/join " + channel))
+	} else {
+		// Private message (query). /private is not standard.
+		conn.Write([]byte("/private " + channel))
+	}
 
-    return &conn
+	return &conn
 }
 
 // Send a message to go-connect. Implements Writer.
 func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
-    bytesWritten, err := self.socket.Write([]byte(msg))
-    return bytesWritten, err
+	bytesWritten, err := self.socket.Write([]byte(msg))
+	return bytesWritten, err
 }
 
 // Listen for JSON messages from go-connect and put on channel
 func (self *InternalConnection) Consume() {
 	var data []byte = make([]byte, 1)
 	var linedata []byte = make([]byte, 4096)
-    var err os.Error
-    var index int
+	var err os.Error
+	var index int
 
-    for {
+	for {
 
 		_, err = self.socket.Read(data)
 		if err != nil {
-            if err == os.EOF {
-                // Internal connection closed
-                close(fromServer)
-                return
-            }
+			if err == os.EOF {
+				// Internal connection closed
+				close(fromServer)
+				return
+			}
 
-            netErr, _ := err.(net.Error)
+			netErr, _ := err.(net.Error)
 
-            // Need to timeout occasionally or we never check isClosing
-            if netErr.Timeout() == true {
-                continue
-            } else {
-			    log.Fatal("Consume Error:", err)
-            }
+			// Need to timeout occasionally or we never check isClosing
+			if netErr.Timeout() == true {
+				continue
+			} else {
+				log.Fatal("Consume Error:", err)
+			}
 		}
 
 		if data[0] == '\n' {
-            fromServer <- linedata[:index]
+			fromServer <- linedata[:index]
 			index = 0
 		} else if data[0] != '\r' { // Ignore CR, because LF is next
 			linedata[index] = data[0]
 			index++
 		}
-    }
+	}
 }
 
 // Close connection to go-connect

@@ -64,8 +64,8 @@ func highlight(str string) string {
 
 // Pad a string left
 func Lpad(chars int, str string) string {
-    for len(str) < chars {
-        str = " " + str
-    }
-    return str
+	for len(str) < chars {
+		str = " " + str
+	}
+	return str
 }

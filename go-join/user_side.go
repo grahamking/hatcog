@@ -6,34 +6,33 @@ import (
 )
 
 func listenInternal(ircConn *Connection) {
-    var data = make([]byte, 256)
+	var data = make([]byte, 256)
 	var content string
 
-    for {
-        data = <-inputChannel
+	for {
+		data = <-inputChannel
 
-        content = sane(string(data))
+		content = sane(string(data))
 
-        if isCommand(content) {
+		if isCommand(content) {
 
-            if content == "/quit" {
-                ircConn.Quit()
-                return
-            }
+			if content == "/quit" {
+				ircConn.Quit()
+				return
+			}
 
-            ircConn.doCommand(content)
+			ircConn.doCommand(content)
 
-        } else {
-            ircConn.doMsg(content)
-        }
-    }
+		} else {
+			ircConn.doMsg(content)
+		}
+	}
 }
 
 // Is 'content' an IRC command
 func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
 }
-
 
 // Act as a server, forward data to irc connection
 func listenInternalSocket() {
@@ -64,7 +63,7 @@ func listenInternalSocket() {
 				break
 			}
 
-            inputChannel <- data
+			inputChannel <- data
 		}
 	}
 
