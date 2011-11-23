@@ -14,8 +14,6 @@ const (
 	PING          = "PING"
 )
 
-type lineCallback func(line *Line)
-
 type Connection struct {
 	socket     net.Conn
 	name       string
