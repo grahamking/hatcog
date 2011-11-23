@@ -6,12 +6,18 @@ import (
 	"json"
 	"strings"
 	"fmt"
+    "bufio"
 )
+
+type Message struct {
+    channel string
+    content string
+}
 
 type Internal struct {
 	port        string
 	connections []*InternalConnection
-	fromUser    chan string
+	fromUser    chan Message
 	Nick        string // Need to know, to tell go-join
 }
 
@@ -21,7 +27,7 @@ type InternalConnection struct {
 	isPrivate bool   // if True, channel is the nick
 }
 
-func NewInternal(port string, fromUser chan string, nick string) *Internal {
+func NewInternal(port string, fromUser chan Message, nick string) *Internal {
 
 	var connections = make([]*InternalConnection, 0)
 	return &Internal{port, connections, fromUser, nick}
@@ -63,8 +69,8 @@ func (self *Internal) workConnection(internalConn *InternalConnection) {
 
 	for {
 
-		data := make([]byte, 256)
-		_, err := internalConn.netConn.Read(data)
+		bufRead := bufio.NewReader(internalConn.netConn)
+        content, err := bufRead.ReadString('\n')
 		if err != nil {
 			if err == os.EOF {
 				self.part(internalConn)
@@ -74,8 +80,8 @@ func (self *Internal) workConnection(internalConn *InternalConnection) {
 			}
 			return
 		}
-
-		content := sane(string(data))
+        content = content[:len(content)-1]      // Chop \n
+        fmt.Println("Content in: " + content)
 
         // First message from go-join is either /join or /private,
         // telling us which channel or user this go-join is talking to
@@ -87,14 +93,18 @@ func (self *Internal) workConnection(internalConn *InternalConnection) {
             isJoin := strings.HasPrefix(content, "/join")
 
             if isJoin || isPrivate {
+                fmt.Println("isPrivate or isJoin")
                 parts := strings.Split(content, " ")
                 if len(parts) == 2 {
                     internalConn.channel = parts[1]
                 }
             }
+            if isPrivate {  // Not an IRC server command
+                continue
+            }
         }
 
-		self.fromUser <- content
+		self.fromUser <- Message{internalConn.channel, content}
 	}
 }
 
@@ -106,8 +116,8 @@ func (self *Internal) sendNick(netConn net.Conn) {
 	netConn.Write(append(jsonData, '\n'))
 }
 
-// Write a message to all go-join connections
-func (self *Internal) Write(channel string, msg []byte) (int, os.Error) {
+// Write a message to channel connection
+func (self *Internal) WriteChannel(channel string, msg []byte) (int, os.Error) {
 
     var bytesWritten int
 
@@ -118,24 +128,25 @@ func (self *Internal) Write(channel string, msg []byte) (int, os.Error) {
         }
 	}
 
+    if bytesWritten == 0 && len(self.connections) > 0 {
+        // No matching channel yet, send to first connection
+        self.connections[0].netConn.Write(msg)
+        bytesWritten += len(msg)
+    }
+
 	return bytesWritten, nil
 }
 
-// Write a private message, which just means send only to the first connection
-func (self *Internal) WritePrivate(channel string, msg []byte) (int, os.Error) {
-	if len(self.connections) == 0 {
-		return 0, nil
-	}
+// Write a message to all go-join connections
+func (self *Internal) WriteAll(msg []byte) (int, os.Error) {
 
-	// Do we have a window for that user?
+    var bytesWritten int
 	for _, conn := range self.connections {
-		if conn.channel == channel {
-			return conn.netConn.Write(msg)
-		}
+        conn.netConn.Write(msg)
+        bytesWritten += len(msg)
 	}
 
-	// Send to first connection, usually this is the first private message
-	return self.connections[0].netConn.Write(msg)
+    return bytesWritten, nil
 }
 
 // Client closed connection, leave channel, no more work here
@@ -145,7 +156,7 @@ func (self *Internal) part(internalConn *InternalConnection) {
 		return
 	}
 
-	self.fromUser <- "/part " + internalConn.channel
+	self.fromUser <- Message{internalConn.channel, "/part " + internalConn.channel}
 }
 
 // Remove a connection from our list, probably because user closed it

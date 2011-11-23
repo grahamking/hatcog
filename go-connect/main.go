@@ -26,7 +26,7 @@ var internalPort = flag.String("port", "8790", "Internal port (for go-join)")
 var infoCmds sort.StringSlice
 
 var fromServer = make(chan *Line)
-var fromUser = make(chan string)
+var fromUser = make(chan Message)
 
 // Logs raw IRC messages
 var rawLog *log.Logger
@@ -105,8 +105,8 @@ func (self *Server) Run() {
 		case serverLine := <-fromServer:
 			self.onServer(serverLine)
 
-		case userString := <-fromUser:
-			self.onUser(userString)
+		case userMessage := <-fromUser:
+			self.onUser(userMessage)
 		}
 	}
 }
@@ -119,28 +119,24 @@ func (self *Server) Close() os.Error {
 // Act on server messages
 func (self *Server) onServer(line *Line) {
 
-	if line.Command == "NICK" && line.User == self.nick {
-		self.nick = line.Content
-		self.internal.Nick = self.nick
-		rawLog.Println("Nick change: " + self.nick)
-	}
-
 	if contains(infoCmds, line.Command) {
 		fmt.Println(line.Content)
 	}
 
-	isMsg := (line.Command == "PRIVMSG")
-	isPrivateMsg := isMsg && (line.User == line.Channel)
+	if line.Command == "NICK" && line.User == self.nick {
+		self.nick = line.Content
+		self.internal.Nick = self.nick
+		rawLog.Println("Nick change: " + self.nick)
 
-	// Send to go-join
+        self.internal.WriteAll(line.AsJson())
 
-	if isPrivateMsg {
-		self.internal.WritePrivate(line.User, line.AsJson())
 	} else {
-		self.internal.Write(line.Channel, line.AsJson())
+        self.internal.WriteChannel(line.Channel, line.AsJson())
 	}
 
 	// Play sound and show notification?
+	isMsg := (line.Command == "PRIVMSG")
+	isPrivateMsg := isMsg && (line.User == line.Channel)
 	if (isMsg && strings.Contains(line.Content, self.nick)) || isPrivateMsg {
 		self.Notify(line)
 	}
@@ -148,26 +144,18 @@ func (self *Server) onServer(line *Line) {
 }
 
 // Act on user input
-func (self *Server) onUser(content string) {
+func (self *Server) onUser(message Message) {
 
-	if isCommand(content) {
+	if isCommand(message.content) {
 
-		self.external.doCommand(content)
+		self.external.doCommand(message.content)
 
 	} else {
-		// Input is expected to be '#channel message_content ...'
-		contentParts := strings.SplitN(content, " ", 2)
-		if len(contentParts) != 2 {
-			// Invalid message
-			return
-		}
-		channel := contentParts[0]
-		content = contentParts[1]
 
-		if strings.HasPrefix(content, "/me ") {
-			self.external.SendAction(channel, content[4:])
+		if strings.HasPrefix(message.content, "/me ") {
+			self.external.SendAction(message.channel, message.content[4:])
 		} else {
-			self.external.SendMessage(channel, content)
+			self.external.SendMessage(message.channel, message.content)
 		}
 	}
 

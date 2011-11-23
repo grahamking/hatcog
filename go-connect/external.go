@@ -73,7 +73,7 @@ func (self *Connection) SendRaw(msg string) {
 	var err os.Error
 	msg = msg + "\n"
 
-	rawLog.Println(" -->", msg)
+	rawLog.Print(" -->", msg)
 
 	_, err = self.socket.Write([]byte(msg))
 	if err != nil {

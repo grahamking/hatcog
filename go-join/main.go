@@ -87,10 +87,6 @@ type Client struct {
 // Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
 func NewClient(channel string) *Client {
 
-	// Connect to go-connect
-	var conn *InternalConnection
-	conn = NewInternalConnection(GO_HOST, channel)
-
 	if strings.HasPrefix(channel, "#") {
 		fmt.Println("Joining channel " + channel)
 	} else {
@@ -101,6 +97,10 @@ func NewClient(channel string) *Client {
 	var term *Terminal = NewTerminal()
 	term.Raw()
 	term.Channel = channel
+
+	// Connect to go-connect
+	var conn *InternalConnection
+	conn = NewInternalConnection(GO_HOST, channel)
 
 	return &Client{
 		term:    term,
@@ -120,11 +120,8 @@ func (self *Client) Run() {
 
 	self.isRunning = true
 
-	go self.term.ListenInternalKeys()
-	self.display("Listening for keyboard input")
-
 	go self.conn.Consume()
-	self.display("Connected to go-connect")
+	go self.term.ListenInternalKeys()
 
 	self.conn.Write([]byte("/names")) // fill users map
 
@@ -175,7 +172,7 @@ func (self *Client) onUser(content []byte) {
 
 	} else {
 		// Send to go-connect
-		self.conn.Write([]byte(self.channel + " "))
+		//self.conn.Write([]byte(self.channel + " "))
 		self.conn.Write(content)
 
 		// Display locally

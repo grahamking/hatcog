@@ -13,6 +13,7 @@ const (
 
 type InternalConnection struct {
 	socket net.Conn
+    channel string
 }
 
 func NewInternalConnection(host string, channel string) *InternalConnection {
@@ -26,22 +27,26 @@ func NewInternalConnection(host string, channel string) *InternalConnection {
 
 	socket.SetReadTimeout(ONE_SECOND_NS)
 
-	conn := InternalConnection{socket}
-	if strings.HasPrefix(channel, "#") {
+	return &InternalConnection{socket, channel}
+}
+
+// Join a channel, or tell go-connect we're a private chat
+func (self *InternalConnection) join() {
+
+	if strings.HasPrefix(self.channel, "#") {
 		// Join a channel
-		conn.Write([]byte("/join " + channel))
+		self.Write([]byte("/join " + self.channel))
+
 	} else {
 		// Private message (query). /private is not standard.
-		conn.Write([]byte("/private " + channel))
+		self.Write([]byte("/private " + self.channel))
 	}
-
-	return &conn
 }
 
 // Send a message to go-connect. Implements Writer.
 func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
-	bytesWritten, err := self.socket.Write([]byte(msg))
-	return bytesWritten, err
+    rawLog.Println(string(msg))
+	return self.socket.Write(append(msg, '\n'))
 }
 
 // Listen for JSON messages from go-connect and put on channel
@@ -50,6 +55,9 @@ func (self *InternalConnection) Consume() {
 	var linedata []byte = make([]byte, 4096)
 	var err os.Error
 	var index int
+
+    rawLog.Println("JOINING")
+    self.join()
 
 	for {
 
