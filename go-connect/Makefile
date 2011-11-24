@@ -6,10 +6,13 @@ include ${GOROOT}/src/Make.inc
 
 TARG=go-connect
 GOFILES=\
+	globals.go\
 	main.go\
+	server.go\
 	external.go\
 	line.go\
-	internal.go
+	internal-manager.go\
+	internal-connection.go
 
 include ${GOROOT}/src/Make.cmd
 

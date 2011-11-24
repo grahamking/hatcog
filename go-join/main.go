@@ -7,7 +7,6 @@ import (
 	"strings"
 	"flag"
 	"time"
-    "exec"
 )
 
 const (
@@ -15,6 +14,7 @@ const (
 	/// but in future go-connect could be remote
 	GO_HOST      = "127.0.0.1:8790"
 	RPL_NAMREPLY = "353"
+    RPL_TOPIC    = "332"
 	CHANNEL_CMDS = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
     //CMD_PRIV_CHAT = "/usr/bin/tmux split-window -v -p 50"
     CMD_PRIV_CHAT = "/usr/bin/gnome-terminal -e"
@@ -80,7 +80,6 @@ type Client struct {
 	channel   string
 	isRunning bool
 	nick      string
-	isNames   bool
 	users     map[string]bool
 }
 
@@ -106,7 +105,6 @@ func NewClient(channel string) *Client {
 		term:    term,
 		conn:    conn,
 		channel: channel,
-		isNames: true, // Accept initial names to fill users map
 		users:   make(map[string]bool),
 	}
 }
@@ -123,7 +121,7 @@ func (self *Client) Run() {
 	go self.conn.Consume()
 	go self.term.ListenInternalKeys()
 
-	self.conn.Write([]byte("/names")) // fill users map
+	//self.conn.Write([]byte("/names")) // fill users map
 
 	for self.isRunning {
 
@@ -158,11 +156,6 @@ func (self *Client) onUser(content []byte) {
 		return
 	}
 
-	if string(content) == "/names" {
-		// Remember we're waiting for name information
-		self.isNames = true
-	}
-
 	// /me is really a message pretending to be a command,
 	isMeCommand := strings.HasPrefix(string(content), "/me")
 
@@ -172,7 +165,6 @@ func (self *Client) onUser(content []byte) {
 
 	} else {
 		// Send to go-connect
-		//self.conn.Write([]byte(self.channel + " "))
 		self.conn.Write(content)
 
 		// Display locally
@@ -202,13 +194,6 @@ func (self *Client) onServer(serverData []byte) {
 	switch line.Command {
 
 	case "PRIVMSG":
-        // Is the message a user starting private chat?
-        isPrivate := line.Channel == line.User
-        if isPrivate && line.Channel != self.channel {
-            go self.openPrivate(line.User)
-            return
-        }
-
 		self.term.Write([]byte(line.String(self.nick)))
 
 	case "ACTION":
@@ -219,12 +204,12 @@ func (self *Client) onServer(serverData []byte) {
 		self.addUser(line.User)
 
 	case RPL_NAMREPLY:
-		if self.isNames {
-			self.display("Users currently in " + line.Channel + ": ")
-			self.display("  " + line.Content)
-			self.isNames = false
-			self.updateUsers(strings.Split(line.Content, " "))
-		}
+        self.display("Users currently in " + line.Channel + ": ")
+        self.display("  " + line.Content)
+        self.updateUsers(strings.Split(line.Content, " "))
+
+    case RPL_TOPIC:
+        self.display(line.Content)
 
 	case "NICK":
 		if self.nick != "" && !self.users[line.User] {
@@ -288,15 +273,6 @@ func (self *Client) displayAction(nick, content string) {
 	}
 
 	self.display(formatted + " " + content)
-}
-
-// Ask window manager to open a new pane for private messages with given user
-func (self *Client) openPrivate(nick string) {
-    // TODO: Sanitise nick to prevent command execution
-    parts := strings.Split(CMD_PRIV_CHAT, " ")
-    parts = append(parts, "go-join -private=" + nick)
-    cd := exec.Command(parts[0], parts[1:]...)
-    cd.Run()
 }
 
 func (self *Client) Close() os.Error {

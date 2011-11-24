@@ -37,7 +37,7 @@ func (self *Line) String() string {
 func (self *Line) AsJson() []byte {
 	jsonData, err := json.Marshal(self)
 	if err != nil {
-		log.Fatal("Error on json Marshal of "+self.Raw, err)
+		log.Println("Error on json Marshal of "+self.Raw, err)
 	}
 	// go-join expects lines to have an ending
 	jsonData = append(jsonData, '\n')

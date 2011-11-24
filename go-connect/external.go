@@ -8,24 +8,19 @@ import (
 	"fmt"
 )
 
-const (
-	ONE_SECOND_NS = 1000 * 1000 * 1000
-	RPL_NAMREPLY  = "353"
-	PING          = "PING"
-)
-
-type Connection struct {
+type External struct {
 	socket     net.Conn
 	name       string
 	isClosing  bool
 	fromServer chan *Line
 }
 
-func NewConnection(server string,
-nick string,
-name string,
-password string,
-fromServer chan *Line) *Connection {
+func NewExternal(
+    server string,
+    nick string,
+    name string,
+    password string,
+    fromServer chan *Line) *External {
 
 	var socket net.Conn
 	var err os.Error
@@ -37,7 +32,7 @@ fromServer chan *Line) *Connection {
 
 	socket.SetReadTimeout(ONE_SECOND_NS)
 
-	conn := Connection{
+	conn := External{
 		socket:     socket,
 		name:       name,
 		fromServer: fromServer,
@@ -54,19 +49,19 @@ fromServer chan *Line) *Connection {
 }
 
 // Send a regular (non-system command) IRC message
-func (self *Connection) SendMessage(channel, msg string) {
+func (self *External) SendMessage(channel, msg string) {
 	fullmsg := "PRIVMSG " + channel + " :" + msg
 	self.SendRaw(fullmsg)
 }
 
 // Send a /me action message
-func (self *Connection) SendAction(channel, msg string) {
+func (self *External) SendAction(channel, msg string) {
 	fullmsg := "PRIVMSG " + channel + " :\u0001ACTION " + msg + "\u0001"
 	self.SendRaw(fullmsg)
 }
 
 // Send message down socket. Add \n at end first.
-func (self *Connection) SendRaw(msg string) {
+func (self *External) SendRaw(msg string) {
 
 	var err os.Error
 	msg = msg + "\n"
@@ -80,14 +75,14 @@ func (self *Connection) SendRaw(msg string) {
 }
 
 // Process a slash command
-func (self *Connection) doCommand(content string) {
+func (self *External) doCommand(content string) {
 
 	content = content[1:]
 	self.SendRaw(content)
 }
 
 // Read IRC messages from the connection and send to stdout
-func (self *Connection) Consume() {
+func (self *External) Consume() {
 	var data []byte = make([]byte, 1)
 	var linedata []byte = make([]byte, 4096)
 	var index int
@@ -134,7 +129,7 @@ func (self *Connection) Consume() {
 }
 
 // Do something with a line
-func (self *Connection) act(line *Line) {
+func (self *External) act(line *Line) {
 
 	if line.Command == PING {
 		self.SendRaw("PONG goirc")
@@ -147,12 +142,12 @@ func (self *Connection) act(line *Line) {
 	self.fromServer <- line
 }
 
-func (self *Connection) Close() os.Error {
+func (self *External) Close() os.Error {
 	return self.socket.Close()
 }
 
 /* Close connection, return from event loop.
  */
-func (self *Connection) Quit() {
+func (self *External) Quit() {
 	self.isClosing = true
 }
