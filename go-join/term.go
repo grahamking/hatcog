@@ -26,6 +26,7 @@ type Terminal struct {
 	data         []byte
 	Channel      string
 	input        []byte
+    cursorPos    int    // Cursor position
 }
 
 func NewTerminal() *Terminal {
@@ -102,8 +103,10 @@ func (self *Terminal) Close() os.Error {
 // Listen for keypresses, display them
 func (self *Terminal) ListenInternalKeys() {
 
+    var char byte
+
 	for {
-		char := self.Read()
+		char = self.Read()
 
 		if char == 0x09 {
 			// Find previous space
@@ -115,12 +118,28 @@ func (self *Terminal) ListenInternalKeys() {
 			var newInput = make([]byte, len(self.input)-1)
 			copy(newInput, self.input)
 			self.input = newInput
-
+            self.cursorPos -= 1
 		}
 
-		if char >= 0x20 && char < 0x7f {
+        if char == 0x1B {
+            // ESC code - starts escape sequence
+            char = self.Read()
+            if char != '[' {    // We only do ANSI escapes
+                continue
+            }
+            char = self.Read()
+            if char == 'D' {    // Arrow left
+                self.cursorPos -= 1
+                self.input = append(self.input, 0x1B, '[', '1', 'D')
+            } else if char == 'C' { // Arrow right
+                self.cursorPos += 1
+                self.input = append(self.input, 0x1B, '[', '1', 'C')
+            }
+
+        } else if char >= 0x20 && char < 0x7f {
 			// Only use printable characters. See 'man ascii'
 			self.input = append(self.input, char)
+            self.cursorPos += 1
 		}
 
 		self.displayInput()
@@ -130,6 +149,7 @@ func (self *Terminal) ListenInternalKeys() {
 			cleanInput := sane(string(self.input))
 			fromUser <- []byte(cleanInput)
 			self.input = make([]byte, 0)
+            self.cursorPos = 0
 		}
 
 	}
