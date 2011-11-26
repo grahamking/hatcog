@@ -5,6 +5,7 @@ import (
 	"os"
 	"unsafe"
 	"syscall"
+	"strconv"
 )
 
 const (
@@ -26,7 +27,7 @@ type Terminal struct {
 	data         []byte
 	Channel      string
 	input        []byte
-    cursorPos    int    // Cursor position
+	cursorPos    int // Cursor position
 }
 
 func NewTerminal() *Terminal {
@@ -103,7 +104,7 @@ func (self *Terminal) Close() os.Error {
 // Listen for keypresses, display them
 func (self *Terminal) ListenInternalKeys() {
 
-    var char byte
+	var char byte
 
 	for {
 		char = self.Read()
@@ -114,32 +115,45 @@ func (self *Terminal) ListenInternalKeys() {
 			// Replace from previous space with match
 		}
 
-		if char == 0x7f && len(self.input) > 0 { // 0x7f = Unicode backspace
-			var newInput = make([]byte, len(self.input)-1)
-			copy(newInput, self.input)
-			self.input = newInput
-            self.cursorPos -= 1
+		if char == 0x7f && len(self.input) > 0 && self.cursorPos > 0 {
+			// 0x7f = Unicode backspace
+			if self.cursorPos == len(self.input) {
+				self.input = self.input[:len(self.input)-1]
+			} else {
+				// Delete
+				self.input = append(self.input[:self.cursorPos], self.input[self.cursorPos+1:]...)
+			}
+			self.cursorPos -= 1
 		}
 
-        if char == 0x1B {
-            // ESC code - starts escape sequence
-            char = self.Read()
-            if char != '[' {    // We only do ANSI escapes
-                continue
-            }
-            char = self.Read()
-            if char == 'D' {    // Arrow left
-                self.cursorPos -= 1
-                self.input = append(self.input, 0x1B, '[', '1', 'D')
-            } else if char == 'C' { // Arrow right
-                self.cursorPos += 1
-                self.input = append(self.input, 0x1B, '[', '1', 'C')
-            }
+		if char == 0x1B {
+			// ESC code - starts escape sequence
+			char = self.Read()
+			if char != '[' { // We only do ANSI escapes
+				continue
+			}
+			char = self.Read()
+			if char == 'D' { // Arrow left
+				self.cursorPos -= 1
+				if self.cursorPos < 0 {
+					self.cursorPos = 0
+				}
+			} else if char == 'C' { // Arrow right
+				self.cursorPos += 1
+				if self.cursorPos > len(self.input) {
+					self.cursorPos = len(self.input)
+				}
+			}
 
-        } else if char >= 0x20 && char < 0x7f {
+		} else if char >= 0x20 && char < 0x7f {
 			// Only use printable characters. See 'man ascii'
-			self.input = append(self.input, char)
-            self.cursorPos += 1
+			if self.cursorPos == len(self.input) {
+				self.input = append(self.input, char)
+			} else {
+				// Insert
+				self.input = append(self.input[:self.cursorPos], append([]byte{char}, self.input[self.cursorPos:]...)...)
+			}
+			self.cursorPos += 1
 		}
 
 		self.displayInput()
@@ -149,7 +163,7 @@ func (self *Terminal) ListenInternalKeys() {
 			cleanInput := sane(string(self.input))
 			fromUser <- []byte(cleanInput)
 			self.input = make([]byte, 0)
-            self.cursorPos = 0
+			self.cursorPos = 0
 		}
 
 	}
@@ -175,6 +189,12 @@ func (self *Terminal) displayInput() {
 		}
 
 		msg += visible
+
+		backs := len(self.input) - self.cursorPos
+		if backs != 0 {
+			msg += string([]byte{0x1B, '['})
+			msg += strconv.Itoa(backs) + "D"
+		}
 	}
 	self.rawWrite([]byte(msg))
 }
