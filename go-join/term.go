@@ -116,12 +116,12 @@ func (self *Terminal) ListenInternalKeys() {
 		}
 
 		if char == 0x7f && len(self.input) > 0 && self.cursorPos > 0 {
-			// 0x7f = Unicode backspace
+			// 0x7f = Unicode Backspace
 			if self.cursorPos == len(self.input) {
 				self.input = self.input[:len(self.input)-1]
 			} else {
 				// Delete
-				self.input = append(self.input[:self.cursorPos], self.input[self.cursorPos+1:]...)
+				self.input = append(self.input[:self.cursorPos-1], self.input[self.cursorPos:]...)
 			}
 			self.cursorPos -= 1
 		}
@@ -129,21 +129,37 @@ func (self *Terminal) ListenInternalKeys() {
 		if char == 0x1B {
 			// ESC code - starts escape sequence
 			char = self.Read()
-			if char != '[' { // We only do ANSI escapes
-				continue
-			}
-			char = self.Read()
-			if char == 'D' { // Arrow left
-				self.cursorPos -= 1
-				if self.cursorPos < 0 {
-					self.cursorPos = 0
-				}
-			} else if char == 'C' { // Arrow right
-				self.cursorPos += 1
-				if self.cursorPos > len(self.input) {
-					self.cursorPos = len(self.input)
-				}
-			}
+
+            // '[' is ANSI escape, 0x4f comes before Home and End
+			if ! (char == '[' || char == 0x4F) {
+                rawLog.Println("Unexpected char after ESC", char)
+                continue
+            }
+
+            char = self.Read()
+            switch char {
+
+            case 'D':   // Arrow left
+                self.cursorPos -= 1
+                if self.cursorPos < 0 {
+                    self.cursorPos = 0
+                }
+
+            case 'C':   // Arrow right
+                self.cursorPos += 1
+                if self.cursorPos > len(self.input) {
+                    self.cursorPos = len(self.input)
+                }
+
+            case 'H':   // Home
+                self.cursorPos = 0
+
+            case 'F':   // End
+                self.cursorPos = len(self.input)
+
+            default:
+                rawLog.Println("Unknown escape sequence:", char)
+            }
 
 		} else if char >= 0x20 && char < 0x7f {
 			// Only use printable characters. See 'man ascii'
