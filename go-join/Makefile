@@ -10,6 +10,7 @@ GOFILES=\
 	internal-connection.go\
 	line.go\
 	util.go\
+	term_input.go\
 	term.go
 
 include ${GOROOT}/src/Make.cmd

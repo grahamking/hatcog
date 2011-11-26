@@ -26,8 +26,7 @@ type Terminal struct {
 	orig_termios termios
 	data         []byte
 	Channel      string
-	input        []byte
-	cursorPos    int // Cursor position
+    input        *TermInput
 }
 
 func NewTerminal() *Terminal {
@@ -38,7 +37,7 @@ func NewTerminal() *Terminal {
 	return &Terminal{
 		orig_termios: orig_termios,
 		data:         make([]byte, 1),
-		input:        make([]byte, 0),
+		input:        NewTermInput(),
 	}
 }
 
@@ -115,15 +114,9 @@ func (self *Terminal) ListenInternalKeys() {
 			// Replace from previous space with match
 		}
 
-		if char == 0x7f && len(self.input) > 0 && self.cursorPos > 0 {
+		if char == 0x7f && self.input.Len() > 0 && self.input.cursorPos > 0 {
 			// 0x7f = Unicode Backspace
-			if self.cursorPos == len(self.input) {
-				self.input = self.input[:len(self.input)-1]
-			} else {
-				// Delete
-				self.input = append(self.input[:self.cursorPos-1], self.input[self.cursorPos:]...)
-			}
-			self.cursorPos -= 1
+            self.input.Backspace()
 		}
 
 		if char == 0x1B {
@@ -139,23 +132,10 @@ func (self *Terminal) ListenInternalKeys() {
             char = self.Read()
             switch char {
 
-            case 'D':   // Arrow left
-                self.cursorPos -= 1
-                if self.cursorPos < 0 {
-                    self.cursorPos = 0
-                }
-
-            case 'C':   // Arrow right
-                self.cursorPos += 1
-                if self.cursorPos > len(self.input) {
-                    self.cursorPos = len(self.input)
-                }
-
-            case 'H':   // Home
-                self.cursorPos = 0
-
-            case 'F':   // End
-                self.cursorPos = len(self.input)
+            case 'D': self.input.KeyLeft()
+            case 'C': self.input.KeyRight()
+            case 'H': self.input.KeyHome()
+            case 'F': self.input.KeyEnd()
 
             default:
                 rawLog.Println("Unknown escape sequence:", char)
@@ -163,23 +143,16 @@ func (self *Terminal) ListenInternalKeys() {
 
 		} else if char >= 0x20 && char < 0x7f {
 			// Only use printable characters. See 'man ascii'
-			if self.cursorPos == len(self.input) {
-				self.input = append(self.input, char)
-			} else {
-				// Insert
-				self.input = append(self.input[:self.cursorPos], append([]byte{char}, self.input[self.cursorPos:]...)...)
-			}
-			self.cursorPos += 1
+            self.input.Add(char)
 		}
 
 		self.displayInput()
 
 		if char == 13 { // Enter
 
-			cleanInput := sane(string(self.input))
+			cleanInput := sane(self.input.String())
 			fromUser <- []byte(cleanInput)
-			self.input = make([]byte, 0)
-			self.cursorPos = 0
+            self.input.Reset()
 		}
 
 	}
@@ -189,24 +162,26 @@ func (self *Terminal) ListenInternalKeys() {
 func (self *Terminal) displayInput() {
 	self.ClearLine()
 
+    input := self.input.String()
+
 	msg := Bold("\r[" + self.Channel + "] ")
-	if len(self.input) != 0 {
+	if len(input) != 0 {
 		width := TerminalWidth()
-		inputLen := len(self.input) + len(msg)
+		inputLen := len(input) + len(msg)
 		start := 0
 		if inputLen > width {
 			start = inputLen - width
 		}
-		visible := string(self.input[start:])
+		visible := string(input[start:])
 
-		if self.input[0] == '/' {
+		if input[0] == '/' {
 			// Bold IRC commands
 			visible = Bold(visible)
 		}
 
 		msg += visible
 
-		backs := len(self.input) - self.cursorPos
+		backs := len(input) - self.input.cursorPos
 		if backs != 0 {
 			msg += string([]byte{0x1B, '['})
 			msg += strconv.Itoa(backs) + "D"
