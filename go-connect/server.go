@@ -67,11 +67,12 @@ func (self *Server) onServer(line *Line) {
 	}
 
 	if line.Command == "NICK" && line.User == self.nick {
-		self.nick = line.Content
-		self.internal.Nick = self.nick
+        self.nick = line.Content
+        self.internal.Nick = self.nick
+    }
 
+    if len(line.Channel) == 0 {
         self.internal.WriteAll(line.AsJson())
-
 	} else {
         self.internal.WriteChannel(line.Channel, line.AsJson())
 	}

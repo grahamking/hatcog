@@ -60,7 +60,9 @@ func (self *TermInput) Add(char byte) {
         self.input = append(self.input, char)
     } else {
         // Insert
-        self.input = append(self.input[:self.cursorPos], append([]byte{char}, self.input[self.cursorPos:]...)...)
+        self.input = append(
+            self.input[:self.cursorPos],
+            append([]byte{char}, self.input[self.cursorPos:]...)...)
     }
     self.cursorPos += 1
 }
@@ -74,3 +76,40 @@ func (self *TermInput) Reset() {
     self.cursorPos = 0
 }
 
+// String between current position and previous space
+func (self *TermInput) Prefix() string {
+    prefix := make([]byte, 0, 10)
+    for pos := self.cursorPos - 1; pos >= 0 && self.input[pos] != ' '; pos-- {
+        prefix = append(prefix, self.input[pos])
+    }
+    return reverse(string(prefix))
+}
+
+// Replace from nearest space to the left to current cursor pos.
+func (self *TermInput) ReplaceWord(word string) {
+    for len(self.input) > 0 && self.input[self.cursorPos - 1] != ' ' {
+        self.Backspace()
+    }
+    self.input = append(
+        self.input[:self.cursorPos],
+        append([]byte(word), self.input[self.cursorPos:]...)...)
+    self.cursorPos += len(word)
+}
+
+// http://stackoverflow.com/questions/1752414/how-to-reverse-a-string-in-go
+func reverse(val string) string {
+    n := 0
+    rune := make([]int, len(val))
+    for _, r := range val {
+            rune[n] = r
+            n++
+    }
+    rune = rune[0:n]
+    // Reverse
+    for i := 0; i < n/2; i++ {
+            rune[i], rune[n-1-i] = rune[n-1-i], rune[i]
+    }
+    // Convert back to UTF-8.
+    output := string(rune)
+    return output
+}

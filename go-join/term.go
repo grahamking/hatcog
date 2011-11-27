@@ -27,9 +27,10 @@ type Terminal struct {
 	data         []byte
 	Channel      string
     input        *TermInput
+    userManager  *UserManager
 }
 
-func NewTerminal() *Terminal {
+func NewTerminal(userManager *UserManager) *Terminal {
 
 	var orig_termios termios
 	getTermios(&orig_termios)
@@ -38,6 +39,7 @@ func NewTerminal() *Terminal {
 		orig_termios: orig_termios,
 		data:         make([]byte, 1),
 		input:        NewTermInput(),
+        userManager:  userManager,
 	}
 }
 
@@ -108,10 +110,11 @@ func (self *Terminal) ListenInternalKeys() {
 	for {
 		char = self.Read()
 
-		if char == 0x09 {
-			// Find previous space
-			// Match prefix against nick list
-			// Replace from previous space with match
+		if char == 0x09 {   // Tab - attempt nick completion
+            prefix := self.input.Prefix()
+            match := self.userManager.FirstMatch(prefix)
+            rawLog.Println(match)
+            self.input.ReplaceWord(match)
 		}
 
 		if char == 0x7f && self.input.Len() > 0 && self.input.cursorPos > 0 {

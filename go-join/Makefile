@@ -7,6 +7,7 @@ include ${GOROOT}/src/Make.inc
 TARG=go-join
 GOFILES=\
 	main.go\
+	user_manager.go\
 	internal-connection.go\
 	line.go\
 	util.go\

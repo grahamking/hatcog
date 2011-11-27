@@ -15,6 +15,7 @@ const (
 	GO_HOST      = "127.0.0.1:8790"
 	RPL_NAMREPLY = "353"
     RPL_TOPIC    = "332"
+    ERR_UNKNOWNCOMMAND = "421"
 	CHANNEL_CMDS = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
     //CMD_PRIV_CHAT = "/usr/bin/tmux split-window -v -p 50"
     CMD_PRIV_CHAT = "/usr/bin/gnome-terminal -e"
@@ -75,12 +76,12 @@ func main() {
 
 // IRC Client abstraction
 type Client struct {
-	term      *Terminal
-	conn      *InternalConnection
-	channel   string
-	isRunning bool
-	nick      string
-	users     map[string]bool
+	term        *Terminal
+	conn        *InternalConnection
+	channel     string
+	isRunning   bool
+	nick        string
+    userManager *UserManager
 }
 
 // Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
@@ -92,8 +93,10 @@ func NewClient(channel string) *Client {
 		fmt.Println("Listening for private messages from " + channel)
 	}
 
+    userManager := NewUserManager()
+
 	// Set terminal to raw mode, listen for keyboard input
-	var term *Terminal = NewTerminal()
+	var term *Terminal = NewTerminal(userManager)
 	term.Raw()
 	term.Channel = channel
 
@@ -105,7 +108,7 @@ func NewClient(channel string) *Client {
 		term:    term,
 		conn:    conn,
 		channel: channel,
-		users:   make(map[string]bool),
+		userManager:   userManager,
 	}
 }
 
@@ -201,18 +204,18 @@ func (self *Client) onServer(serverData []byte) {
 
 	case "JOIN":
 		self.display(line.User + " joined the channel")
-		self.addUser(line.User)
+		self.userManager.Add(line.User)
 
 	case RPL_NAMREPLY:
         self.display("Users currently in " + line.Channel + ": ")
         self.display("  " + line.Content)
-        self.updateUsers(strings.Split(line.Content, " "))
+        self.userManager.Update(strings.Split(line.Content, " "))
 
     case RPL_TOPIC:
         self.display(line.Content)
 
 	case "NICK":
-		if self.nick != "" && !self.users[line.User] {
+		if self.nick != "" && !self.userManager.Has(line.User) {
 			return
 		}
 
@@ -223,39 +226,27 @@ func (self *Client) onServer(serverData []byte) {
 			self.display(line.User + " is now know as " + line.Content)
 		}
 
-		self.removeUser(line.User)
-		self.addUser(line.Content)
+        self.userManager.Remove(line.User)
+        self.userManager.Add(line.Content)
 
 	case "PART":
 		self.display(line.User + " left the channel.")
-		self.removeUser(line.User)
+        self.userManager.Remove(line.User)
 
 	case "QUIT":
-		if !self.users[line.User] {
-			return
-		}
-		self.display(line.User + " has quit.")
-		self.removeUser(line.User)
+        if self.userManager.Remove(line.User) {
+            self.display(line.User + " has quit.")
+        }
+
+    case ERR_UNKNOWNCOMMAND:
+        if len(line.Args) == 2 {
+            self.display("Unknown command: " + line.Args[1])
+        } else {
+            self.display("Unknown command")
+        }
+
 	}
 
-}
-
-func (self *Client) addUser(user string) {
-	if strings.HasPrefix(user, "@") || strings.HasPrefix(user, "+") {
-		user = user[1:]
-	}
-	self.users[user] = true
-}
-
-func (self *Client) removeUser(user string) {
-	self.users[user] = false, false
-}
-
-func (self *Client) updateUsers(users []string) {
-	self.users = make(map[string]bool)
-	for _, user := range users {
-		self.addUser(user)
-	}
 }
 
 // Write string to terminal
@@ -284,3 +275,4 @@ func (self *Client) Close() os.Error {
 func isCommand(content []byte) bool {
 	return len(content) > 1 && content[0] == '/'
 }
+
