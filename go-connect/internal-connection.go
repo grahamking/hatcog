@@ -51,7 +51,14 @@ func (self *Internal) Run() {
                     self.channel = parts[1]
                 }
             }
-            if isPrivate {  // Not an IRC server command
+            if isPrivate {
+                // Send most recent private message, so new window shows it
+                if self.manager.lastPrivate != nil {
+                    self.netConn.Write(self.manager.lastPrivate)
+                    self.manager.lastPrivate = nil
+                }
+
+                // Not an IRC server command, so don't send to IRC server
                 continue
             }
         }

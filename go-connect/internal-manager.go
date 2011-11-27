@@ -10,6 +10,7 @@ type InternalManager struct {
 	connections []*Internal
 	fromUser    chan Message
 	Nick        string // Need to know, to tell go-join
+    lastPrivate []byte  // Most recent private message
 }
 
 type Message struct {
@@ -20,7 +21,7 @@ type Message struct {
 func NewInternalManager(port string, fromUser chan Message, nick string) *InternalManager {
 
 	var connections = make([]*Internal, 0)
-	return &InternalManager{port, connections, fromUser, nick}
+	return &InternalManager{port, connections, fromUser, nick, nil}
 }
 
 // Act as a server, forward data to irc connection

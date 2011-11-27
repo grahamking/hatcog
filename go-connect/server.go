@@ -81,6 +81,7 @@ func (self *Server) onServer(line *Line) {
 	isPrivate := isMsg && (line.User == line.Channel)
 
     if isPrivate && !self.internal.HasChannel(line.Channel) {
+        self.internal.lastPrivate = []byte(line.AsJson())
         go self.openPrivate(line.User)
     }
 
