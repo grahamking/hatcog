@@ -113,7 +113,6 @@ func (self *Terminal) ListenInternalKeys() {
 		if char == 0x09 {   // Tab - attempt nick completion
             prefix := self.input.Prefix()
             match := self.userManager.FirstMatch(prefix)
-            rawLog.Println(match)
             self.input.ReplaceWord(match)
 		}
 
