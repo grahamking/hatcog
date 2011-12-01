@@ -229,6 +229,9 @@ func (self *Client) onServer(serverData []byte) {
         self.userManager.Remove(line.User)
         self.userManager.Add(line.Content)
 
+    case "NOTICE":
+        self.display(line.Content)
+
 	case "PART":
 		self.display(line.User + " left the channel.")
         self.userManager.Remove(line.User)

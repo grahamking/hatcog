@@ -44,7 +44,6 @@ func (self *UserManager) Update(users []string) {
 // Is this user in our channel?
 func (self *UserManager) Has(user string) bool {
     result := self.users[user]
-    rawLog.Println("Has: " + user, result)
     return result
 }
 

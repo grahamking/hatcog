@@ -53,7 +53,6 @@ func ParseLine(data string) (*Line, os.Error) {
 	var isCTCP bool
 
 	data = sane(data)
-	rawLog.Println(data)
 
 	if len(data) <= 2 {
 		return nil, ELSHORT

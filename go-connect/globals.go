@@ -17,6 +17,10 @@ const (
 	ONE_SECOND_NS = 1000 * 1000 * 1000
 	RPL_NAMREPLY  = "353"
 	PING          = "PING"
+
+    // Standard IRC SSL port
+    // http://blog.freenode.net/2011/02/port-6697-irc-via-tlsssl/
+    SSL_PORT      = "6697"
 )
 
 var serverArg = flag.String("server", "127.0.0.1:6667", "IP address or hostname and optional port for IRC server to connect to")

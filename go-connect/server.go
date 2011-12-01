@@ -71,7 +71,7 @@ func (self *Server) onServer(line *Line) {
         self.internal.Nick = self.nick
     }
 
-    if len(line.Channel) == 0 {
+    if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
         self.internal.WriteAll(line.AsJson())
 	} else {
         self.internal.WriteChannel(line.Channel, line.AsJson())
@@ -87,7 +87,12 @@ func (self *Server) onServer(line *Line) {
 
 	if isPrivate || (isMsg && strings.Contains(line.Content, self.nick)) {
 		go self.Notify(line)
-	}
+        go self.Beep()
+
+	} else if isMsg && self.internal.IsNotify(line.Channel) {
+        go self.Notify(line)
+    }
+
 
 }
 
@@ -109,7 +114,7 @@ func (self *Server) onUser(message Message) {
 
 }
 
-// Alert user that someone is talking to them
+// Display this line as an OS notification
 func (self *Server) Notify(line *Line) {
 
 	title := line.User
@@ -119,7 +124,10 @@ func (self *Server) Notify(line *Line) {
 	}
 	notifyCmd := exec.Command(NOTIFY_CMD, title, line.Content)
 	notifyCmd.Run()
+}
 
+// Make a sound to alert user someone is talking to them
+func (self *Server) Beep() {
 	parts := strings.Split(SOUND_CMD, " ")
 	soundCmd := exec.Command(parts[0], parts[1:]...)
 	soundCmd.Run()
@@ -140,6 +148,11 @@ func (self *Server) openPrivate(nick string) {
 // Is 'content' an IRC command?
 func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
+}
+
+// Does command require a channel
+func isChannelRequired(command string) bool {
+    return command == RPL_NAMREPLY
 }
 
 // Does slice 'arr' contain string 'candidate'?

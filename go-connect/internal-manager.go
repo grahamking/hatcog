@@ -94,12 +94,27 @@ func (self *InternalManager) delete(internalConn *Internal) {
 	self.connections = newConnections
 }
 
-// Do we have a connection (a go-join) open on given channel or nick
-func (self *InternalManager) HasChannel(channel string) bool {
+
+// The internal connection for given channel, or nil
+func (self *InternalManager) GetChannelConnection(channel string) *Internal {
     for _, conn := range self.connections {
         if conn.channel == channel {
-            return true
+            return conn
         }
+    }
+    return nil
+}
+
+// Do we have a connection (a go-join) open on given channel or nick
+func (self *InternalManager) HasChannel(channel string) bool {
+    return self.GetChannelConnection(channel) != nil
+}
+
+// Does channel require notifications?
+func (self *InternalManager) IsNotify(channel string) bool {
+    internal := self.GetChannelConnection(channel)
+    if internal != nil {
+        return internal.isNotify
     }
     return false
 }
