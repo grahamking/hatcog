@@ -67,32 +67,31 @@ func (self *Server) onServer(line *Line) {
 	}
 
 	if line.Command == "NICK" && line.User == self.nick {
-        self.nick = line.Content
-        self.internal.Nick = self.nick
-    }
+		self.nick = line.Content
+		self.internal.Nick = self.nick
+	}
 
-    if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
-        self.internal.WriteAll(line.AsJson())
+	if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
+		self.internal.WriteAll(line.AsJson())
 	} else {
-        self.internal.WriteChannel(line.Channel, line.AsJson())
+		self.internal.WriteChannel(line.Channel, line.AsJson())
 	}
 
 	isMsg := (line.Command == "PRIVMSG")
 	isPrivate := isMsg && (line.User == line.Channel)
 
-    if isPrivate && !self.internal.HasChannel(line.Channel) {
-        self.internal.lastPrivate = []byte(line.AsJson())
-        go self.openPrivate(line.User)
-    }
+	if isPrivate && !self.internal.HasChannel(line.Channel) {
+		self.internal.lastPrivate = []byte(line.AsJson())
+		go self.openPrivate(line.User)
+	}
 
 	if isPrivate || (isMsg && strings.Contains(line.Content, self.nick)) {
 		go self.Notify(line)
-        go self.Beep()
+		go self.Beep()
 
 	} else if isMsg && self.internal.IsNotify(line.Channel) {
-        go self.Notify(line)
-    }
-
+		go self.Notify(line)
+	}
 
 }
 
@@ -136,13 +135,13 @@ func (self *Server) Beep() {
 // Ask window manager to open a new pane for private messages with given user
 func (self *Server) openPrivate(nick string) {
 
-    // TODO: Sanitise nick to prevent command execution
+	// TODO: Sanitise nick to prevent command execution
 
-    parts := strings.Split(PRIV_CHAT_CMD, " ")
-    parts = append(parts, "go-join -private=" + nick)
+	parts := strings.Split(PRIV_CHAT_CMD, " ")
+	parts = append(parts, "go-join -private="+nick)
 
-    command := exec.Command(parts[0], parts[1:]...)
-    command.Run()
+	command := exec.Command(parts[0], parts[1:]...)
+	command.Run()
 }
 
 // Is 'content' an IRC command?
@@ -152,7 +151,7 @@ func isCommand(content string) bool {
 
 // Does command require a channel
 func isChannelRequired(command string) bool {
-    return command == RPL_NAMREPLY
+	return command == RPL_NAMREPLY
 }
 
 // Does slice 'arr' contain string 'candidate'?
@@ -160,4 +159,3 @@ func contains(arr sort.StringSlice, candidate string) bool {
 	idx := arr.Search(candidate)
 	return idx < len(arr) && arr[idx] == candidate
 }
-

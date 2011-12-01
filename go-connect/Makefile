@@ -16,3 +16,6 @@ GOFILES=\
 
 include ${GOROOT}/src/Make.cmd
 
+format:
+	find . -type f -name "*.go" -exec gofmt -w {} \;
+

@@ -2,12 +2,12 @@ package main
 
 import (
 	"net"
-    "crypto/tls"
+	"crypto/tls"
 	"os"
 	"log"
 	"time"
 	"fmt"
-    "strings"
+	"strings"
 )
 
 type External struct {
@@ -17,21 +17,20 @@ type External struct {
 	fromServer chan *Line
 }
 
-func NewExternal(
-    server string,
-    nick string,
-    name string,
-    password string,
-    fromServer chan *Line) *External {
+func NewExternal(server string,
+nick string,
+name string,
+password string,
+fromServer chan *Line) *External {
 
 	var socket net.Conn
 	var err os.Error
 
-    if strings.HasSuffix(server, SSL_PORT) {
-        socket, err = tls.Dial("tcp", server, nil)
-    } else {
-        socket, err = net.Dial("tcp", server)
-    }
+	if strings.HasSuffix(server, SSL_PORT) {
+		socket, err = tls.Dial("tcp", server, nil)
+	} else {
+		socket, err = net.Dial("tcp", server)
+	}
 
 	if err != nil {
 		log.Fatal("Error on IRC connect:", err)
@@ -119,11 +118,11 @@ func (self *External) Consume() {
 		}
 
 		if data[0] == '\n' {
-            if index == 0 {
-                continue
-            }
+			if index == 0 {
+				continue
+			}
 			rawLine = string(linedata[:index])
-            rawLog.Println(rawLine)
+			rawLog.Println(rawLine)
 
 			line, err = ParseLine(rawLine)
 			if err == nil {

@@ -12,8 +12,8 @@ const (
 )
 
 type InternalConnection struct {
-	socket net.Conn
-    channel string
+	socket  net.Conn
+	channel string
 }
 
 func NewInternalConnection(host string, channel string) *InternalConnection {
@@ -45,7 +45,7 @@ func (self *InternalConnection) join() {
 
 // Send a message to go-connect. Implements Writer.
 func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
-    rawLog.Println(string(msg))
+	rawLog.Println(string(msg))
 	return self.socket.Write(append(msg, '\n'))
 }
 
@@ -56,8 +56,8 @@ func (self *InternalConnection) Consume() {
 	var err os.Error
 	var index int
 
-    rawLog.Println("JOINING")
-    self.join()
+	rawLog.Println("JOINING")
+	self.join()
 
 	for {
 

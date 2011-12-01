@@ -6,16 +6,16 @@ import (
 	"json"
 	"strings"
 	"fmt"
-    "bufio"
-    "strconv"
+	"bufio"
+	"strconv"
 )
 
 type Internal struct {
 	netConn   net.Conn
-	channel   string    // channel or nick (for private/query messages)
-	isPrivate bool      // if True, channel is the nick
-    isNotify  bool      // display all messages with OS notifications
-    manager   *InternalManager
+	channel   string // channel or nick (for private/query messages)
+	isPrivate bool   // if True, channel is the nick
+	isNotify  bool   // display all messages with OS notifications
+	manager   *InternalManager
 }
 
 func (self *Internal) Run() {
@@ -26,87 +26,87 @@ func (self *Internal) Run() {
 	for {
 
 		bufRead := bufio.NewReader(self.netConn)
-        content, err := bufRead.ReadString('\n')
+		content, err := bufRead.ReadString('\n')
 		if err != nil {
 			if err == os.EOF {
 				self.part()
-                self.manager.delete(self)   // TODO: Replace with channel?
+				self.manager.delete(self) // TODO: Replace with channel?
 			} else {
 				fmt.Println(err)
 			}
 			return
 		}
-        content = content[:len(content)-1]      // Chop \n
+		content = content[:len(content)-1] // Chop \n
 
-        if self.Special(content) {
-            continue
-        }
+		if self.Special(content) {
+			continue
+		}
 
 		self.manager.fromUser <- Message{self.channel, content}
 	}
 }
 
 /* Special incoming command processing, used to implement
- non-standard function, mostly about communication between go-connect
- and go-join.
+non-standard function, mostly about communication between go-connect
+and go-join.
 
- @return true if no further processing should occur, false otherwise. true
- means don't send this message to the IRC server, it was internal only.
+@return true if no further processing should occur, false otherwise. true
+means don't send this message to the IRC server, it was internal only.
 */
 func (self *Internal) Special(content string) bool {
 
-    if self.channel == "" {
-        // First message from go-join is either /join or /private,
-        // telling us which channel or user this go-join is talking to
+	if self.channel == "" {
+		// First message from go-join is either /join or /private,
+		// telling us which channel or user this go-join is talking to
 
-        isPrivate := strings.HasPrefix(content, "/private")
-        self.isPrivate = isPrivate
+		isPrivate := strings.HasPrefix(content, "/private")
+		self.isPrivate = isPrivate
 
-        isJoin := strings.HasPrefix(content, "/join")
+		isJoin := strings.HasPrefix(content, "/join")
 
-        if isJoin || isPrivate {
-            parts := strings.Split(content, " ")
-            if len(parts) == 2 {
-                self.channel = parts[1]
-            }
-        }
+		if isJoin || isPrivate {
+			parts := strings.Split(content, " ")
+			if len(parts) == 2 {
+				self.channel = parts[1]
+			}
+		}
 
-        if isPrivate {
-            // Send most recent private message, so new window shows it
-            if self.manager.lastPrivate != nil {
-                self.netConn.Write(self.manager.lastPrivate)
-                self.manager.lastPrivate = nil
-            }
+		if isPrivate {
+			// Send most recent private message, so new window shows it
+			if self.manager.lastPrivate != nil {
+				self.netConn.Write(self.manager.lastPrivate)
+				self.manager.lastPrivate = nil
+			}
 
-            // Not an IRC server command, so don't send to IRC server
-            return true
-        }
-    }
+			// Not an IRC server command, so don't send to IRC server
+			return true
+		}
+	}
 
-    if strings.HasPrefix(content, "/notify") {
-        self.isNotify = !self.isNotify
-        line := Line{
-            Command: "NOTICE",
-            Content: "Notifications: " + strconv.Btoa(self.isNotify),
-            Channel: "",
-            User: ""}
-        jsonData, _ := json.Marshal(line)
-        self.netConn.Write(append(jsonData, '\n'))
+	if strings.HasPrefix(content, "/notify") {
+		self.isNotify = !self.isNotify
+		line := Line{
+			Command: "NOTICE",
+			Content: "Notifications: " + strconv.Btoa(self.isNotify),
+			Channel: "",
+			User:    ""}
+		jsonData, _ := json.Marshal(line)
+		self.netConn.Write(append(jsonData, '\n'))
 
-        // Not an IRC server command, so don't send to IRC server
-        return true
-    }
+		// Not an IRC server command, so don't send to IRC server
+		return true
+	}
 
-    return false
+	return false
 }
 
 func (self *Internal) sendNick() {
 
 	line := Line{
-        Command: "NICK",
-        Content: self.manager.Nick,
-        Channel: "",
-        User: ""}
+		Command: "NICK",
+		Content: self.manager.Nick,
+		Channel: "",
+		User:    ""}
 
 	jsonData, _ := json.Marshal(line)
 	self.netConn.Write(append(jsonData, '\n'))
@@ -121,4 +121,3 @@ func (self *Internal) part() {
 
 	self.manager.fromUser <- Message{self.channel, "/part " + self.channel}
 }
-

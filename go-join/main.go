@@ -12,14 +12,14 @@ import (
 const (
 	// go-connect and go-join must be on same host for now,
 	/// but in future go-connect could be remote
-	GO_HOST      = "127.0.0.1:8790"
-	RPL_NAMREPLY = "353"
-    RPL_TOPIC    = "332"
-    ERR_UNKNOWNCOMMAND = "421"
-	CHANNEL_CMDS = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
-    //CMD_PRIV_CHAT = "/usr/bin/tmux split-window -v -p 50"
-    CMD_PRIV_CHAT = "/usr/bin/gnome-terminal -e"
-	USAGE        = `
+	GO_HOST            = "127.0.0.1:8790"
+	RPL_NAMREPLY       = "353"
+	RPL_TOPIC          = "332"
+	ERR_UNKNOWNCOMMAND = "421"
+	CHANNEL_CMDS       = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
+	//CMD_PRIV_CHAT = "/usr/bin/tmux split-window -v -p 50"
+	CMD_PRIV_CHAT = "/usr/bin/gnome-terminal -e"
+	USAGE         = `
 Usage: go-join [channel|-private=nick]
 Note there's no # in front of the channel
 Examples:
@@ -81,7 +81,7 @@ type Client struct {
 	channel     string
 	isRunning   bool
 	nick        string
-    userManager *UserManager
+	userManager *UserManager
 }
 
 // Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
@@ -93,7 +93,7 @@ func NewClient(channel string) *Client {
 		fmt.Println("Listening for private messages from " + channel)
 	}
 
-    userManager := NewUserManager()
+	userManager := NewUserManager()
 
 	// Set terminal to raw mode, listen for keyboard input
 	var term *Terminal = NewTerminal(userManager)
@@ -105,10 +105,10 @@ func NewClient(channel string) *Client {
 	conn = NewInternalConnection(GO_HOST, channel)
 
 	return &Client{
-		term:    term,
-		conn:    conn,
-		channel: channel,
-		userManager:   userManager,
+		term:        term,
+		conn:        conn,
+		channel:     channel,
+		userManager: userManager,
 	}
 }
 
@@ -207,12 +207,12 @@ func (self *Client) onServer(serverData []byte) {
 		self.userManager.Add(line.User)
 
 	case RPL_NAMREPLY:
-        self.display("Users currently in " + line.Channel + ": ")
-        self.display("  " + line.Content)
-        self.userManager.Update(strings.Split(line.Content, " "))
+		self.display("Users currently in " + line.Channel + ": ")
+		self.display("  " + line.Content)
+		self.userManager.Update(strings.Split(line.Content, " "))
 
-    case RPL_TOPIC:
-        self.display(line.Content)
+	case RPL_TOPIC:
+		self.display(line.Content)
 
 	case "NICK":
 		if self.nick != "" && !self.userManager.Has(line.User) {
@@ -226,27 +226,27 @@ func (self *Client) onServer(serverData []byte) {
 			self.display(line.User + " is now know as " + line.Content)
 		}
 
-        self.userManager.Remove(line.User)
-        self.userManager.Add(line.Content)
+		self.userManager.Remove(line.User)
+		self.userManager.Add(line.Content)
 
-    case "NOTICE":
-        self.display(line.Content)
+	case "NOTICE":
+		self.display(line.Content)
 
 	case "PART":
 		self.display(line.User + " left the channel.")
-        self.userManager.Remove(line.User)
+		self.userManager.Remove(line.User)
 
 	case "QUIT":
-        if self.userManager.Remove(line.User) {
-            self.display(line.User + " has quit.")
-        }
+		if self.userManager.Remove(line.User) {
+			self.display(line.User + " has quit.")
+		}
 
-    case ERR_UNKNOWNCOMMAND:
-        if len(line.Args) == 2 {
-            self.display("Unknown command: " + line.Args[1])
-        } else {
-            self.display("Unknown command")
-        }
+	case ERR_UNKNOWNCOMMAND:
+		if len(line.Args) == 2 {
+			self.display("Unknown command: " + line.Args[1])
+		} else {
+			self.display("Unknown command")
+		}
 
 	}
 
@@ -278,4 +278,3 @@ func (self *Client) Close() os.Error {
 func isCommand(content []byte) bool {
 	return len(content) > 1 && content[0] == '/'
 }
-

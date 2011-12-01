@@ -26,8 +26,8 @@ type Terminal struct {
 	orig_termios termios
 	data         []byte
 	Channel      string
-    input        *TermInput
-    userManager  *UserManager
+	input        *TermInput
+	userManager  *UserManager
 }
 
 func NewTerminal(userManager *UserManager) *Terminal {
@@ -39,7 +39,7 @@ func NewTerminal(userManager *UserManager) *Terminal {
 		orig_termios: orig_termios,
 		data:         make([]byte, 1),
 		input:        NewTermInput(),
-        userManager:  userManager,
+		userManager:  userManager,
 	}
 }
 
@@ -110,45 +110,49 @@ func (self *Terminal) ListenInternalKeys() {
 	for {
 		char = self.Read()
 
-		if char == 0x09 {   // Tab - attempt nick completion
-            rawLog.Println("Tab")
-            prefix := self.input.Prefix()
-            rawLog.Println("Tab prefix:", prefix)
-            match := self.userManager.FirstMatch(prefix)
-            rawLog.Println("Match:", match)
-            self.input.ReplaceWord(match)
+		if char == 0x09 { // Tab - attempt nick completion
+			rawLog.Println("Tab")
+			prefix := self.input.Prefix()
+			rawLog.Println("Tab prefix:", prefix)
+			match := self.userManager.FirstMatch(prefix)
+			rawLog.Println("Match:", match)
+			self.input.ReplaceWord(match)
 		}
 
 		if char == 0x7f && self.input.Len() > 0 && self.input.cursorPos > 0 {
 			// 0x7f = Unicode Backspace
-            self.input.Backspace()
+			self.input.Backspace()
 		}
 
 		if char == 0x1B {
 			// ESC code - starts escape sequence
 			char = self.Read()
 
-            // '[' is ANSI escape, 0x4f comes before Home and End
-			if ! (char == '[' || char == 0x4F) {
-                rawLog.Println("Unexpected char after ESC", char)
-                continue
-            }
+			// '[' is ANSI escape, 0x4f comes before Home and End
+			if !(char == '[' || char == 0x4F) {
+				rawLog.Println("Unexpected char after ESC", char)
+				continue
+			}
 
-            char = self.Read()
-            switch char {
+			char = self.Read()
+			switch char {
 
-            case 'D': self.input.KeyLeft()
-            case 'C': self.input.KeyRight()
-            case 'H': self.input.KeyHome()
-            case 'F': self.input.KeyEnd()
+			case 'D':
+				self.input.KeyLeft()
+			case 'C':
+				self.input.KeyRight()
+			case 'H':
+				self.input.KeyHome()
+			case 'F':
+				self.input.KeyEnd()
 
-            default:
-                rawLog.Println("Unknown escape sequence:", char)
-            }
+			default:
+				rawLog.Println("Unknown escape sequence:", char)
+			}
 
 		} else if char >= 0x20 && char < 0x7f {
 			// Only use printable characters. See 'man ascii'
-            self.input.Add(char)
+			self.input.Add(char)
 		}
 
 		self.displayInput()
@@ -157,7 +161,7 @@ func (self *Terminal) ListenInternalKeys() {
 
 			cleanInput := sane(self.input.String())
 			fromUser <- []byte(cleanInput)
-            self.input.Reset()
+			self.input.Reset()
 		}
 
 	}
@@ -167,7 +171,7 @@ func (self *Terminal) ListenInternalKeys() {
 func (self *Terminal) displayInput() {
 	self.ClearLine()
 
-    input := self.input.String()
+	input := self.input.String()
 
 	msg := Bold("\r[" + self.Channel + "] ")
 	if len(input) != 0 {
