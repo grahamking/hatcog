@@ -1,8 +1,12 @@
 
-hatcogd -> /usr/local/bin
-hjoin -> /usr/local/bin
-.hatcogrc -> ~/
+To install:
 
+Copy hatcogd and hjoin to /usr/local/bin
+Copy .hatcogrc to your home directory. Edit it.
+Run 'hjoin <channel>' e.g. hjoin test
+Log files are in ~/.hatcog/
+
+Below is slightly outdated.
 ---
 
 goirc is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). I'm using this to learn Go, so you probably shouldn't use it yet. It's still a bit rough. I don't expect it run on anything except Linux.
