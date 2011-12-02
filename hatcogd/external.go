@@ -32,17 +32,12 @@ name string,
 password string,
 fromServer chan *Line) *External {
 
-    logFilename := HOME + LOG_DIR + "raw.log"
-    logFile, err := os.Create(logFilename)
-    if err != nil {
-        LOG.Println("Error creating raw log file: ", logFilename, err)
-        os.Exit(1)
-    }
-
-    rawLog := log.New(logFile, "", log.LstdFlags)
-	LOG.Println("Logging raw IRC messages to: ", logFilename)
+    logFilename := HOME + LOG_DIR + "server_raw.log"
+    rawLog := openLog(logFilename)
+	LOG.Println("Logging raw IRC messages to:", logFilename)
 
 	var socket net.Conn
+    var err os.Error
 
 	if strings.HasSuffix(server, SSL_PORT) {
 		socket, err = tls.Dial("tcp", server, nil)

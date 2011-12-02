@@ -18,11 +18,10 @@ type InternalConnection struct {
 
 func NewInternalConnection(host string, channel string) *InternalConnection {
 
-	var socket net.Conn
-	var err os.Error
-	socket, err = net.Dial("tcp", host)
+    socket, err := net.Dial("tcp", host)
 	if err != nil {
-		log.Fatal("Error connection to go-connect", err)
+        // TODO: Start the daemon!
+		LOG.Fatal("Error connecting to daemon", err)
 	}
 
 	socket.SetReadTimeout(ONE_SECOND_NS)
@@ -30,7 +29,7 @@ func NewInternalConnection(host string, channel string) *InternalConnection {
 	return &InternalConnection{socket, channel}
 }
 
-// Join a channel, or tell go-connect we're a private chat
+// Join a channel, or tell daemon we're a private chat
 func (self *InternalConnection) join() {
 
 	if strings.HasPrefix(self.channel, "#") {
@@ -43,20 +42,18 @@ func (self *InternalConnection) join() {
 	}
 }
 
-// Send a message to go-connect. Implements Writer.
+// Send a message to daemon. Implements Writer.
 func (self *InternalConnection) Write(msg []byte) (int, os.Error) {
-	rawLog.Println(string(msg))
 	return self.socket.Write(append(msg, '\n'))
 }
 
-// Listen for JSON messages from go-connect and put on channel
+// Listen for JSON messages from daemon and put on channel
 func (self *InternalConnection) Consume() {
 	var data []byte = make([]byte, 1)
 	var linedata []byte = make([]byte, 4096)
 	var err os.Error
 	var index int
 
-	rawLog.Println("JOINING")
 	self.join()
 
 	for {

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"time"
+    "log"
 )
 
 // IRC Client abstraction
@@ -15,6 +16,7 @@ type Client struct {
 	isRunning   bool
 	nick        string
 	userManager *UserManager
+    rawLog      *log.Logger
 }
 
 // Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
@@ -26,6 +28,8 @@ func NewClient(channel string) *Client {
 		fmt.Println("Listening for private messages from " + channel)
 	}
 
+    rawLog := openLog(HOME + LOG_DIR + "client_raw.log")
+
 	userManager := NewUserManager()
 
 	// Set terminal to raw mode, listen for keyboard input
@@ -33,7 +37,7 @@ func NewClient(channel string) *Client {
 	term.Raw()
 	term.Channel = channel
 
-	// Connect to go-connect
+	// Connect to daemon
 	var conn *InternalConnection
 	conn = NewInternalConnection(GO_HOST, channel)
 
@@ -42,6 +46,7 @@ func NewClient(channel string) *Client {
 		conn:        conn,
 		channel:     channel,
 		userManager: userManager,
+        rawLog:      rawLog,
 	}
 }
 
@@ -64,7 +69,7 @@ func (self *Client) Run() {
 		select {
 		case serverData, ok = <-fromServer:
 			if ok {
-				rawLog.Println(string(serverData))
+				self.rawLog.Println(self.channel, string(serverData))
 				self.onServer(serverData)
 			} else {
 				self.isRunning = false
@@ -126,6 +131,7 @@ func (self *Client) onUser(content []byte) {
 func (self *Client) onServer(serverData []byte) {
 
 	line := FromJson(serverData)
+    LOG.Println(line.Command)
 
 	switch line.Command {
 
@@ -148,22 +154,22 @@ func (self *Client) onServer(serverData []byte) {
 		self.display(line.Content)
 
 	case "NICK":
-        rawLog.Println("NICK message")
-        rawLog.Println("self.nick", self.nick)
+        LOG.Println("NICK message")
+        LOG.Println("self.nick", self.nick)
 		if self.nick != "" && !self.userManager.Has(line.User) {
-            rawLog.Println("case 1")
+            LOG.Println("case 1")
 			return
 		}
-        rawLog.Println("Len line.User", len(line.User))
+        LOG.Println("Len line.User", len(line.User))
 		if len(line.User) == 0 || line.User == self.nick {
-            rawLog.Println("case 2")
+            LOG.Println("case 2")
 			self.nick = line.Content
 			self.display("You are now know as " + self.nick)
 		} else {
-            rawLog.Println("case 3")
+            LOG.Println("case 3")
 			self.display(line.User + " is now know as " + line.Content)
 		}
-        rawLog.Println("outside")
+        LOG.Println("outside")
 		self.userManager.Remove(line.User)
 		self.userManager.Add(line.Content)
 

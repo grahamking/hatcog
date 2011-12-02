@@ -111,11 +111,11 @@ func (self *Terminal) ListenInternalKeys() {
 		char = self.Read()
 
 		if char == 0x09 { // Tab - attempt nick completion
-			rawLog.Println("Tab")
+			LOG.Println("Tab")
 			prefix := self.input.Prefix()
-			rawLog.Println("Tab prefix:", prefix)
+			LOG.Println("Tab prefix:", prefix)
 			match := self.userManager.FirstMatch(prefix)
-			rawLog.Println("Match:", match)
+			LOG.Println("Match:", match)
 			self.input.ReplaceWord(match)
 		}
 
@@ -130,7 +130,7 @@ func (self *Terminal) ListenInternalKeys() {
 
 			// '[' is ANSI escape, 0x4f comes before Home and End
 			if !(char == '[' || char == 0x4F) {
-				rawLog.Println("Unexpected char after ESC", char)
+				LOG.Println("Unexpected char after ESC", char)
 				continue
 			}
 
@@ -147,7 +147,7 @@ func (self *Terminal) ListenInternalKeys() {
 				self.input.KeyEnd()
 
 			default:
-				rawLog.Println("Unknown escape sequence:", char)
+				LOG.Println("Unknown escape sequence:", char)
 			}
 
 		} else if char >= 0x20 && char < 0x7f {

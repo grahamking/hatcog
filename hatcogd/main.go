@@ -29,9 +29,9 @@ func main() {
 
     HOME = os.Getenv("HOME")
 
-    logFilename := HOME + LOG_DIR + "main.log"
+    logFilename := HOME + LOG_DIR + "server.log"
     fmt.Println(VERSION, "logging to", logFilename)
-    openLog(logFilename)
+    LOG = openLog(logFilename)
 
     LOG.Println("START")
 
@@ -53,13 +53,12 @@ func main() {
             sig == syscall.SIGTERM {
             break
         }
-        fmt.Println(sig)
     }
     LOG.Println("END")
 }
 
 // Open the main log file
-func openLog(logFilename string) {
+func openLog(logFilename string) *log.Logger {
     os.Mkdir(HOME + LOG_DIR, 0750)
 
     logFile, err := os.OpenFile(
@@ -67,21 +66,22 @@ func openLog(logFilename string) {
         os.O_RDWR|os.O_APPEND|os.O_CREATE,
         0650)
     if err != nil {
-        fmt.Println("Error creating log file: "+ logFilename, err)
+        fmt.Println("Error creating log file:", logFilename, err)
         os.Exit(1)
     }
-    LOG = log.New(logFile, "", log.LstdFlags)
+    return log.New(logFile, "", log.LstdFlags)
 }
 
 // Load / Parse the config file
 func loadConfig() Config {
 
     configFilename := HOME + DEFAULT_CONFIG
-    LOG.Println("Reading config file: ", configFilename)
+    LOG.Println("Reading config file:", configFilename)
 
     config, err := Load(configFilename)
     if err != nil {
         fmt.Println("Error parsing config file:", err)
+        LOG.Println("Error parsing config file:", err)
         os.Exit(1)
     }
     return config

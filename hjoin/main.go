@@ -9,22 +9,29 @@ import (
 )
 
 const (
-	// go-connect and go-join must be on same host for now,
-	/// but in future go-connect could be remote
+	VERSION    = "hatcog v0.3 (github.com/grahamking/hatcog)"
+    DEFAULT_CONFIG = "/.hatcogrc"
+    LOG_DIR = "/.hatcog/"
+
 	GO_HOST            = "127.0.0.1:8790"
+
 	RPL_NAMREPLY       = "353"
 	RPL_TOPIC          = "332"
 	ERR_UNKNOWNCOMMAND = "421"
 	CHANNEL_CMDS       = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
-	//CMD_PRIV_CHAT = "/usr/bin/tmux split-window -v -p 50"
-	CMD_PRIV_CHAT = "/usr/bin/gnome-terminal -e"
+
 	USAGE         = `
-Usage: go-join [channel|-private=nick]
+Usage: hjoin [channel|-private=nick]
 Note there's no # in front of the channel
 Examples:
  1. Join channel test: go-join test
  2. Listen for private (/query) message from bob: go-join -private=bob
 `
+)
+
+var (
+    HOME string
+    LOG *log.Logger
 )
 
 var userPrivate = flag.String(
@@ -35,19 +42,16 @@ var userPrivate = flag.String(
 var fromUser = make(chan []byte)
 var fromServer = make(chan []byte)
 
-// Logs messages from go-connect
-var rawLog *log.Logger
-
-func init() {
-	var logfile *os.File
-	logfile, _ = os.Create("/tmp/go-join.log")
-	rawLog = log.New(logfile, "", log.LstdFlags)
-}
-
 /*
  * main
  */
 func main() {
+
+    HOME = os.Getenv("HOME")
+
+    logFilename := HOME + LOG_DIR + "client.log"
+    fmt.Println(VERSION, "logging to", logFilename)
+    LOG = openLog(logFilename)
 
 	if len(os.Args) != 2 {
 		fmt.Println(USAGE)
@@ -71,5 +75,20 @@ func main() {
 	}()
 
 	client.Run()
+}
+
+// Open the main log file
+func openLog(logFilename string) *log.Logger {
+    os.Mkdir(HOME + LOG_DIR, 0750)
+
+    logFile, err := os.OpenFile(
+        logFilename,
+        os.O_RDWR|os.O_APPEND|os.O_CREATE,
+        0650)
+    if err != nil {
+        fmt.Println("Error creating log file:", logFilename, err)
+        os.Exit(1)
+    }
+    return log.New(logFile, "", log.LstdFlags)
 }
 
