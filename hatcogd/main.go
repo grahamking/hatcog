@@ -5,9 +5,10 @@ import (
 	"os"
     "os/signal"
 	"strings"
-	"bufio"
     "log"
     "syscall"
+    "exec"
+    "bytes"
 )
 
 const (
@@ -36,7 +37,7 @@ func main() {
     LOG.Println("START")
 
     config := loadConfig()
-    password := readPassword()
+    password := getPassword(config)
 
     fromServer = make(chan *Line)
     fromUser = make(chan Message)
@@ -87,23 +88,38 @@ func loadConfig() Config {
     return config
 }
 
-// Read password from Stdin, if it was piped in. Otherwise return empty string.
-func readPassword() string {
+// Get password from config file
+func getPassword(config Config) string {
 
-    // Stdin is a TTY, not a pipe, so no password
-	if isatty(os.Stdin) {
-        return ""
+    password := sane(config.Get("password"))
+
+    if strings.HasPrefix(password, "$(") {
+        pwdCmd := password[2:len(password)-1]
+        LOG.Println("Running command to get password:", pwdCmd)
+        password = shell(pwdCmd)
     }
-
-    reader := bufio.NewReader(os.Stdin)
-    password, _ := reader.ReadString('\n')
-    return sane(password)
+    return password
 }
 
-// Is given File a terminal?
-func isatty(file *os.File) bool {
-	stat, _ := file.Stat()
-	return !stat.IsFifo()
+// Run the given command and return it's output
+func shell(cmd string) string {
+
+    var stderr, stdout bytes.Buffer
+
+    parts := strings.Split(cmd, " ")
+    command := exec.Command(parts[0], parts[1:]...)
+    command.Stdout = &stdout
+    command.Stderr = &stderr
+
+    err := command.Run()
+
+    if err != nil {
+        LOG.Println("Error running command:", err)
+        LOG.Println(string(stderr.Bytes()))
+        os.Exit(1)
+    }
+
+    return string(stdout.Bytes())
 }
 
 /* Trims a string to not include junk such as:

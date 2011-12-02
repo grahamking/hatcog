@@ -7,11 +7,11 @@ import (
 	"log"
 	"time"
 	"strings"
+    "bufio"
 )
 
 const (
-    // One second in nanoseconds
-	ONE_SECOND_NS = 1000 * 1000 * 1000
+	ONE_SECOND_NS = 1000 * 1000 * 1000  // One second in nanoseconds
 
 	// Standard IRC SSL port
 	// http://blog.freenode.net/2011/02/port-6697-irc-via-tlsssl/
@@ -104,26 +104,19 @@ func (self *External) doCommand(content string) {
 
 // Read IRC messages from the connection and send to stdout
 func (self *External) Consume() {
-	var data []byte = make([]byte, 1)
-	var linedata []byte = make([]byte, 4096)
-	var index int
-	var line *Line
-	var rawLine string
-	var err os.Error = nil
-	var netErr net.Error
 
+    bufRead := bufio.NewReader(self.socket)
 	for {
 
 		if self.isClosing {
 			return
 		}
 
-		_, err = self.socket.Read(data)
+        content, err := bufRead.ReadString('\n')
 
 		if err != nil {
-			netErr, _ = err.(net.Error)
+            netErr, _ := err.(net.Error)
 
-			// Need to timeout occasionally or we never check isClosing
 			if netErr.Timeout() == true {
 				continue
 			} else {
@@ -131,26 +124,15 @@ func (self *External) Consume() {
 			}
 		}
 
-		if data[0] == '\n' {
-			if index == 0 {
-				continue
-			}
-			rawLine = string(linedata[:index])
-			self.rawLog.Println(rawLine)
+        self.rawLog.Println(content)
 
-			line, err = ParseLine(rawLine)
-			if err == nil {
-				self.act(line)
-			} else {
-				self.rawLog.Println(err)
-				LOG.Println("Invalid line: " + rawLine)
-			}
+        line, err := ParseLine(content)
+        if err == nil {
+            self.act(line)
+        } else {
+            LOG.Println("Invalid line:", content)
+        }
 
-			index = 0
-		} else if data[0] != '\r' { // Ignore CR, because LF is next
-			linedata[index] = data[0]
-			index++
-		}
 	}
 }
 

@@ -156,7 +156,7 @@ func (self *Server) openPrivate(nick string) {
 	// TODO: Sanitise nick to prevent command execution
 
 	parts := strings.Split(self.cmdPrivateChat, " ")
-	parts = append(parts, "hjoin -private="+nick)
+	parts = append(parts, "/usr/local/bin/hjoin -private="+nick)
 
 	command := exec.Command(parts[0], parts[1:]...)
 	command.Run()

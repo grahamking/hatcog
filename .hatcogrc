@@ -1,4 +1,7 @@
 # hatcog configuration file
+#
+# Lines starting with # are comments.
+# Don't use ~ to mean your home directory, use the full path.
 
 ### server ###
 # IRC server and port to connect to. Example: irc.example.com:6667
@@ -17,6 +20,13 @@ server = "127.0.0.1:6667"
 ### nick ###
 # Your IRC nickname
 nick = "graham_king"
+
+### password ###
+# Your password, if you have registered a nick with NickServ, otherwise blank.
+# If you wrap the value in $( and ), we run it and the output is your password
+# e.g. password = $(gpg -d /home/bob/password.gpg)
+# password = "S3cret"
+password = $(gpg -d /home/graham/SpiderOak/.ircpw.asc)
 
 ### name ###
 # Your name, to display to IRC users

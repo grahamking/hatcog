@@ -6,6 +6,9 @@ import (
 	"log"
 	"strings"
 	"flag"
+    "time"
+    "net"
+    "exec"
 )
 
 const (
@@ -13,8 +16,12 @@ const (
     DEFAULT_CONFIG = "/.hatcogrc"
     LOG_DIR = "/.hatcog/"
 
-	GO_HOST            = "127.0.0.1:8790"
+	DAEMON_ADDR        = "127.0.0.1:8790"
 
+    CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin/hatcogd"
+    CMD_STOP_DAEMON  = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
+
+	ONE_SECOND_NS = 1000 * 1000 * 1000
 	RPL_NAMREPLY       = "353"
 	RPL_TOPIC          = "332"
 	ERR_UNKNOWNCOMMAND = "421"
@@ -40,7 +47,7 @@ var userPrivate = flag.String(
 	"Listen for private messages from this nick only")
 
 var fromUser = make(chan []byte)
-var fromServer = make(chan []byte)
+var fromServer = make(chan string)
 
 /*
  * main
@@ -58,9 +65,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	var channel string
-
 	arg := os.Args[1]
+    if arg == "--stop" {
+        fmt.Println("Closing all connections")
+        stopDaemon()
+        return
+    }
+
+	var channel string
 	if strings.HasPrefix(arg, "-private") {
 		flag.Parse()
 		channel = *userPrivate
@@ -92,3 +104,42 @@ func openLog(logFilename string) *log.Logger {
     return log.New(logFile, "", log.LstdFlags)
 }
 
+// Get a connection to the daemon, starting it if needed
+func GetDaemonConnection() net.Conn {
+
+    socket, err := net.Dial("tcp", DAEMON_ADDR)
+    if err != nil {
+        socket = startDaemon()
+    }
+	socket.SetReadTimeout(ONE_SECOND_NS)
+    return socket
+}
+
+// Start the daemon, and return a connection to it
+func startDaemon() net.Conn {
+    LOG.Println("Starting the daemon:", CMD_START_DAEMON)
+
+    parts := strings.Split(CMD_START_DAEMON, " ")
+    cmd := exec.Command(parts[0], parts[1:]...)
+    cmd.Run()
+
+    // Wait for it to be ready
+
+    var socket net.Conn
+    err := os.NewError("Placeholder")
+
+    for err != nil {
+        time.Sleep(ONE_SECOND_NS / 2)
+        socket, err = net.Dial("tcp", DAEMON_ADDR)
+    }
+    return socket
+}
+
+// Stop the daemon. This will also stop all clients.
+func stopDaemon() {
+    LOG.Println("Stopping the daemon:", CMD_STOP_DAEMON)
+
+    parts := strings.Split(CMD_STOP_DAEMON, " ")
+    cmd := exec.Command(parts[0], parts[1:]...)
+    cmd.Run()
+}

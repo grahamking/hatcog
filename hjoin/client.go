@@ -38,8 +38,7 @@ func NewClient(channel string) *Client {
 	term.Channel = channel
 
 	// Connect to daemon
-	var conn *InternalConnection
-	conn = NewInternalConnection(GO_HOST, channel)
+    conn := &InternalConnection{GetDaemonConnection(), channel}
 
 	return &Client{
 		term:        term,
@@ -54,7 +53,8 @@ func NewClient(channel string) *Client {
    Listen for keyboard input and socket input and be an IRC client
 */
 func (self *Client) Run() {
-	var serverData, userInput []byte
+	var serverData string
+    var userInput []byte
 	var ok bool
 
 	self.isRunning = true
@@ -62,14 +62,12 @@ func (self *Client) Run() {
 	go self.conn.Consume()
 	go self.term.ListenInternalKeys()
 
-	//self.conn.Write([]byte("/names")) // fill users map
-
 	for self.isRunning {
 
 		select {
 		case serverData, ok = <-fromServer:
 			if ok {
-				self.rawLog.Println(self.channel, string(serverData))
+				self.rawLog.Println(self.channel, serverData)
 				self.onServer(serverData)
 			} else {
 				self.isRunning = false
@@ -128,10 +126,9 @@ func (self *Client) onUser(content []byte) {
 }
 
 // Do something with Line from daemon. Usually just display to screen.
-func (self *Client) onServer(serverData []byte) {
+func (self *Client) onServer(serverData string) {
 
-	line := FromJson(serverData)
-    LOG.Println(line.Command)
+	line := FromJson([]byte(serverData))
 
 	switch line.Command {
 
@@ -154,22 +151,15 @@ func (self *Client) onServer(serverData []byte) {
 		self.display(line.Content)
 
 	case "NICK":
-        LOG.Println("NICK message")
-        LOG.Println("self.nick", self.nick)
 		if self.nick != "" && !self.userManager.Has(line.User) {
-            LOG.Println("case 1")
 			return
 		}
-        LOG.Println("Len line.User", len(line.User))
 		if len(line.User) == 0 || line.User == self.nick {
-            LOG.Println("case 2")
 			self.nick = line.Content
 			self.display("You are now know as " + self.nick)
 		} else {
-            LOG.Println("case 3")
 			self.display(line.User + " is now know as " + line.Content)
 		}
-        LOG.Println("outside")
 		self.userManager.Remove(line.User)
 		self.userManager.Add(line.Content)
 
