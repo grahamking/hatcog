@@ -5,7 +5,6 @@ import (
 	"os"
 	"json"
 	"strings"
-	"fmt"
 	"bufio"
 	"strconv"
 )
@@ -32,7 +31,7 @@ func (self *Internal) Run() {
 				self.part()
 				self.manager.delete(self) // TODO: Replace with channel?
 			} else {
-				fmt.Println(err)
+				LOG.Println(err)
 			}
 			return
 		}

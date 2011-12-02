@@ -1,15 +1,53 @@
 # hatcog configuration file
 
+### server ###
+# IRC server and port to connect to. Example: irc.example.com:6667
+# Format is anything Go's net.Dial understands: http://golang.org/pkg/net/#Dial
+#
+# If the port is 6697, it's a secure connection using TLS.
+# You must always include a port
+#
+
+# Freenode, over TLS
+#server = "irc.freenode.net:6697"
+
+# Local unsecured
 server = "127.0.0.1:6667"
+
+### nick ###
+# Your IRC nickname
 nick = "graham_king"
+
+### name ###
+# Your name, to display to IRC users
 name = "Graham King"
+
+### internal_port ###
+# Port hatcogd listens on for hjoin connections.
+# You'll only need to change this if you have something else on that
+# port (unlikely), or if you're running multiple hatcogd
+# (for example to connect to several networks)
 internal_port = "8790"
 
-raw_log = "/tmp/hatcog.log"
+### cmd_notify ###
+# Command to run to display a notification.
+# This gets given two parameters: The title and the body of the notification.
+# e.g. if cmd_notify is "/home/bob/bin/sayIt", this gets called:
+#  /home/bob/bin/sayIt Message "Some text here"
 cmd_notify = "/usr/bin/notify-send"
+
+## cmd_beep ###
+# Command to alert you that your name was mentioned in a chat.
+# Download a beep from here: http://darkcoding.net/beep.wav
 cmd_beep = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
 
-# If you don't use tmux you might prefer:
+### cmd_private_chat ###
+# Command to open a private chat window, when someone /query or /msg you
+# This get given the command "hjoin -private=<nick_talking>" as last param
+
+# Open a gnome-terminal
 #cmd_private_chat = "/usr/bin/gnome-terminal -e"
+
+# Split your current tmux window
 cmd_private_chat = "/usr/bin/tmux split-window -v -p 50"
 

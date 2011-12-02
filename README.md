@@ -1,3 +1,10 @@
+
+hatcogd -> /usr/local/bin
+hjoin -> /usr/local/bin
+.hatcogrc -> ~/
+
+---
+
 goirc is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). I'm using this to learn Go, so you probably shouldn't use it yet. It's still a bit rough. I don't expect it run on anything except Linux.
 
 goirc is made up of two programs: `go-connect`, which connects to your irc server, and `go-join`, which manages input/output for a single channel.

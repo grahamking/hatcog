@@ -4,18 +4,18 @@
 
 include ${GOROOT}/src/Make.inc
 
-TARG=go-join
+TARG=hatcogd
 GOFILES=\
+	config.go\
 	main.go\
-	client.go\
-	user_manager.go\
-	internal-connection.go\
+	server.go\
+	external.go\
 	line.go\
-	util.go\
-	term_input.go\
-	term.go
+	internal-manager.go\
+	internal-connection.go
 
 include ${GOROOT}/src/Make.cmd
 
 format:
 	find . -type f -name "*.go" -exec gofmt -w {} \;
+

@@ -6,7 +6,6 @@ import (
 	"os"
 	"log"
 	"time"
-	"fmt"
 	"strings"
 )
 
@@ -31,17 +30,17 @@ func NewExternal(server string,
 nick string,
 name string,
 password string,
-fromServer chan *Line,
-logFilename string) *External {
+fromServer chan *Line) *External {
 
+    logFilename := HOME + LOG_DIR + "raw.log"
     logFile, err := os.Create(logFilename)
     if err != nil {
-        fmt.Println("Error creating raw log file: "+ logFilename, err)
+        LOG.Println("Error creating raw log file: ", logFilename, err)
         os.Exit(1)
     }
 
     rawLog := log.New(logFile, "", log.LstdFlags)
-	fmt.Println("Logging raw IRC messages to: " + logFilename)
+	LOG.Println("Logging raw IRC messages to: ", logFilename)
 
 	var socket net.Conn
 
@@ -149,7 +148,7 @@ func (self *External) Consume() {
 				self.act(line)
 			} else {
 				self.rawLog.Println(err)
-				fmt.Println("Invalid line: " + rawLine)
+				LOG.Println("Invalid line: " + rawLine)
 			}
 
 			index = 0

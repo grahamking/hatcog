@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"exec"
@@ -31,7 +30,6 @@ func NewServer(config Config, password string) *Server {
     nick := config.Get("nick")
     name := config.Get("name")
     internalPort := config.Get("internal_port")
-    rawLogFilename := config.Get("raw_log")
 
     cmdNotify := config.Get("cmd_notify")
     cmdBeep := config.Get("cmd_beep")
@@ -39,18 +37,18 @@ func NewServer(config Config, password string) *Server {
 
 	// IRC connection to remote server
 	var external *External
-	external = NewExternal(server, nick, name, password, fromServer, rawLogFilename)
-	fmt.Println("Connected to IRC server " + server)
+	external = NewExternal(server, nick, name, password, fromServer)
+	LOG.Println("Connected to IRC server " + server)
 
 	if password != "" {
-		fmt.Println("Identifying with NickServ")
+		LOG.Println("Identifying with NickServ")
 	}
 
 	// Socket connections from go-join programs
 	var internal *InternalManager
 	internal = NewInternalManager(internalPort, fromUser, nick)
 
-	fmt.Println("Listening for internal connection on port " + internalPort)
+	LOG.Println("Listening for internal connection on port " + internalPort)
 
 	return &Server{nick, external, internal, false, cmdNotify, cmdBeep, cmdPrivateChat}
 }
@@ -83,7 +81,7 @@ func (self *Server) Close() os.Error {
 func (self *Server) onServer(line *Line) {
 
 	if isInfoCommand(line.Command) {
-		fmt.Println(line.Content)
+		LOG.Println(line.Content)
 	}
 
 	if line.Command == "NICK" && line.User == self.nick {
