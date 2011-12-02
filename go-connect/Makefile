@@ -6,7 +6,7 @@ include ${GOROOT}/src/Make.inc
 
 TARG=go-connect
 GOFILES=\
-	globals.go\
+	config.go\
 	main.go\
 	server.go\
 	external.go\

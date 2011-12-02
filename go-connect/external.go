@@ -10,21 +10,40 @@ import (
 	"strings"
 )
 
+const (
+    // One second in nanoseconds
+	ONE_SECOND_NS = 1000 * 1000 * 1000
+
+	// Standard IRC SSL port
+	// http://blog.freenode.net/2011/02/port-6697-irc-via-tlsssl/
+	SSL_PORT = "6697"
+)
+
 type External struct {
 	socket     net.Conn
 	name       string
 	isClosing  bool
 	fromServer chan *Line
+    rawLog     *log.Logger
 }
 
 func NewExternal(server string,
 nick string,
 name string,
 password string,
-fromServer chan *Line) *External {
+fromServer chan *Line,
+logFilename string) *External {
+
+    logFile, err := os.Create(logFilename)
+    if err != nil {
+        fmt.Println("Error creating raw log file: "+ logFilename, err)
+        os.Exit(1)
+    }
+
+    rawLog := log.New(logFile, "", log.LstdFlags)
+	fmt.Println("Logging raw IRC messages to: " + logFilename)
 
 	var socket net.Conn
-	var err os.Error
 
 	if strings.HasSuffix(server, SSL_PORT) {
 		socket, err = tls.Dial("tcp", server, nil)
@@ -43,6 +62,7 @@ fromServer chan *Line) *External {
 		socket:     socket,
 		name:       name,
 		fromServer: fromServer,
+        rawLog:     rawLog,
 	}
 	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
 	conn.SendRaw("NICK " + nick)
@@ -73,7 +93,7 @@ func (self *External) SendRaw(msg string) {
 	var err os.Error
 	msg = msg + "\n"
 
-	rawLog.Print(" -->", msg)
+	self.rawLog.Print(" -->", msg)
 
 	_, err = self.socket.Write([]byte(msg))
 	if err != nil {
@@ -122,13 +142,13 @@ func (self *External) Consume() {
 				continue
 			}
 			rawLine = string(linedata[:index])
-			rawLog.Println(rawLine)
+			self.rawLog.Println(rawLine)
 
 			line, err = ParseLine(rawLine)
 			if err == nil {
 				self.act(line)
 			} else {
-				rawLog.Println(err)
+				self.rawLog.Println(err)
 				fmt.Println("Invalid line: " + rawLine)
 			}
 
@@ -143,7 +163,7 @@ func (self *External) Consume() {
 // Do something with a line
 func (self *External) act(line *Line) {
 
-	if line.Command == PING {
+	if line.Command == "PING" {
 		self.SendRaw("PONG goirc")
 		return
 	} else if line.Command == "VERSION" {

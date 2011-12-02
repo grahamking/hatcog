@@ -1,0 +1,15 @@
+# hatcog configuration file
+
+server = "127.0.0.1:6667"
+nick = "graham_king"
+name = "Graham King"
+internal_port = "8790"
+
+raw_log = "/tmp/hatcog.log"
+cmd_notify = "/usr/bin/notify-send"
+cmd_beep = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
+
+# If you don't use tmux you might prefer:
+#cmd_private_chat = "/usr/bin/gnome-terminal -e"
+cmd_private_chat = "/usr/bin/tmux split-window -v -p 50"
+

@@ -1,25 +1,32 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
-	"log"
 	"strings"
-	"sort"
 	"bufio"
 )
 
-func init() {
-	var logfile *os.File
-	logfile, _ = os.Create(RAW_LOG)
-	rawLog = log.New(logfile, "", log.LstdFlags)
+const (
+	VERSION    = "GoIRC v0.3 (github.com/grahamking/goirc)"
+    DEFAULT_CONFIG = "/.hatcogrc"
+)
 
-	infoCmds = sort.StringSlice([]string{"001", "002", "003", "004", "372", "NOTICE"})
-	infoCmds.Sort()
-}
+var fromServer = make(chan *Line)
+var fromUser = make(chan Message)
 
 func main() {
+
+	fmt.Println(VERSION)
+
+    configFilename := os.Getenv("HOME") + DEFAULT_CONFIG
+    fmt.Println("Reading config file: " + configFilename)
+
+    config, err := Load(configFilename)
+    if err != nil {
+        fmt.Println("Error parsing config file:", err)
+        return
+    }
 
 	var password string
 	if !isatty(os.Stdin) {
@@ -29,12 +36,7 @@ func main() {
 		password = sane(password)
 	}
 
-	fmt.Println(VERSION)
-	fmt.Println("Logging raw IRC messages to: " + RAW_LOG)
-
-	flag.Parse()
-
-	server := NewServer(*nickArg, *serverArg, *nameArg, *internalPort, password)
+    server := NewServer(config, password)
 	defer server.Close()
 	server.Run()
 

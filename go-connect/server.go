@@ -5,7 +5,14 @@ import (
 	"os"
 	"strings"
 	"exec"
-	"sort"
+)
+
+const (
+	RPL_NAMREPLY  = "353"
+)
+
+var (
+    INFO_CMDS = []string{"001", "002", "003", "004", "372", "NOTICE"}
 )
 
 type Server struct {
@@ -13,13 +20,26 @@ type Server struct {
 	external  *External
 	internal  *InternalManager
 	isRunning bool
+    cmdNotify string
+    cmdBeep string
+    cmdPrivateChat string
 }
 
-func NewServer(nick, server, name, internalPort, password string) *Server {
+func NewServer(config Config, password string) *Server {
+
+    server := config.Get("server")
+    nick := config.Get("nick")
+    name := config.Get("name")
+    internalPort := config.Get("internal_port")
+    rawLogFilename := config.Get("raw_log")
+
+    cmdNotify := config.Get("cmd_notify")
+    cmdBeep := config.Get("cmd_beep")
+    cmdPrivateChat := config.Get("cmd_private_chat")
 
 	// IRC connection to remote server
 	var external *External
-	external = NewExternal(server, nick, name, password, fromServer)
+	external = NewExternal(server, nick, name, password, fromServer, rawLogFilename)
 	fmt.Println("Connected to IRC server " + server)
 
 	if password != "" {
@@ -32,7 +52,7 @@ func NewServer(nick, server, name, internalPort, password string) *Server {
 
 	fmt.Println("Listening for internal connection on port " + internalPort)
 
-	return &Server{nick, external, internal, false}
+	return &Server{nick, external, internal, false, cmdNotify, cmdBeep, cmdPrivateChat}
 }
 
 // Main loop
@@ -62,7 +82,7 @@ func (self *Server) Close() os.Error {
 // Act on server messages
 func (self *Server) onServer(line *Line) {
 
-	if contains(infoCmds, line.Command) {
+	if isInfoCommand(line.Command) {
 		fmt.Println(line.Content)
 	}
 
@@ -121,13 +141,13 @@ func (self *Server) Notify(line *Line) {
 	if line.Channel != line.User {
 		title += " " + line.Channel
 	}
-	notifyCmd := exec.Command(NOTIFY_CMD, title, line.Content)
+	notifyCmd := exec.Command(self.cmdNotify, title, line.Content)
 	notifyCmd.Run()
 }
 
 // Make a sound to alert user someone is talking to them
 func (self *Server) Beep() {
-	parts := strings.Split(SOUND_CMD, " ")
+	parts := strings.Split(self.cmdBeep, " ")
 	soundCmd := exec.Command(parts[0], parts[1:]...)
 	soundCmd.Run()
 }
@@ -137,7 +157,7 @@ func (self *Server) openPrivate(nick string) {
 
 	// TODO: Sanitise nick to prevent command execution
 
-	parts := strings.Split(PRIV_CHAT_CMD, " ")
+	parts := strings.Split(self.cmdPrivateChat, " ")
 	parts = append(parts, "go-join -private="+nick)
 
 	command := exec.Command(parts[0], parts[1:]...)
@@ -149,13 +169,26 @@ func isCommand(content string) bool {
 	return len(content) > 1 && content[0] == '/'
 }
 
+// Is 'command' an IRC information command?
+func isInfoCommand(command string) bool {
+
+    for _, cmd := range INFO_CMDS {
+        if cmd == command {
+            return true
+        }
+    }
+    return false
+}
+
 // Does command require a channel
 func isChannelRequired(command string) bool {
 	return command == RPL_NAMREPLY
 }
 
 // Does slice 'arr' contain string 'candidate'?
+/*
 func contains(arr sort.StringSlice, candidate string) bool {
 	idx := arr.Search(candidate)
 	return idx < len(arr) && arr[idx] == candidate
 }
+*/
