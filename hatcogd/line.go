@@ -39,7 +39,7 @@ func (self *Line) AsJson() []byte {
 	if err != nil {
 		log.Println("Error on json Marshal of "+self.Raw, err)
 	}
-	// go-join expects lines to have an ending
+	// client expects lines to have an ending
 	jsonData = append(jsonData, '\n')
 	return jsonData
 }

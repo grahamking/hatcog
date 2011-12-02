@@ -9,7 +9,7 @@ type InternalManager struct {
 	port        string
 	connections []*Internal
 	fromUser    chan Message
-	Nick        string // Need to know, to tell go-join
+	Nick        string // Need to know, to tell client
 	lastPrivate []byte // Most recent private message
 }
 
@@ -71,7 +71,7 @@ func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, os.E
 	return bytesWritten, nil
 }
 
-// Write a message to all go-join connections
+// Write a message to all client connections
 func (self *InternalManager) WriteAll(msg []byte) (int, os.Error) {
 
 	var bytesWritten int
@@ -104,7 +104,7 @@ func (self *InternalManager) GetChannelConnection(channel string) *Internal {
 	return nil
 }
 
-// Do we have a connection (a go-join) open on given channel or nick
+// Do we have a connection (a client) open on given channel or nick
 func (self *InternalManager) HasChannel(channel string) bool {
 	return self.GetChannelConnection(channel) != nil
 }

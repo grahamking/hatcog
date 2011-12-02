@@ -44,7 +44,7 @@ func NewServer(config Config, password string) *Server {
 		LOG.Println("Identifying with NickServ")
 	}
 
-	// Socket connections from go-join programs
+	// Socket connections from client programs
 	var internal *InternalManager
 	internal = NewInternalManager(internalPort, fromUser, nick)
 
@@ -156,7 +156,7 @@ func (self *Server) openPrivate(nick string) {
 	// TODO: Sanitise nick to prevent command execution
 
 	parts := strings.Split(self.cmdPrivateChat, " ")
-	parts = append(parts, "go-join -private="+nick)
+	parts = append(parts, "hjoin -private="+nick)
 
 	command := exec.Command(parts[0], parts[1:]...)
 	command.Run()

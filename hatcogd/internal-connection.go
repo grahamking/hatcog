@@ -19,7 +19,7 @@ type Internal struct {
 
 func (self *Internal) Run() {
 
-	// Send NICK msg to new go-join connections
+	// Send NICK msg to new client connections
 	self.sendNick()
 
 	for {
@@ -47,7 +47,7 @@ func (self *Internal) Run() {
 
 /* Special incoming command processing, used to implement
 non-standard function, mostly about communication between go-connect
-and go-join.
+and client.
 
 @return true if no further processing should occur, false otherwise. true
 means don't send this message to the IRC server, it was internal only.
@@ -55,8 +55,8 @@ means don't send this message to the IRC server, it was internal only.
 func (self *Internal) Special(content string) bool {
 
 	if self.channel == "" {
-		// First message from go-join is either /join or /private,
-		// telling us which channel or user this go-join is talking to
+		// First message from client is either /join or /private,
+		// telling us which channel or user this client is talking to
 
 		isPrivate := strings.HasPrefix(content, "/private")
 		self.isPrivate = isPrivate

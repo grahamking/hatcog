@@ -19,7 +19,7 @@ type Client struct {
     rawLog      *log.Logger
 }
 
-// Create IRC client. Switch keyboard to raw mode, connect to go-connect socket
+// Create IRC client. Switch keyboard to raw mode, connect to daemon socket
 func NewClient(channel string) *Client {
 
 	if strings.HasPrefix(channel, "#") {
@@ -87,7 +87,7 @@ func (self *Client) Run() {
 	return
 }
 
-// Do something with user input. Usually just send to go-connect
+// Do something with user input. Usually just send to daemon
 func (self *Client) onUser(content []byte) {
 
 	if sane(string(content)) == "/quit" {
@@ -105,7 +105,7 @@ func (self *Client) onUser(content []byte) {
 		self.conn.Write(content)
 
 	} else {
-		// Send to go-connect
+		// Send to daemon
 		self.conn.Write(content)
 
 		// Display locally
@@ -127,7 +127,7 @@ func (self *Client) onUser(content []byte) {
 
 }
 
-// Do something with Line from go-connect. Usually just display to screen.
+// Do something with Line from daemon. Usually just display to screen.
 func (self *Client) onServer(serverData []byte) {
 
 	line := FromJson(serverData)

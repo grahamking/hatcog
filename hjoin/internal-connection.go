@@ -86,7 +86,7 @@ func (self *InternalConnection) Consume() {
 	}
 }
 
-// Close connection to go-connect
+// Close connection to daemon
 func (self *InternalConnection) Close() os.Error {
 	return self.socket.Close()
 }
