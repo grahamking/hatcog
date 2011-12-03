@@ -28,8 +28,9 @@ func (self *Internal) Run() {
 		content, err := bufRead.ReadString('\n')
 		if err != nil {
 			if err == os.EOF {
+                LOG.Println("Leaving", self.channel)
 				self.part()
-				self.manager.delete(self) // TODO: Replace with channel?
+				self.manager.delete(self)
 			} else {
 				LOG.Println(err)
 			}

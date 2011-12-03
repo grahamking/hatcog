@@ -9,6 +9,8 @@ import (
     "time"
     "net"
     "exec"
+    "bytes"
+    "../config"
 )
 
 const (
@@ -80,7 +82,10 @@ func main() {
 		channel = "#" + arg
 	}
 
-	client := NewClient(channel)
+    conf := loadConfig()
+    password := getPassword(conf)
+
+	client := NewClient(channel, password)
 	defer func() {
 		client.Close()
 		fmt.Println("Bye!")
@@ -143,3 +148,53 @@ func stopDaemon() {
     cmd := exec.Command(parts[0], parts[1:]...)
     cmd.Run()
 }
+
+// Load / Parse the config file
+func loadConfig() config.Config {
+
+    configFilename := HOME + DEFAULT_CONFIG
+    LOG.Println("Reading config file:", configFilename)
+
+    conf, err := config.Load(configFilename)
+    if err != nil {
+        fmt.Println("Error parsing config file:", err)
+        LOG.Println("Error parsing config file:", err)
+        os.Exit(1)
+    }
+    return conf
+}
+
+// Get password from config file
+func getPassword(conf config.Config) string {
+
+    password := sane(conf.Get("password"))
+
+    if strings.HasPrefix(password, "$(") {
+        pwdCmd := password[2:len(password)-1]
+        LOG.Println("Running command to get password:", pwdCmd)
+        password = shell(pwdCmd)
+    }
+    return password
+}
+
+// Run the given command and return it's output
+func shell(cmd string) string {
+
+    var stderr, stdout bytes.Buffer
+
+    parts := strings.Split(cmd, " ")
+    command := exec.Command(parts[0], parts[1:]...)
+    command.Stdout = &stdout
+    command.Stderr = &stderr
+
+    err := command.Run()
+
+    if err != nil {
+        LOG.Println("Error running command:", err)
+        LOG.Println(string(stderr.Bytes()))
+        os.Exit(1)
+    }
+
+    return string(stdout.Bytes())
+}
+

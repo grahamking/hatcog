@@ -24,12 +24,12 @@ type External struct {
 	isClosing  bool
 	fromServer chan *Line
     rawLog     *log.Logger
+    isIdentified bool
 }
 
 func NewExternal(server string,
 nick string,
 name string,
-password string,
 fromServer chan *Line) *External {
 
     logFilename := HOME + LOG_DIR + "server_raw.log"
@@ -62,11 +62,16 @@ fromServer chan *Line) *External {
 	conn.SendRaw("NICK " + nick)
 	time.Sleep(ONE_SECOND_NS)
 
-	if password != "" {
-		conn.SendMessage("NickServ", "identify "+password)
-	}
-
 	return &conn
+}
+
+// Identify with NickServ. Must of already sent NICK.
+func (self *External) Identify(password string) {
+    if ! self.isIdentified {
+        LOG.Println("Identifying with NickServ")
+        self.SendMessage("NickServ", "identify " + password)
+        self.isIdentified = true
+    }
 }
 
 // Send a regular (non-system command) IRC message

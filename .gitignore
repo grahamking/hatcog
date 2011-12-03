@@ -1,3 +1,4 @@
-goirc
-go-connect/go-connect
-go-join/go-join
+*.6
+*.8
+hjoin/hjoin
+hatcogd/hatcogd

@@ -20,7 +20,7 @@ type Client struct {
 }
 
 // Create IRC client. Switch keyboard to raw mode, connect to daemon socket
-func NewClient(channel string) *Client {
+func NewClient(channel string, password string) *Client {
 
 	if strings.HasPrefix(channel, "#") {
 		fmt.Println("Joining channel " + channel)
@@ -38,7 +38,12 @@ func NewClient(channel string) *Client {
 	term.Channel = channel
 
 	// Connect to daemon
-    conn := &InternalConnection{GetDaemonConnection(), channel}
+    socket := GetDaemonConnection()
+    if len(password) != 0 {
+        socket.Write([]byte("/pw " + password + "\n"))
+        time.Sleep(ONE_SECOND_NS)
+    }
+    conn := &InternalConnection{socket, channel}
 
 	return &Client{
 		term:        term,

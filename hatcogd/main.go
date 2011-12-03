@@ -7,8 +7,7 @@ import (
 	"strings"
     "log"
     "syscall"
-    "exec"
-    "bytes"
+    "../config"
 )
 
 const (
@@ -36,13 +35,12 @@ func main() {
 
     LOG.Println("START")
 
-    config := loadConfig()
-    password := getPassword(config)
+    conf := loadConfig()
 
     fromServer = make(chan *Line)
     fromUser = make(chan Message)
 
-    server := NewServer(config, password)
+    server := NewServer(conf)
 	defer server.Close()
 	go server.Run()
 
@@ -74,52 +72,18 @@ func openLog(logFilename string) *log.Logger {
 }
 
 // Load / Parse the config file
-func loadConfig() Config {
+func loadConfig() config.Config {
 
     configFilename := HOME + DEFAULT_CONFIG
     LOG.Println("Reading config file:", configFilename)
 
-    config, err := Load(configFilename)
+    conf, err := config.Load(configFilename)
     if err != nil {
         fmt.Println("Error parsing config file:", err)
         LOG.Println("Error parsing config file:", err)
         os.Exit(1)
     }
-    return config
-}
-
-// Get password from config file
-func getPassword(config Config) string {
-
-    password := sane(config.Get("password"))
-
-    if strings.HasPrefix(password, "$(") {
-        pwdCmd := password[2:len(password)-1]
-        LOG.Println("Running command to get password:", pwdCmd)
-        password = shell(pwdCmd)
-    }
-    return password
-}
-
-// Run the given command and return it's output
-func shell(cmd string) string {
-
-    var stderr, stdout bytes.Buffer
-
-    parts := strings.Split(cmd, " ")
-    command := exec.Command(parts[0], parts[1:]...)
-    command.Stdout = &stdout
-    command.Stderr = &stderr
-
-    err := command.Run()
-
-    if err != nil {
-        LOG.Println("Error running command:", err)
-        LOG.Println(string(stderr.Bytes()))
-        os.Exit(1)
-    }
-
-    return string(stdout.Bytes())
+    return conf
 }
 
 /* Trims a string to not include junk such as:

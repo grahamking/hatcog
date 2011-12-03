@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"exec"
+    "../config"
 )
 
 const (
@@ -24,25 +25,21 @@ type Server struct {
     cmdPrivateChat string
 }
 
-func NewServer(config Config, password string) *Server {
+func NewServer(conf config.Config) *Server {
 
-    server := config.Get("server")
-    nick := config.Get("nick")
-    name := config.Get("name")
-    internalPort := config.Get("internal_port")
+    server := conf.Get("server")
+    nick := conf.Get("nick")
+    name := conf.Get("name")
+    internalPort := conf.Get("internal_port")
 
-    cmdNotify := config.Get("cmd_notify")
-    cmdBeep := config.Get("cmd_beep")
-    cmdPrivateChat := config.Get("cmd_private_chat")
+    cmdNotify := conf.Get("cmd_notify")
+    cmdBeep := conf.Get("cmd_beep")
+    cmdPrivateChat := conf.Get("cmd_private_chat")
 
 	// IRC connection to remote server
 	var external *External
-	external = NewExternal(server, nick, name, password, fromServer)
+	external = NewExternal(server, nick, name, fromServer)
 	LOG.Println("Connected to IRC server " + server)
-
-	if password != "" {
-		LOG.Println("Identifying with NickServ")
-	}
 
 	// Socket connections from client programs
 	var internal *InternalManager
@@ -116,17 +113,17 @@ func (self *Server) onServer(line *Line) {
 // Act on user input
 func (self *Server) onUser(message Message) {
 
-	if isCommand(message.content) {
+    if strings.HasPrefix(message.content, "/pw ") {
+        self.external.Identify(message.content[4:])
 
+    } else if strings.HasPrefix(message.content, "/me ") {
+        self.external.SendAction(message.channel, message.content[4:])
+
+    } else if isCommand(message.content) {
 		self.external.doCommand(message.content)
 
 	} else {
-
-		if strings.HasPrefix(message.content, "/me ") {
-			self.external.SendAction(message.channel, message.content[4:])
-		} else {
-			self.external.SendMessage(message.channel, message.content)
-		}
+        self.external.SendMessage(message.channel, message.content)
 	}
 
 }
@@ -182,11 +179,3 @@ func isInfoCommand(command string) bool {
 func isChannelRequired(command string) bool {
 	return command == RPL_NAMREPLY
 }
-
-// Does slice 'arr' contain string 'candidate'?
-/*
-func contains(arr sort.StringSlice, candidate string) bool {
-	idx := arr.Search(candidate)
-	return idx < len(arr) && arr[idx] == candidate
-}
-*/

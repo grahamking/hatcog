@@ -1,5 +1,5 @@
 // Configuration file parser
-package main
+package config
 
 import (
     "os"

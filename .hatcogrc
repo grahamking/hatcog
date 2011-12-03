@@ -12,10 +12,10 @@
 #
 
 # Freenode, over TLS
-#server = "irc.freenode.net:6697"
+server = "irc.freenode.net:6697"
 
 # Local unsecured
-server = "127.0.0.1:6667"
+#server = "127.0.0.1:6667"
 
 ### nick ###
 # Your IRC nickname

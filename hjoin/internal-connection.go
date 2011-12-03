@@ -14,7 +14,6 @@ type InternalConnection struct {
 
 // Join a channel, or tell daemon we're a private chat
 func (self *InternalConnection) join() {
-
 	if strings.HasPrefix(self.channel, "#") {
 		// Join a channel
 		self.Write([]byte("/join " + self.channel))

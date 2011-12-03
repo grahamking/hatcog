@@ -2,6 +2,7 @@
 include ${GOROOT}/src/Make.inc
 
 all:
+	$(GC) config.go
 	gomake -C hatcogd
 	gomake -C hjoin
 
