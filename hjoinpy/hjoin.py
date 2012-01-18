@@ -5,6 +5,7 @@ and provide a user interface to it.
 import logging
 import sys
 import os.path
+from client import Client
 
 VERSION    = "hatcog v0.3 (github.com/grahamking/hatcog)"
 DEFAULT_CONFIG = "/.hatcogrc"
@@ -47,6 +48,26 @@ def main(argv=None):
         print("Closing all connections")
         stop_daemon()
         return 0
+
+    if arg.startswith("-private"):
+        print('TODO: private messages')
+        #channel = *userPrivate
+    else:
+		channel = "#" + arg
+
+    #TODO conf = loadConfig()
+    #TODO password = getPassword(conf)
+    password = ''
+
+    client = Client(channel, password)
+    '''
+	defer func() {
+		client.Close()
+		fmt.Println("Bye!")
+	}()
+    '''
+
+    client.run()
 
 
 def stop_daemon():
