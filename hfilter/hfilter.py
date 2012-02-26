@@ -4,45 +4,55 @@ import json
 from datetime import datetime
 
 PATTERNS = {
-    'NOTICE': '%(content)s',
-    'NICK': '* %(user)s is now known as %(content)s',
-    'JOIN': '* %(user)s joined the channel',
-    'PRIVMSG': '%(time)s [%(user)s] \t %(content)s',
-    'QUIT': '%(user)s has quit',
-    'MODE': 'Mode set to %(content)s',
+    'NOTICE': u'%(content)s',
+    'NICK': u'* %(user)s is now known as %(content)s',
+    'JOIN': u'* %(user)s joined the channel',
+    'PART': u'* %(user)s left the channel',
+    'PRIVMSG': u'[%(user)s] \t %(content)s',
+    'QUIT': u'%(user)s has quit',
+    'MODE': u'Mode set to %(content)s',
 
     # Message of the day
-    '372': '%(content)s',
+    '372': u'%(content)s',
 
     # Topic
-    '332': 'Topic: %(content)s',
+    '332': u'Topic: %(content)s',
 
     # NAMES reply
-    '353': 'Users currently in %(channel)s: %(content)s',
+    '353': u'Users currently in %(channel)s: %(content)s',
 
     # IRC ops online
-    '252': '%(arg1)s %(content)s',
+    '252': u'%(content)s %(arg1)s',
 
     # Who set the topic
-    '333': 'Topic set by %(arg2)s',
+    '333': u'Topic set by %(arg2)s',
 
     # This channel's URL
-    '328': 'Channel url: %(content)s',
+    '328': u'Channel url: %(content)s',
 
-    # Ignores
-    '005': '',  # Extensions server supports
-    '253': '',  # Num unknown connections
-    '254': '',  # Num channels
-    '255': '',  # Num clients and servers
-    '366': '',  # End of NAMES
-    '376': '',  # End of MOTD
-
-    # 001, 002, 003,
-    # 004, 265, 266,
-    # 250, 251, 375
-    '__default__': '%(content)s'
+    '__default__': u'%(content)s'
 }
 
+IGNORE = [
+    '005',  # Extensions server supports
+    '253',  # Num unknown connections
+    '254',  # Num channels
+    '255',  # Num clients and servers
+    '366',  # End of NAMES
+    '376',  # End of MOTD
+]
+
+DEFAULT = [
+    '001',
+    '002',
+    '003',
+    '004',
+    '265',
+    '266',
+    '250',
+    '251',
+    '375'
+]
 
 def lowercase_keys(dict_obj):
     """Convert map keys to lower case"""
@@ -63,34 +73,41 @@ def add_args(dict_obj):
         index += 1
 
 
-def add_time(dict_obj):
-    """Add HH:mm under key 'time' to dict"""
-    #received = datetime.strpdict_obj['received']
-    dict_obj['time'] = datetime.now().strftime('%H:%M')
-
-
 def main():
 
     missing_cmds = set()
 
     for line in sys.stdin:
         line = line.strip()
+        if not line:
+            continue
+
         obj = json.loads(line)
         lowercase_keys(obj)
-        add_args(obj)
-        add_time(obj)
-
         cmd = obj['command']
+        if cmd in IGNORE:
+            continue
+
+        add_args(obj)
 
         if cmd in PATTERNS:
             pattern = PATTERNS[cmd]
-        else:
+        elif cmd in DEFAULT:
             pattern = PATTERNS['__default__']
+        else:
             missing_cmds.add(cmd)
+            # Use default setup because we didn't account for this message
+            pattern = PATTERNS['__default__']
 
-        print(pattern % obj)
+        # Timestamp everything
+        if '--timestamp' in sys.argv:
+            pattern = '%(received)s ' + pattern
 
-    print(missing_cmds)
+        output = pattern % obj
+        print(output.encode('utf8'))
+
+    if missing_cmds:
+        print(missing_cmds)
 
 
 if __name__ == '__main__':
