@@ -1,0 +1,1963 @@
+Red denotes a conflicting numeric definition, gray for depreciated (however
+quite possibly still in use), and blue for OK.
+
+Updates? Please Email me! Thank you!
+
+ #             Name              Origin             Format                  Comments
+
+                                                                      The first message
+                                          :Welcome to the Internet    sent after client
+001 RPL_WELCOME                RFC2812    Relay Network <nick>!<user> registration. The
+                                          @<host>                     text used varies
+                                                                      widely
+
+                                                                      Part of the
+002 RPL_YOURHOST               RFC2812    :Your host is <servername>, post-registration
+                                          running version <version>   greeting. Text varies
+                                                                      widely
+
+                                                                      Part of the
+003 RPL_CREATED                RFC2812    :This server was created    post-registration
+                                          <date>                      greeting. Text varies
+                                                                      widely
+
+                                          <server_name> <version>     Part of the
+004 RPL_MYINFO                 RFC2812    <user_modes> <chan_modes>   post-registration
+                                                                      greeting
+
+                                          <server_name> <version>     Same as RFC2812
+                                          <user_modes> <chan_modes>   however with
+004 RPL_MYINFO                 KineIRCd   <channel_modes_with_params> additional fields to
+                                          <user_modes_with_params>    avoid additional 005
+                                          <server_modes>              burden.
+                                          <server_modes_with_params>
+
+                                                                      Sent by the server to
+                                                                      a user to suggest an
+                                                                      alternative server,
+                                                                      sometimes used when
+                                          :Try server <server_name>,  the connection is
+005 RPL_BOUNCE                 RFC2812    port <port_number>          refused because the
+                                                                      server is already
+                                                                      full. Also known as
+                                                                      RPL_SLINE (AustHex),
+                                                                      and RPL_REDIR Also
+                                                                      see #010.
+
+                                                                      Also known as
+005 RPL_ISUPPORT                                                      RPL_PROTOCTL
+                                                                      (Bahamut, Unreal,
+                                                                      Ultimate)
+
+006 RPL_MAP                    Unreal
+
+007 RPL_MAPEND                 Unreal
+
+008 RPL_SNOMASK                ircu                                   Server notice mask
+                                                                      (hex)
+
+009 RPL_STATMEMTOT             ircu
+
+                                                                      Sent to the client to
+010 RPL_BOUNCE                            <hostname> <port> :<info>   redirect it to
+                                                                      another server. Also
+                                                                      known as RPL_REDIR
+
+010 RPL_STATMEM                ircu
+
+014 RPL_YOURCOOKIE             Hybrid?
+
+015 RPL_MAP                    ircu
+
+016 RPL_MAPMORE                ircu
+
+017 RPL_MAPEND                 ircu
+
+042 RPL_YOURID                 IRCnet
+
+                                                                      Sent to the client
+043 RPL_SAVENICK               IRCnet     :<info>                     when their nickname
+                                                                      was forced to change
+                                                                      due to a collision
+
+050 RPL_ATTEMPTINGJUNC         aircd
+
+051 RPL_ATTEMPTINGREROUTE      aircd
+
+                                          Link <version>[.
+                                          <debug_level>]
+                                          <destination> <next_server>
+200 RPL_TRACELINK              RFC1459    [V<protocol_version>        See RFC
+                                          <link_uptime_in_seconds>
+                                          <backstream_sendq>
+                                          <upstream_sendq>]
+
+201 RPL_TRACECONNECTING        RFC1459    Try. <class> <server>       See RFC
+
+202 RPL_TRACEHANDSHAKE         RFC1459    H.S. <class> <server>       See RFC
+
+203 RPL_TRACEUNKNOWN           RFC1459    ???? <class>                See RFC
+                                          [<connection_address>]
+
+204 RPL_TRACEOPERATOR          RFC1459    Oper <class> <nick>         See RFC
+
+205 RPL_TRACEUSER              RFC1459    User <class> <nick>         See RFC
+
+                                          Serv <class> <int>S <int>C
+206 RPL_TRACESERVER            RFC1459    <server> <nick!user|*!*>@   See RFC
+                                          <host|server> [V
+                                          <protocol_version>]
+
+207 RPL_TRACESERVICE           RFC2812    Service <class> <name>      See RFC
+                                          <type> <active_type>
+
+208 RPL_TRACENEWTYPE           RFC1459    <newtype> 0 <client_name>   See RFC
+
+209 RPL_TRACECLASS             RFC2812    Class <class> <count>       See RFC
+
+210 RPL_TRACERECONNECT         RFC2812
+
+                                                                      Used instead of
+210 RPL_STATS                  aircd                                  having multiple stats
+                                                                      numerics
+
+                                          <linkname> <sendq>
+211 RPL_STATSLINKINFO          RFC1459    <sent_msgs> <sent_bytes>    Reply to STATS (See
+                                          <recvd_msgs> <rcvd_bytes>   RFC)
+                                          <time_open>
+
+                                          <command> <count>           Reply to STATS (See
+212 RPL_STATSCOMMANDS          RFC1459    [<byte_count>               RFC)
+                                          <remote_count>]
+
+213 RPL_STATSCLINE             RFC1459    C <host> * <name> <port>    Reply to STATS (See
+                                          <class>                     RFC)
+
+                                                                      Reply to STATS (See
+214 RPL_STATSNLINE             RFC1459    N <host> * <name> <port>    RFC), Also known as
+                                          <class>                     RPL_STATSOLDNLINE
+                                                                      (ircu, Unreal)
+
+215 RPL_STATSILINE             RFC1459    I <host> * <host> <port>    Reply to STATS (See
+                                          <class>                     RFC)
+
+216 RPL_STATSKLINE             RFC1459    K <host> * <username>       Reply to STATS (See
+                                          <port> <class>              RFC)
+
+217 RPL_STATSQLINE             RFC1459
+
+217 RPL_STATSPLINE             ircu
+
+218 RPL_STATSYLINE             RFC1459    Y <class> <ping_freq>       Reply to STATS (See
+                                          <connect_freq> <max_sendq>  RFC)
+
+219 RPL_ENDOFSTATS             RFC1459    <query> :<info>             End of RPL_STATS*
+                                                                      list.
+
+220 RPL_STATSPLINE             Hybrid
+
+220 RPL_STATSBLINE             Bahamut,
+                               Unreal
+
+                                                                      Information about a
+                                                                      user's own modes.
+                                          <user_modes>                Some daemons have
+221 RPL_UMODEIS                RFC1459    [<user_mode_params>]        extended the mode
+                                                                      command and certain
+                                                                      modes take parameters
+                                                                      (like channel modes).
+
+222 RPL_MODLIST
+
+222 RPL_SQLINE_NICK            Unreal
+
+222 RPL_STATSBLINE             Bahamut
+
+223 RPL_STATSELINE             Bahamut
+
+223 RPL_STATSGLINE             Unreal
+
+224 RPL_STATSFLINE             Hybrid,
+                               Bahamut
+
+224 RPL_STATSTLINE             Unreal
+
+225 RPL_STATSDLINE             Hybrid
+
+225 RPL_STATSZLINE             Bahamut
+
+225 RPL_STATSELINE             Unreal
+
+226 RPL_STATSCOUNT             Bahamut
+
+226 RPL_STATSNLINE             Unreal
+
+227 RPL_STATSGLINE             Bahamut
+
+227 RPL_STATSVLINE             Unreal
+
+228 RPL_STATSQLINE             ircu
+
+231 RPL_SERVICEINFO            RFC1459
+
+232 RPL_ENDOFSERVICES          RFC1459
+
+232 RPL_RULES                  Unreal
+
+233 RPL_SERVICE                RFC1459
+
+234 RPL_SERVLIST               RFC2812    <name> <server> <mask>      A service entry in
+                                          <type> <hopcount> <info>    the service list
+
+235 RPL_SERVLISTEND            RFC2812    <mask> <type> :<info>       Termination of an
+                                                                      RPL_SERVLIST list
+
+236 RPL_STATSVERBOSE           ircu                                   Verbose server list?
+
+237 RPL_STATSENGINE            ircu                                   Engine name?
+
+238 RPL_STATSFLINE             ircu                                   Feature lines?
+
+239 RPL_STATSIAUTH             IRCnet
+
+240 RPL_STATSVLINE             RFC2812
+
+240 RPL_STATSXLINE             AustHex
+
+241 RPL_STATSLLINE             RFC1459    L <hostmask> * <servername> Reply to STATS (See
+                                          <maxdepth>                  RFC)
+
+242 RPL_STATSUPTIME            RFC1459    :Server Up <days> days      Reply to STATS (See
+                                          <hours>:<minutes>:<seconds> RFC)
+
+                                                                      Reply to STATS (See
+                                                                      RFC); The info field
+                                                                      is an extension found
+243 RPL_STATSOLINE             RFC1459    O <hostmask> * <nick> [:    in some IRC daemons,
+                                          <info>]                     which returns info
+                                                                      such as an e-mail
+                                                                      address or the name/
+                                                                      job of an operator
+
+244 RPL_STATSHLINE             RFC1459    H <hostmask> * <servername> Reply to STATS (See
+                                                                      RFC)
+
+                               Bahamut,
+245 RPL_STATSSLINE             IRCnet,
+                               Hybrid
+
+246 RPL_STATSPING              RFC2812
+
+246 RPL_STATSTLINE             ircu
+
+246 RPL_STATSULINE             Hybrid
+
+247 RPL_STATSBLINE             RFC2812
+
+                               Hybrid,
+247 RPL_STATSXLINE             PTlink,
+                               Unreal
+
+247 RPL_STATSGLINE             ircu
+
+248 RPL_STATSULINE             ircu
+
+248 RPL_STATSDEFINE            IRCnet
+
+249 RPL_STATSULINE                                                    Extension to RFC1459?
+
+249 RPL_STATSDEBUG             Hybrid
+
+250 RPL_STATSDLINE             RFC2812
+
+250 RPL_STATSCONN              ircu,
+                               Unreal
+
+                                                                      Reply to LUSERS
+                                          :There are <int> users and  command, other
+251 RPL_LUSERCLIENT            RFC1459    <int> invisible on <int>    versions exist (eg.
+                                          servers                     RFC2812); Text may
+                                                                      vary.
+
+                                                                      Reply to LUSERS
+252 RPL_LUSEROP                RFC1459    <int> :<info>               command - Number of
+                                                                      IRC operators online
+
+                                                                      Reply to LUSERS
+253 RPL_LUSERUNKNOWN           RFC1459    <int> :<info>               command - Number of
+                                                                      unknown/unregistered
+                                                                      connections
+
+                                                                      Reply to LUSERS
+254 RPL_LUSERCHANNELS          RFC1459    <int> :<info>               command - Number of
+                                                                      channels formed
+
+                                                                      Reply to LUSERS
+                                          :I have <int> clients and   command - Information
+255 RPL_LUSERME                RFC1459    <int> servers               about local
+                                                                      connections; Text may
+                                                                      vary.
+
+                                                                      Start of an
+                                                                      RPL_ADMIN* reply. In
+                                                                      practise, the server
+                                                                      parameter is often
+                                                                      never given, and
+                                                                      instead the info
+                                                                      field contains the
+                                                                      text 'Administrative
+256 RPL_ADMINME                RFC1459    <server> :<info>            info about <server>'.
+                                                                      Newer daemons seem to
+                                                                      follow the RFC and
+                                                                      output the server's
+                                                                      hostname in the
+                                                                      'server' parameter,
+                                                                      but also output the
+                                                                      server name in the
+                                                                      text as per
+                                                                      traditional daemons.
+
+                                                                      Reply to ADMIN
+257 RPL_ADMINLOC1              RFC1459    :<admin_location>           command (Location,
+                                                                      first line)
+
+                                                                      Reply to ADMIN
+258 RPL_ADMINLOC2              RFC1459    :<admin_location>           command (Location,
+                                                                      second line)
+
+                                                                      Reply to ADMIN
+259 RPL_ADMINEMAIL             RFC1459    :<email_address>            command (E-mail
+                                                                      address of
+                                                                      administrator)
+
+261 RPL_TRACELOG               RFC1459    File <logfile>              See RFC
+                                          <debug_level>
+
+262 RPL_TRACEPING                                                     Extension to RFC1459?
+
+                                          <server_name> <version>[.   Used to terminate a
+262 RPL_TRACEEND               RFC2812    <debug_level>] :<info>      list of RPL_TRACE*
+                                                                      replies
+
+                                                                      When a server drops a
+                                                                      command without
+                                                                      processing it, it
+                                                                      MUST use this reply.
+263 RPL_TRYAGAIN               RFC2812    <command> :<info>           Also known as
+                                                                      RPL_LOAD_THROTTLED
+                                                                      and RPL_LOAD2HI, I'm
+                                                                      presuming they do the
+                                                                      same thing.
+
+                               aircd,
+265 RPL_LOCALUSERS             Hybrid,                                Also known as
+                               Hybrid,                                RPL_CURRENT_LOCAL
+                               Bahamut
+
+                               aircd,
+266 RPL_GLOBALUSERS            Hybrid,                                Also known as
+                               Hybrid,                                RPL_CURRENT_GLOBAL
+                               Bahamut
+
+267 RPL_START_NETSTAT          aircd
+
+268 RPL_NETSTAT                aircd
+
+269 RPL_END_NETSTAT            aircd
+
+270 RPL_PRIVS                  ircu
+
+271 RPL_SILELIST               ircu
+
+272 RPL_ENDOFSILELIST          ircu
+
+273 RPL_NOTIFY                 aircd
+
+274 RPL_ENDNOTIFY              aircd
+
+274 RPL_STATSDELTA             IRCnet
+
+275 RPL_STATSDLINE             ircu,
+                               Ultimate
+
+276 RPL_VCHANEXIST
+
+277 RPL_VCHANLIST
+
+278 RPL_VCHANHELP
+
+280 RPL_GLIST                  ircu
+
+281 RPL_ENDOFGLIST             ircu
+
+281 RPL_ACCEPTLIST
+
+282 RPL_ENDOFACCEPT
+
+282 RPL_JUPELIST               ircu
+
+283 RPL_ALIST
+
+283 RPL_ENDOFJUPELIST          ircu
+
+284 RPL_ENDOFALIST
+
+284 RPL_FEATURE                ircu
+
+285 RPL_GLIST_HASH
+
+285 RPL_CHANINFO_HANDLE        aircd
+
+285 RPL_NEWHOSTIS              QuakeNet
+
+286 RPL_CHANINFO_USERS         aircd
+
+286 RPL_CHKHEAD                QuakeNet
+
+287 RPL_CHANINFO_CHOPS         aircd
+
+287 RPL_CHANUSER               QuakeNet
+
+288 RPL_CHANINFO_VOICES        aircd
+
+288 RPL_PATCHHEAD              QuakeNet
+
+289 RPL_CHANINFO_AWAY          aircd
+
+289 RPL_PATCHCON               QuakeNet
+
+290 RPL_CHANINFO_OPERS         aircd
+
+290 RPL_HELPHDR                Unreal
+
+290 RPL_DATASTR                QuakeNet
+
+291 RPL_CHANINFO_BANNED        aircd
+
+291 RPL_HELPOP                 Unreal
+
+291 RPL_ENDOFCHECK             QuakeNet
+
+292 RPL_CHANINFO_BANS          aircd
+
+292 RPL_HELPTLR                Unreal
+
+293 RPL_CHANINFO_INVITE        aircd
+
+293 RPL_HELPHLP                Unreal
+
+294 RPL_CHANINFO_INVITES       aircd
+
+294 RPL_HELPFWD                Unreal
+
+295 RPL_CHANINFO_KICK          aircd
+
+295 RPL_HELPIGN                Unreal
+
+296 RPL_CHANINFO_KICKS         aircd
+
+299 RPL_END_CHANINFO           aircd
+
+                                                                      Dummy reply,
+                                                                      supposedly only used
+300 RPL_NONE                   RFC1459                                for debugging/testing
+                                                                      new features, however
+                                                                      has appeared in
+                                                                      production daemons.
+
+                                                                      Used in reply to a
+301 RPL_AWAY                   RFC1459    <nick> :<message>           command directed at a
+                                                                      user who is marked as
+                                                                      away
+
+                                                                      Identical to
+                                                                      RPL_AWAY, however
+                                                                      this includes the
+                                                                      number of seconds the
+                                                                      user has been away
+                                                                      for. This is designed
+301 RPL_AWAY                   KineIRCd   <nick> <seconds away> :     to discourage the
+                                          <message>                   need for people to
+                                                                      use those horrible
+                                                                      scripts which set the
+                                                                      AWAY message every 30
+                                                                      seconds in order to
+                                                                      include an 'away
+                                                                      since' timer.
+
+302 RPL_USERHOST               RFC1459    :*1<reply> *( ' ' <reply> ) Reply used by
+                                                                      USERHOST (see RFC)
+
+303 RPL_ISON                   RFC1459    :*1<nick> *( ' ' <nick> )   Reply to the ISON
+                                                                      command (see RFC)
+
+304 RPL_TEXT
+
+                                                                      Reply from AWAY when
+305 RPL_UNAWAY                 RFC1459    :<info>                     no longer marked as
+                                                                      away
+
+306 RPL_NOWAWAY                RFC1459    :<info>                     Reply from AWAY when
+                                                                      marked away
+
+307 RPL_USERIP
+
+307 RPL_WHOISREGNICK           Bahamut,
+                               Unreal
+
+307 RPL_SUSERHOST              AustHex
+
+308 RPL_NOTIFYACTION           aircd
+
+308 RPL_WHOISADMIN             Bahamut
+
+308 RPL_RULESSTART             Unreal
+
+309 RPL_NICKTRACE              aircd
+
+309 RPL_WHOISSADMIN            Bahamut
+
+309 RPL_ENDOFRULES             Unreal
+
+309 RPL_WHOISHELPER            AustHex
+
+310 RPL_WHOISSVCMSG            Bahamut
+
+310 RPL_WHOISHELPOP            Unreal
+
+310 RPL_WHOISSERVICE           AustHex
+
+                                          <nick> <user> <host> * :    Reply to WHOIS -
+311 RPL_WHOISUSER              RFC1459    <real_name>                 Information about the
+                                                                      user
+
+312 RPL_WHOISSERVER            RFC1459    <nick> <server> :           Reply to WHOIS - What
+                                          <server_info>               server they're on
+
+                                                                      Reply to WHOIS - User
+313 RPL_WHOISOPERATOR          RFC1459    <nick> :<privileges>        has IRC Operator
+                                                                      privileges
+
+                                          <nick> <user> <host> * :    Reply to WHOWAS -
+314 RPL_WHOWASUSER             RFC1459    <real_name>                 Information about the
+                                                                      user
+
+                                                                      Used to terminate a
+315 RPL_ENDOFWHO               RFC1459    <name> :<info>              list of RPL_WHOREPLY
+                                                                      replies
+
+316 RPL_WHOISCHANOP            RFC1459
+
+317 RPL_WHOISIDLE              RFC1459    <nick> <seconds> :seconds   Reply to WHOIS - Idle
+                                          idle                        information
+
+318 RPL_ENDOFWHOIS             RFC1459    <nick> :<info>              Reply to WHOIS - End
+                                                                      of list
+
+                                          <nick> :*( ( '@' / '+' )    Reply to WHOIS -
+319 RPL_WHOISCHANNELS          RFC1459    <channel> ' ' )             Channel list for user
+                                                                      (See RFC)
+
+320 RPL_WHOISVIRT              AustHex
+
+320 RPL_WHOIS_HIDDEN           Anothernet
+
+320 RPL_WHOISSPECIAL           Unreal
+
+321 RPL_LISTSTART              RFC1459    Channels :Users Name        Channel list - Header
+
+322 RPL_LIST                   RFC1459    <channel> <#_visible> :     Channel list - A
+                                          <topic>                     channel
+
+323 RPL_LISTEND                RFC1459    :<info>                     Channel list - End of
+                                                                      list
+
+324 RPL_CHANNELMODEIS          RFC1459    <channel> <mode>
+                                          <mode_params>
+
+325 RPL_UNIQOPIS               RFC2812    <channel> <nickname>
+
+325 RPL_CHANNELPASSIS
+
+326 RPL_NOCHANPASS
+
+327 RPL_CHPASSUNKNOWN
+
+328 RPL_CHANNEL_URL            Bahamut,
+                               AustHex
+
+329 RPL_CREATIONTIME           Bahamut
+
+330 RPL_WHOWAS_TIME
+
+330 RPL_WHOISACCOUNT           ircu       <nick> <authname> :<info>
+
+331 RPL_NOTOPIC                RFC1459    <channel> :<info>           Response to TOPIC
+                                                                      when no topic is set
+
+332 RPL_TOPIC                  RFC1459    <channel> :<topic>          Response to TOPIC
+                                                                      with the set topic
+
+333 RPL_TOPICWHOTIME           ircu
+
+334 RPL_LISTUSAGE              ircu
+
+334 RPL_COMMANDSYNTAX          Bahamut
+
+334 RPL_LISTSYNTAX             Unreal
+
+335 RPL_WHOISBOT               Unreal
+
+338 RPL_CHANPASSOK
+
+338 RPL_WHOISACTUALLY          ircu,
+                               Bahamut
+
+339 RPL_BADCHANPASS
+
+340 RPL_USERIP                 ircu
+
+                                                                      Returned by the
+                                                                      server to indicate
+                                                                      that the attempted
+                                                                      INVITE message was
+                                                                      successful and is
+                                                                      being passed onto the
+                                                                      end client. Note that
+                                                                      RFC1459 documents the
+341 RPL_INVITING               RFC1459    <nick> <channel>            parameters in the
+                                                                      reverse order. The
+                                                                      format given here is
+                                                                      the format used on
+                                                                      production servers,
+                                                                      and should be
+                                                                      considered the
+                                                                      standard reply above
+                                                                      that given by
+                                                                      RFC1459.
+
+                                                                      Returned by a server
+                                                                      answering a SUMMON
+342 RPL_SUMMONING              RFC1459    <user> :<info>              message to indicate
+                                                                      that it is summoning
+                                                                      that user
+
+                                          <channel> <user being       Sent to users on a
+                                          invited> <user issuing      channel when an
+345 RPL_INVITED                GameSurge  invite> :<user being        INVITE command has
+                                          invited> has been invited   been issued
+                                          by <user issuing invite>
+
+346 RPL_INVITELIST             RFC2812    <channel> <invitemask>      An invite mask for
+                                                                      the invite mask list
+
+347 RPL_ENDOFINVITELIST        RFC2812    <channel> :<info>           Termination of an
+                                                                      RPL_INVITELIST list
+
+                                                                      An exception mask for
+                                                                      the exception mask
+348 RPL_EXCEPTLIST             RFC2812    <channel> <exceptionmask>   list. Also known as
+                                                                      RPL_EXLIST (Unreal,
+                                                                      Ultimate)
+
+                                                                      Termination of an
+                                                                      RPL_EXCEPTLIST list.
+349 RPL_ENDOFEXCEPTLIST        RFC2812    <channel> :<info>           Also known as
+                                                                      RPL_ENDOFEXLIST
+                                                                      (Unreal, Ultimate)
+
+                                                                      Reply by the server
+                                          <version>[.<debuglevel>]    showing its version
+351 RPL_VERSION                RFC1459    <server> :<comments>        details, however this
+                                                                      format is not often
+                                                                      adhered to
+
+                                                                      Reply to vanilla WHO
+                                                                      (See RFC). This
+                                          <channel> <user> <host>     format can be very
+352 RPL_WHOREPLY               RFC1459    <server> <nick> <H|G>[*][@| different if the
+                                          +] :<hopcount> <real_name>  'WHOX' version of the
+                                                                      command is used (see
+                                                                      ircu).
+
+                                          ( '=' / '*' / '@' )
+353 RPL_NAMREPLY               RFC1459    <channel> ' ' : [ '@' / '+' Reply to NAMES (See
+                                          ] <nick> *( ' ' [ '@' / '+' RFC)
+                                          ] <nick> )
+
+                                                                      Reply to WHO, however
+                                                                      it is a 'special'
+                                                                      reply because it is
+                                                                      returned using a
+                                                                      non-standard
+                                                                      (non-RFC1459) format.
+                                                                      The format is
+354 RPL_WHOSPCRPL              ircu                                   dictated by the
+                                                                      command given by the
+                                                                      user, and can vary
+                                                                      widely. When this is
+                                                                      used, the WHO command
+                                                                      was invoked in its
+                                                                      'extended' form, as
+                                                                      announced by the
+                                                                      'WHOX' ISUPPORT tag.
+
+                                                                      Reply to the "NAMES
+                                                                      -d" command - used to
+                                                                      show invisible users
+                                          ( '=' / '*' / '@' )         (when the channel is
+355 RPL_NAMREPLY_              QuakeNet   <channel> ' ' : [ '@' / '+' set +D, QuakeNet
+                                          ] <nick> *( ' ' [ '@' / '+' relative). The proper
+                                          ] <nick> )                  define name for this
+                                                                      numeric is unknown at
+                                                                      this time Also see #
+                                                                      353.
+
+357 RPL_MAP                    AustHex
+
+358 RPL_MAPMORE                AustHex
+
+359 RPL_MAPEND                 AustHex
+
+361 RPL_KILLDONE               RFC1459
+
+362 RPL_CLOSING                RFC1459
+
+363 RPL_CLOSEEND               RFC1459
+
+364 RPL_LINKS                  RFC1459    <mask> <server> :<hopcount> Reply to the LINKS
+                                          <server_info>               command
+
+365 RPL_ENDOFLINKS             RFC1459    <mask> :<info>              Termination of an
+                                                                      RPL_LINKS list
+
+366 RPL_ENDOFNAMES             RFC1459    <channel> :<info>           Termination of an
+                                                                      RPL_NAMREPLY list
+
+                                                                      A ban-list item (See
+                                          <channel> <banid>           RFC); <time left> and
+367 RPL_BANLIST                RFC1459    [<time_left> :<reason>]     <reason> are
+                                                                      additions used by
+                                                                      KineIRCd
+
+368 RPL_ENDOFBANLIST           RFC1459    <channel> :<info>           Termination of an
+                                                                      RPL_BANLIST list
+
+369 RPL_ENDOFWHOWAS            RFC1459    <nick> :<info>              Reply to WHOWAS - End
+                                                                      of list
+
+371 RPL_INFO                   RFC1459    :<string>                   Reply to INFO
+
+372 RPL_MOTD                   RFC1459    :- <string>                 Reply to MOTD
+
+373 RPL_INFOSTART              RFC1459
+
+374 RPL_ENDOFINFO              RFC1459    :<info>                     Termination of an
+                                                                      RPL_INFO list
+
+375 RPL_MOTDSTART              RFC1459    :- <server> Message of the  Start of an RPL_MOTD
+                                          day -                       list
+
+376 RPL_ENDOFMOTD              RFC1459    :<info>                     Termination of an
+                                                                      RPL_MOTD list
+
+377 RPL_KICKEXPIRED            aircd
+
+                                                                      Used during the
+                                                                      connection (after
+                                                                      MOTD) to announce the
+377 RPL_SPAM                   AustHex    :<text>                     network policy on
+                                                                      spam and privacy.
+                                                                      Supposedly now
+                                                                      obsoleted in favour
+                                                                      of using NOTICE.
+
+378 RPL_BANEXPIRED             aircd
+
+378 RPL_WHOISHOST              Unreal
+
+                                                                      Used by AustHex to
+                                                                      'force' the display
+                                                                      of the MOTD, however
+378 RPL_MOTD                   AustHex                                is considered
+                                                                      obsolete due to
+                                                                      client/script
+                                                                      awareness & ability
+                                                                      to Also see #372.
+
+379 RPL_KICKLINKED             aircd
+
+379 RPL_WHOISMODES             Unreal
+
+380 RPL_BANLINKED              aircd
+
+380 RPL_YOURHELPER             AustHex
+
+381 RPL_YOUREOPER              RFC1459    :<info>                     Successful reply from
+                                                                      OPER
+
+382 RPL_REHASHING              RFC1459    <config_file> :<info>       Successful reply from
+                                                                      REHASH
+
+                                          :You are service            Sent upon successful
+383 RPL_YOURESERVICE           RFC2812    <service_name>              registration of a
+                                                                      service
+
+384 RPL_MYPORTIS               RFC1459
+
+                               AustHex,
+385 RPL_NOTOPERANYMORE         Hybrid,
+                               Unreal
+
+386 RPL_QLIST                  Unreal
+
+386 RPL_IRCOPS                 Ultimate
+
+387 RPL_ENDOFQLIST             Unreal
+
+387 RPL_ENDOFIRCOPS            Ultimate
+
+388 RPL_ALIST                  Unreal
+
+389 RPL_ENDOFALIST             Unreal
+
+                                                                      Response to the TIME
+                                                                      command. The string
+391 RPL_TIME                   RFC1459    <server> :<time string>     format may vary
+                                                                      greatly. Also see #
+                                                                      679.
+
+                                                                      This extention adds
+                                          <server> <timestamp>        the timestamp and
+391 RPL_TIME                   ircu       <offset> :<time string>     timestamp-offet
+                                                                      information for
+                                                                      clients.
+
+                                                                      Timezone name is
+                                                                      acronym style (eg.
+                                                                      'EST', 'PST' etc).
+                                                                      The microseconds
+                                                                      field is the number
+                                                                      of microseconds since
+                                          <server> <timezone name>    the UNIX epoch,
+391 RPL_TIME                   bdq-ircd   <microseconds> :<time       however it is
+                                          string>                     relative to the local
+                                                                      timezone of the
+                                                                      server. The timezone
+                                                                      field is ambiguous,
+                                                                      since it only appears
+                                                                      to include American
+                                                                      zones.
+
+                                                                      Yet another
+                                          <server> <year> <month>     variation, including
+391 RPL_TIME                              <day> <hour> <minute>       the time broken down
+                                          <second>                    into its components.
+                                                                      Time is supposedly
+                                                                      relative to UTC.
+
+392 RPL_USERSSTART             RFC1459    :UserID Terminal Host       Start of an RPL_USERS
+                                                                      list
+
+393 RPL_USERS                  RFC1459    :<username> <ttyline>       Response to the USERS
+                                          <hostname>                  command (See RFC)
+
+394 RPL_ENDOFUSERS             RFC1459    :<info>                     Termination of an
+                                                                      RPL_USERS list
+
+395 RPL_NOUSERS                RFC1459    :<info>                     Reply to USERS when
+                                                                      nobody is logged in
+
+                                                                      Reply to a user when
+396 RPL_HOSTHIDDEN             Undernet                               user mode +x (host
+                                                                      masking) was set
+                                                                      successfully
+
+                                                                      Sent when an error
+                                                                      occured executing a
+                                                                      command, but it is
+400 ERR_UNKNOWNERROR                      <command> [<?>] :<info>     not specifically
+                                                                      known why the command
+                                                                      could not be
+                                                                      executed.
+
+                                                                      Used to indicate the
+401 ERR_NOSUCHNICK             RFC1459    <nick> :<reason>            nickname parameter
+                                                                      supplied to a command
+                                                                      is currently unused
+
+                                                                      Used to indicate the
+402 ERR_NOSUCHSERVER           RFC1459    <server> :<reason>          server name given
+                                                                      currently doesn't
+                                                                      exist
+
+                                                                      Used to indicate the
+403 ERR_NOSUCHCHANNEL          RFC1459    <channel> :<reason>         given channel name is
+                                                                      invalid, or does not
+                                                                      exist
+
+                                                                      Sent to a user who
+404 ERR_CANNOTSENDTOCHAN       RFC1459    <channel> :<reason>         does not have the
+                                                                      rights to send a
+                                                                      message to a channel
+
+                                                                      Sent to a user when
+                                                                      they have joined the
+405 ERR_TOOMANYCHANNELS        RFC1459    <channel> :<reason>         maximum number of
+                                                                      allowed channels and
+                                                                      they tried to join
+                                                                      another channel
+
+                                                                      Returned by WHOWAS to
+406 ERR_WASNOSUCHNICK          RFC1459    <nick> :<reason>            indicate there was no
+                                                                      history information
+                                                                      for a given nickname
+
+                                                                      The given target(s)
+                                                                      for a command are
+407 ERR_TOOMANYTARGETS         RFC1459    <target> :<reason>          ambiguous in that
+                                                                      they relate to too
+                                                                      many targets
+
+                                                                      Returned to a client
+                                                                      which is attempting
+408 ERR_NOSUCHSERVICE          RFC2812    <service_name> :<reason>    to send an SQUERY (or
+                                                                      other message) to a
+                                                                      service which does
+                                                                      not exist
+
+408 ERR_NOCOLORSONCHAN         Bahamut
+
+                                                                      PING or PONG message
+                                                                      missing the
+                                                                      originator parameter
+409 ERR_NOORIGIN               RFC1459    :<reason>                   which is required
+                                                                      since these commands
+                                                                      must work without
+                                                                      valid prefixes
+
+                                                                      Returned when no
+411 ERR_NORECIPIENT            RFC1459    :<reason>                   recipient is given
+                                                                      with a command
+
+                                                                      Returned when NOTICE/
+412 ERR_NOTEXTTOSEND           RFC1459    :<reason>                   PRIVMSG is used with
+                                                                      no message given
+
+                                                                      Used when a message
+                                                                      is being sent to a
+                                                                      mask without being
+413 ERR_NOTOPLEVEL             RFC1459    <mask> :<reason>            limited to a
+                                                                      top-level domain
+                                                                      (i.e. * instead of
+                                                                      *.au)
+
+                                                                      Used when a message
+                                                                      is being sent to a
+414 ERR_WILDTOPLEVEL           RFC1459    <mask> :<reason>            mask with a wild-card
+                                                                      for a top level
+                                                                      domain (i.e. *.*)
+
+                                                                      Used when a message
+415 ERR_BADMASK                RFC2812    <mask> :<reason>            is being sent to a
+                                                                      mask with an invalid
+                                                                      syntax
+
+                                                                      Returned when too
+                                                                      many matches have
+                                                                      been found for a
+                                                                      command and the
+                                                                      output has been
+416 ERR_TOOMANYMATCHES         IRCnet     <command> [<mask>] :<info>  truncated. An example
+                                                                      would be the WHO
+                                                                      command, where by the
+                                                                      mask '*' would match
+                                                                      everyone on the
+                                                                      network! Ouch!
+
+416 ERR_QUERYTOOLONG           ircu                                   Same as
+                                                                      ERR_TOOMANYMATCHES
+
+419 ERR_LENGTHTRUNCATED        aircd
+
+                                                                      Returned when the
+                                                                      given command is
+421 ERR_UNKNOWNCOMMAND         RFC1459    <command> :<reason>         unknown to the server
+                                                                      (or hidden because of
+                                                                      lack of access
+                                                                      rights)
+
+                                                                      Sent when there is no
+422 ERR_NOMOTD                 RFC1459    :<reason>                   MOTD to send the
+                                                                      client
+
+                                                                      Returned by a server
+                                                                      in response to an
+                                                                      ADMIN request when no
+                                                                      information is
+                                                                      available. RFC1459
+                                                                      mentions this in the
+423 ERR_NOADMININFO            RFC1459    <server> :<reason>          list of numerics.
+                                                                      While it's not listed
+                                                                      as a valid reply in
+                                                                      section 4.3.7 ('Admin
+                                                                      command'), it's
+                                                                      confirmed to exist in
+                                                                      the real world.
+
+                                                                      Generic error message
+                                                                      used to report a
+424 ERR_FILEERROR              RFC1459    :<reason>                   failed file operation
+                                                                      during the processing
+                                                                      of a command
+
+425 ERR_NOOPERMOTD             Unreal
+
+429 ERR_TOOMANYAWAY            Bahamut
+
+                                                                      Returned by NICK when
+                                                                      the user is not
+430 ERR_EVENTNICKCHANGE        AustHex                                allowed to change
+                                                                      their nickname due to
+                                                                      a channel event
+                                                                      (channel mode +E)
+
+                                                                      Returned when a
+431 ERR_NONICKNAMEGIVEN        RFC1459    :<reason>                   nickname parameter
+                                                                      expected for a
+                                                                      command isn't found
+
+                                                                      Returned after
+                                                                      receiving a NICK
+                                                                      message which
+                                                                      contains a nickname
+                                                                      which is considered
+                                                                      invalid, such as it's
+                                                                      reserved
+432 ERR_ERRONEUSNICKNAME       RFC1459    <nick> :<reason>            ('anonymous') or
+                                                                      contains characters
+                                                                      considered invalid
+                                                                      for nicknames. This
+                                                                      numeric is misspelt,
+                                                                      but remains with this
+                                                                      name for historical
+                                                                      reasons :)
+
+                                                                      Returned by the NICK
+433 ERR_NICKNAMEINUSE          RFC1459    <nick> :<reason>            command when the
+                                                                      given nickname is
+                                                                      already in use
+
+434 ERR_SERVICENAMEINUSE       AustHex?
+
+434 ERR_NORULES                Unreal,
+                               Ultimate
+
+435 ERR_SERVICECONFUSED        Unreal
+
+435 ERR_BANONCHAN              Bahamut
+
+                                                                      Returned by a server
+436 ERR_NICKCOLLISION          RFC1459    <nick> :<reason>            to a client when it
+                                                                      detects a nickname
+                                                                      collision
+
+                                                                      Return when the
+                                                                      target is unable to
+                                          <nick/channel/service> :    be reached
+437 ERR_UNAVAILRESOURCE        RFC2812    <reason>                    temporarily, eg. a
+                                                                      delay mechanism in
+                                                                      play, or a service
+                                                                      being offline
+
+437 ERR_BANNICKCHANGE          ircu
+
+                                                                      Also known as
+438 ERR_NICKTOOFAST            ircu                                   ERR_NCHANGETOOFAST
+                                                                      (Unreal, Ultimate)
+
+438 ERR_DEAD                   IRCnet
+
+                                                                      Also known as many
+439 ERR_TARGETTOOFAST          ircu                                   other things,
+                                                                      RPL_INVTOOFAST,
+                                                                      RPL_MSGTOOFAST etc
+
+440 ERR_SERVICESDOWN           Bahamut,
+                               Unreal
+
+                                                                      Returned by the
+                                                                      server to indicate
+441 ERR_USERNOTINCHANNEL       RFC1459    <nick> <channel> :<reason>  that the target user
+                                                                      of the command is not
+                                                                      on the given channel
+
+                                                                      Returned by the
+                                                                      server whenever a
+                                                                      client tries to
+442 ERR_NOTONCHANNEL           RFC1459    <channel> :<reason>         perform a channel
+                                                                      effecting command for
+                                                                      which the client is
+                                                                      not a member
+
+                                                                      Returned when a
+                                          <nick> <channel> [:         client tries to
+443 ERR_USERONCHANNEL          RFC1459    <reason>]                   invite a user to a
+                                                                      channel they're
+                                                                      already on
+
+                                                                      Returned by the
+                                                                      SUMMON command if a
+444 ERR_NOLOGIN                RFC1459    <user> :<reason>            given user was not
+                                                                      logged in and could
+                                                                      not be summoned
+
+                                                                      Returned by SUMMON
+445 ERR_SUMMONDISABLED         RFC1459    :<reason>                   when it has been
+                                                                      disabled or not
+                                                                      implemented
+
+                                                                      Returned by USERS
+446 ERR_USERSDISABLED          RFC1459    :<reason>                   when it has been
+                                                                      disabled or not
+                                                                      implemented
+
+447 ERR_NONICKCHANGE           Unreal
+
+                                                                      Returned when a
+449 ERR_NOTIMPLEMENTED         Undernet   Unspecified                 requested feature is
+                                                                      not implemented (and
+                                                                      cannot be completed)
+
+                                                                      Returned by the
+                                                                      server to indicate
+                                                                      that the client must
+451 ERR_NOTREGISTERED          RFC1459    :<reason>                   be registered before
+                                                                      the server will allow
+                                                                      it to be parsed in
+                                                                      detail
+
+452 ERR_IDCOLLISION
+
+453 ERR_NICKLOST
+
+455 ERR_HOSTILENAME            Unreal
+
+456 ERR_ACCEPTFULL
+
+457 ERR_ACCEPTEXIST
+
+458 ERR_ACCEPTNOT
+
+                                                                      Not allowed to become
+459 ERR_NOHIDING               Unreal                                 an invisible
+                                                                      operator?
+
+460 ERR_NOTFORHALFOPS          Unreal
+
+                                                                      Returned by the
+                                                                      server by any command
+461 ERR_NEEDMOREPARAMS         RFC1459    <command> :<reason>         which requires more
+                                                                      parameters than the
+                                                                      number of parameters
+                                                                      given
+
+                                                                      Returned by the
+462 ERR_ALREADYREGISTERED      RFC1459    :<reason>                   server to any link
+                                                                      which attempts to
+                                                                      register again
+
+                                                                      Returned to a client
+                                                                      which attempts to
+                                                                      register with a
+463 ERR_NOPERMFORHOST          RFC1459    :<reason>                   server which has been
+                                                                      configured to refuse
+                                                                      connections from the
+                                                                      client's host
+
+                                                                      Returned by the PASS
+                                                                      command to indicate
+464 ERR_PASSWDMISMATCH         RFC1459    :<reason>                   the given password
+                                                                      was required and was
+                                                                      either not given or
+                                                                      was incorrect
+
+                                                                      Returned to a client
+                                                                      after an attempt to
+465 ERR_YOUREBANNEDCREEP       RFC1459    :<reason>                   register on a server
+                                                                      configured to ban
+                                                                      connections from that
+                                                                      client
+
+                                                                      Sent by a server to a
+466 ERR_YOUWILLBEBANNED        RFC1459                                user to inform that
+                                                                      access to the server
+                                                                      will soon be denied
+
+                                                                      Returned when the
+467 ERR_KEYSET                 RFC1459    <channel> :<reason>         channel key for a
+                                                                      channel has already
+                                                                      been set
+
+468 ERR_INVALIDUSERNAME        ircu
+
+468 ERR_ONLYSERVERSCANCHANGE   Bahamut,
+                               Unreal
+
+469 ERR_LINKSET                Unreal
+
+470 ERR_LINKCHANNEL            Unreal
+
+470 ERR_KICKEDFROMCHAN         aircd
+
+                                                                      Returned when
+                                                                      attempting to join a
+471 ERR_CHANNELISFULL          RFC1459    <channel> :<reason>         channel which is set
+                                                                      +l and is already
+                                                                      full
+
+472 ERR_UNKNOWNMODE            RFC1459    <char> :<reason>            Returned when a given
+                                                                      mode is unknown
+
+                                                                      Returned when
+                                                                      attempting to join a
+473 ERR_INVITEONLYCHAN         RFC1459    <channel> :<reason>         channel which is
+                                                                      invite only without
+                                                                      an invitation
+
+                                                                      Returned when
+474 ERR_BANNEDFROMCHAN         RFC1459    <channel> :<reason>         attempting to join a
+                                                                      channel a user is
+                                                                      banned from
+
+                                                                      Returned when
+                                                                      attempting to join a
+475 ERR_BADCHANNELKEY          RFC1459    <channel> :<reason>         key-locked channel
+                                                                      either without a key
+                                                                      or with the wrong key
+
+476 ERR_BADCHANMASK            RFC2812    <channel> :<reason>         The given channel
+                                                                      mask was invalid
+
+                                                                      Returned when
+                                                                      attempting to set a
+                                                                      mode on a channel
+477 ERR_NOCHANMODES            RFC2812    <channel> :<reason>         which does not
+                                                                      support channel
+                                                                      modes, or channel
+                                                                      mode changes. Also
+                                                                      known as ERR_MODELESS
+
+                               Bahamut,
+477 ERR_NEEDREGGEDNICK         ircu,
+                               Unreal
+
+                                                                      Returned when a
+                                                                      channel access list
+478 ERR_BANLISTFULL            RFC2812    <channel> <char> :<reason>  (i.e. ban list etc)
+                                                                      is full and cannot be
+                                                                      added to
+
+479 ERR_BADCHANNAME            Hybrid
+
+479 ERR_LINKFAIL               Unreal
+
+480 ERR_NOULINE                AustHex
+
+480 ERR_CANNOTKNOCK            Unreal
+
+                                                                      Returned by any
+                                                                      command requiring
+                                                                      special privileges
+481 ERR_NOPRIVILEGES           RFC1459    :<reason>                   (eg. IRC operator) to
+                                                                      indicate the
+                                                                      operation was
+                                                                      unsuccessful
+
+                                                                      Returned by any
+                                                                      command requiring
+                                                                      special channel
+482 ERR_CHANOPRIVSNEEDED       RFC1459    <channel> :<reason>         privileges (eg.
+                                                                      channel operator) to
+                                                                      indicate the
+                                                                      operation was
+                                                                      unsuccessful
+
+                                                                      Returned by KILL to
+483 ERR_CANTKILLSERVER         RFC1459    :<reason>                   anyone who tries to
+                                                                      kill a server
+
+                                                                      Sent by the server to
+                                                                      a user upon
+                                                                      connection to
+484 ERR_RESTRICTED             RFC2812    :<reason>                   indicate the
+                                                                      restricted nature of
+                                                                      the connection (i.e.
+                                                                      usermode +r)
+
+484 ERR_ISCHANSERVICE          Undernet
+
+                               Bahamut,
+484 ERR_DESYNC                 Hybrid,
+                               PTlink
+
+484 ERR_ATTACKDENY             Unreal
+
+                                                                      Any mode requiring
+                                                                      'channel creator'
+                                                                      privileges returns
+485 ERR_UNIQOPRIVSNEEDED       RFC2812    :<reason>                   this error if the
+                                                                      client is attempting
+                                                                      to use it while not a
+                                                                      channel creator on
+                                                                      the given channel
+
+485 ERR_KILLDENY               Unreal
+
+485 ERR_CANTKICKADMIN          PTlink
+
+485 ERR_ISREALSERVICE          QuakeNet
+
+486 ERR_NONONREG
+
+486 ERR_HTMDISABLED            Unreal
+
+486 ERR_ACCOUNTONLY            QuakeNet
+
+487 ERR_CHANTOORECENT          IRCnet
+
+487 ERR_MSGSERVICES            Bahamut
+
+488 ERR_TSLESSCHAN             IRCnet
+
+489 ERR_VOICENEEDED            Undernet
+
+489 ERR_SECUREONLYCHAN         Unreal
+
+                                                                      Returned by OPER to a
+                                                                      client who cannot
+                                                                      become an IRC
+491 ERR_NOOPERHOST             RFC1459    :<reason>                   operator because the
+                                                                      server has been
+                                                                      configured to
+                                                                      disallow the client's
+                                                                      host
+
+492 ERR_NOSERVICEHOST          RFC1459
+
+493 ERR_NOFEATURE              ircu
+
+494 ERR_BADFEATURE             ircu
+
+495 ERR_BADLOGTYPE             ircu
+
+496 ERR_BADLOGSYS              ircu
+
+497 ERR_BADLOGVALUE            ircu
+
+498 ERR_ISOPERLCHAN            ircu
+
+                                                                      Works just like
+                                                                      ERR_CHANOPRIVSNEEDED
+499 ERR_CHANOWNPRIVNEEDED      Unreal                                 except it indicates
+                                                                      that owner status
+                                                                      (+q) is needed. Also
+                                                                      see #482.
+
+                                                                      Returned by the
+                                                                      server to indicate
+                                                                      that a MODE message
+501 ERR_UMODEUNKNOWNFLAG       RFC1459    :<reason>                   was sent with a
+                                                                      nickname parameter
+                                                                      and that the mode
+                                                                      flag sent was not
+                                                                      recognised
+
+                                                                      Error sent to any
+                                                                      user trying to view
+502 ERR_USERSDONTMATCH         RFC1459    :<reason>                   or change the user
+                                                                      mode for a user other
+                                                                      than themselves
+
+503 ERR_GHOSTEDCLIENT          Hybrid
+
+                                                                      Warning about
+                                                                      Virtual-World being
+503 ERR_VWORLDWARN             AustHex    :<warning_text>             turned off. Obsoleted
+                                                                      in favour for
+                                                                      RPL_MODECHANGEWARN
+                                                                      Also see #662.
+
+504 ERR_USERNOTONSERV
+
+511 ERR_SILELISTFULL           ircu
+
+                                                                      Also known as
+512 ERR_TOOMANYWATCH           Bahamut                                ERR_NOTIFYFULL
+                                                                      (aircd), I presume
+                                                                      they are the same
+
+                                                                      Also known as
+                                                                      ERR_NEEDPONG (Unreal/
+                                                                      Ultimate) for use
+513 ERR_BADPING                ircu                                   during registration,
+                                                                      however it's not used
+                                                                      in Unreal (and might
+                                                                      not be used in
+                                                                      Ultimate either).
+
+514 ERR_INVALID_ERROR          ircu
+
+514 ERR_TOOMANYDCC             Bahamut
+
+515 ERR_BADEXPIRE              ircu
+
+516 ERR_DONTCHEAT              ircu
+
+517 ERR_DISABLED               ircu       <command> :<info/reason>
+
+518 ERR_NOINVITE               Unreal
+
+518 ERR_LONGMASK               ircu
+
+519 ERR_ADMONLY                Unreal
+
+519 ERR_TOOMANYUSERS           ircu
+
+520 ERR_OPERONLY               Unreal
+
+520 ERR_MASKTOOWIDE            ircu
+
+                                                                      This is considered
+                                                                      obsolete in favour of
+520 ERR_WHOTRUNC               AustHex                                ERR_TOOMANYMATCHES,
+                                                                      and should no longer
+                                                                      be used. Also see #
+                                                                      416.
+
+521 ERR_LISTSYNTAX             Bahamut
+
+522 ERR_WHOSYNTAX              Bahamut
+
+523 ERR_WHOLIMEXCEED           Bahamut
+
+524 ERR_QUARANTINED            ircu
+
+524 ERR_OPERSPVERIFY           Unreal
+
+525 ERR_REMOTEPFX              CAPAB      <nickname> :<reason>        Proposed.
+                               USERCMDPFX
+
+526 ERR_PFXUNROUTABLE          CAPAB      <nickname> :<reason>        Proposed.
+                               USERCMDPFX
+
+550 ERR_BADHOSTMASK            QuakeNet
+
+551 ERR_HOSTUNAVAIL            QuakeNet
+
+552 ERR_USINGSLINE             QuakeNet
+
+553 ERR_STATSSLINE             QuakeNet
+
+600 RPL_LOGON                  Bahamut,
+                               Unreal
+
+601 RPL_LOGOFF                 Bahamut,
+                               Unreal
+
+602 RPL_WATCHOFF               Bahamut,
+                               Unreal
+
+603 RPL_WATCHSTAT              Bahamut,
+                               Unreal
+
+604 RPL_NOWON                  Bahamut,
+                               Unreal
+
+605 RPL_NOWOFF                 Bahamut,
+                               Unreal
+
+606 RPL_WATCHLIST              Bahamut,
+                               Unreal
+
+607 RPL_ENDOFWATCHLIST         Bahamut,
+                               Unreal
+
+608 RPL_WATCHCLEAR             Ultimate
+
+610 RPL_MAPMORE                Unreal
+
+610 RPL_ISOPER                 Ultimate
+
+611 RPL_ISLOCOP                Ultimate
+
+612 RPL_ISNOTOPER              Ultimate
+
+613 RPL_ENDOFISOPER            Ultimate
+
+615 RPL_MAPMORE                PTlink
+
+615 RPL_WHOISMODES             Ultimate
+
+616 RPL_WHOISHOST              Ultimate
+
+617 RPL_DCCSTATUS              Bahamut
+
+617 RPL_WHOISBOT               Ultimate
+
+618 RPL_DCCLIST                Bahamut
+
+619 RPL_ENDOFDCCLIST           Bahamut
+
+619 RPL_WHOWASHOST             Ultimate
+
+620 RPL_DCCINFO                Bahamut
+
+620 RPL_RULESSTART             Ultimate
+
+621 RPL_RULES                  Ultimate
+
+622 RPL_ENDOFRULES             Ultimate
+
+623 RPL_MAPMORE                Ultimate
+
+624 RPL_OMOTDSTART             Ultimate
+
+625 RPL_OMOTD                  Ultimate
+
+626 RPL_ENDOFO                 Ultimate
+
+630 RPL_SETTINGS               Ultimate
+
+631 RPL_ENDOFSETTINGS          Ultimate
+
+                                                                      Never actually used
+                                                                      by Unreal - was
+                                                                      defined however the
+640 RPL_DUMPING                Unreal                                 feature that would
+                                                                      have used this
+                                                                      numeric was never
+                                                                      created.
+
+                                                                      Never actually used
+                                                                      by Unreal - was
+                                                                      defined however the
+641 RPL_DUMPRPL                Unreal                                 feature that would
+                                                                      have used this
+                                                                      numeric was never
+                                                                      created.
+
+                                                                      Never actually used
+                                                                      by Unreal - was
+                                                                      defined however the
+642 RPL_EODUMP                 Unreal                                 feature that would
+                                                                      have used this
+                                                                      numeric was never
+                                                                      created.
+
+                                          <target> <hop#> [<address>  Returned from the
+660 RPL_TRACEROUTE_HOP         KineIRCd   [<hostname> | '*']          TRACEROUTE IRC-Op
+                                          <usec_ping>]                command when
+                                                                      tracerouting a host
+
+                                          <target> <target_FQDN>      Start of an
+661 RPL_TRACEROUTE_START       KineIRCd   <target_address> <max_hops> RPL_TRACEROUTE_HOP
+                                                                      list
+
+                                                                      Plain text warning to
+                                                                      the user about
+                                          ['+' | '-']<mode_char> :    turning on or off a
+662 RPL_MODECHANGEWARN         KineIRCd   <warning>                   user mode. If no '+'
+                                                                      or '-' prefix is used
+                                                                      for the mode char,
+                                                                      '+' is presumed.
+
+                                                                      Used to notify the
+                                                                      client upon JOIN that
+                                                                      they are joining a
+                                                                      different channel
+                                          <old_chan> <new_chan> :     than expected because
+663 RPL_CHANREDIR              KineIRCd   <info>                      the IRC Daemon has
+                                                                      been set up to map
+                                                                      the channel they
+                                                                      attempted to join to
+                                                                      the channel they
+                                                                      eventually will join.
+
+                                                                      Reply to MODE
+                                                                      <servername>.
+                                                                      KineIRCd supports
+664 RPL_SERVMODEIS             KineIRCd   <server> <modes>            server modes to
+                                          <parameters>..              simplify
+                                                                      configuration of
+                                                                      servers; Similar to
+                                                                      RPL_CHANNELMODEIS
+
+                                                                      Reply to MODE
+                                                                      <nickname> to return
+                                                                      the user-modes of
+                                                                      another user to help
+665 RPL_OTHERUMODEIS           KineIRCd   <nickname> <modes>          troubleshoot
+                                                                      connections, etc.
+                                                                      Similar to
+                                                                      RPL_UMODEIS, however
+                                                                      including the target
+
+                                          <command> [<parameter> ...] Generic response for
+666 RPL_ENDOF_GENERIC          KineIRCd   :<info>                     new lists to save
+                                                                      numerics.
+
+                                                                      Returned by WHOWAS to
+                                                                      return extended
+                                          <nick> <type> :             information (if
+670 RPL_WHOWASDETAILS          KineIRCd   <information>               available). The type
+                                                                      field is a number
+                                                                      indication what kind
+                                                                      of information.
+
+                                                                      Reply to WHOIS
+                                                                      command - Returned if
+                                                                      the target is
+                                                                      connected securely,
+671 RPL_WHOISSECURE            KineIRCd   <nick> <type> [:<info>]     eg. type may be
+                                                                      TLSv1, or SSLv2 etc.
+                                                                      If the type is
+                                                                      unknown, a '*' may be
+                                                                      used.
+
+                                                                      Returns a full list
+                                                                      of modes that are
+672 RPL_UNKNOWNMODES           Ithildin   <modes> :<info>             unknown when a client
+                                                                      issues a MODE command
+                                                                      (rather than one
+                                                                      numeric per mode)
+
+                                                                      Returns a full list
+673 RPL_CANNOTSETMODES         Ithildin   <modes> :<info>             of modes that cannot
+                                                                      be set when a client
+                                                                      issues a MODE command
+
+                                                                      Reply to LUSERS
+                                                                      command - Number of
+                                                                      network staff (or
+678 RPL_LUSERSTAFF             KineIRCd   <staff_online_count> :      'helpers') online
+                                          <info>                      (differs from Local/
+                                                                      Global operators).
+                                                                      Similar format to
+                                                                      RPL_LUSEROP
+
+                                                                      Optionally sent upon
+                                                                      connection, and/or
+                                                                      sent as a reply to
+                                                                      the TIME command.
+                                                                      This returns the time
+                                                                      on the server in a
+                                                                      uniform manner. The
+                                                                      seconds (and
+                                                                      optionally
+                                                                      nanoseconds) is the
+                                                                      time since the UNIX
+                                                                      Epoch, and is used
+                                                                      since many existing
+                                          <seconds> [<nanoseconds> |  timestamps in the
+679 RPL_TIMEONSERVERIS         KineIRCd   '0'] <timezone> <flags> :   IRC-2 protocol are
+                                          <info>                      done this way (i.e.
+                                                                      ban lists). The
+                                                                      timezone is hours and
+                                                                      minutes each of
+                                                                      Greenwich ('[+/-]
+                                                                      HHMM'). Since all
+                                                                      timestamps sent from
+                                                                      the server are in a
+                                                                      similar format, this
+                                                                      numeric is designed
+                                                                      to give clients the
+                                                                      ability to provide
+                                                                      accurate timestamps
+                                                                      to their users.
+
+                                                                      A reply to the
+                                                                      NETWORKS command when
+682 RPL_NETWORKS               KineIRCd   <name> <through_name>       requesting a list of
+                                          <hops> :<info>              known networks
+                                                                      (within the IIRC
+                                                                      domain).
+
+                                                                      Reply to the LANGUAGE
+                                                                      command, informing
+687 RPL_YOURLANGUAGEIS         KineIRCd   <code(s)> :<info>           the client of the
+                                                                      language(s) it has
+                                                                      set
+
+                                          <code> <revision>           A language reply to
+688 RPL_LANGUAGE               KineIRCd   <maintainer> <flags> * :    LANGUAGE when
+                                          <info>                      requesting a list of
+                                                                      known languages
+
+                                                                      The user is a staff
+                                                                      member. The
+                                                                      information may
+                                                                      explain the user's
+                                                                      job role, or simply
+                                                                      state that they are a
+                                                                      part of the network
+                                                                      staff. Staff members
+                                                                      are not IRC
+689 RPL_WHOISSTAFF             KineIRCd   :<info>                     operators, but rather
+                                                                      people who have
+                                                                      special access in
+                                                                      association with
+                                                                      network services.
+                                                                      KineIRCd uses this
+                                                                      numeric instead of
+                                                                      the existing numerics
+                                                                      due to the
+                                                                      overwhelming number
+                                                                      of conflicts.
+
+                                                                      Reply to WHOIS
+                                                                      command - A list of
+690 RPL_WHOISLANGUAGE          KineIRCd   <nick> <language codes>     languages someone can
+                                                                      speak. The language
+                                                                      codes are comma
+                                                                      delimitered.
+
+702 RPL_MODLIST                RatBox     <?> 0x<?> <?> <?>           Output from the
+                                                                      MODLIST command
+
+703 RPL_ENDOFMODLIST           RatBox     :<text>                     Terminates MODLIST
+                                                                      output
+
+704 RPL_HELPSTART              RatBox     <command> :<text>           Start of HELP command
+                                                                      output
+
+705 RPL_HELPTXT                RatBox     <command> :<text>           Output from HELP
+                                                                      command
+
+706 RPL_ENDOFHELP              RatBox     <command> :<text>           End of HELP command
+                                                                      output
+
+708 RPL_ETRACEFULL             RatBox     <?> <?> <?> <?> <?> <?> <?> Output from
+                                          :<?>                        'extended' trace
+
+709 RPL_ETRACE                 RatBox     <?> <?> <?> <?> <?> <?> :   Output from
+                                          <?>                         'extended' trace
+
+710 RPL_KNOCK                  RatBox     <channel> <nick>!<user>@    Message delivered
+                                          <host> :<text>              using KNOCK command
+
+711 RPL_KNOCKDLVR              RatBox     <channel> :<text>           Message returned from
+                                                                      using KNOCK command
+
+                                                                      Message returned when
+712 ERR_TOOMANYKNOCK           RatBox     <channel> :<text>           too many KNOCKs for a
+                                                                      channel have been
+                                                                      sent by a user
+
+                                                                      Message returned from
+713 ERR_CHANOPEN               RatBox     <channel> :<text>           KNOCK when the
+                                                                      channel can be freely
+                                                                      joined by the user
+
+                                                                      Message returned from
+                                                                      KNOCK when the user
+714 ERR_KNOCKONCHAN            RatBox     <channel> :<text>           has used KNOCK on a
+                                                                      channel they have
+                                                                      already joined
+
+                                                                      Returned from KNOCK
+715 ERR_KNOCKDISABLED          RatBox     :<text>                     when the command has
+                                                                      been disabled
+
+                                                                      Sent to indicate the
+716 RPL_TARGUMODEG             RatBox     <nick> :<info>              given target is set
+                                                                      +g (server-side
+                                                                      ignore)
+
+                                                                      Sent following a
+                                                                      PRIVMSG/NOTICE to
+                                                                      indicate the target
+717 RPL_TARGNOTIFY             RatBox     <nick> :<info>              has been notified of
+                                                                      an attempt to talk to
+                                                                      them while they are
+                                                                      set +g
+
+                                                                      Sent to a user who is
+                                                                      +g to inform them
+                                                                      that someone has
+                                                                      attempted to talk to
+                                          <nick> <user>@<host> :      them (via PRIVMSG/
+718 RPL_UMODEGMSG              RatBox     <info>                      NOTICE), and that
+                                                                      they will need to be
+                                                                      accepted (via the
+                                                                      ACCEPT command)
+                                                                      before being able to
+                                                                      talk to them
+
+                                                                      IRC Operator MOTD
+720 RPL_OMOTDSTART             RatBox     :<text>                     header, sent upon
+                                                                      OPER command
+
+                                                                      IRC Operator MOTD
+721 RPL_OMOTD                  RatBox     :<text>                     text (repeated,
+                                                                      usually)
+
+722 RPL_ENDOFOMOTD             RatBox     :<text>                     IRC operator MOTD
+                                                                      footer
+
+                                                                      Returned from an oper
+                                                                      command when the IRC
+723 ERR_NOPRIVS                RatBox     <command> :<text>           operator does not
+                                                                      have the relevant
+                                                                      operator privileges.
+
+                                                                      Reply from an oper
+724 RPL_TESTMARK               RatBox     <nick>!<user>@<host> <?>    command reporting how
+                                          <?> :<text>                 many users match a
+                                                                      given user@host mask
+
+                                                                      Reply from an oper
+                                                                      command reporting
+725 RPL_TESTLINE               RatBox     <?> <?> <?> :<?>            relevant I/K lines
+                                                                      that will match a
+                                                                      given user@host
+
+                                                                      Reply from oper
+726 RPL_NOTESTLINE             RatBox     <?> :<text>                 command reporting no
+                                                                      I/K lines match the
+                                                                      given user@host
+
+                                                                      Used to send
+                                                                      'eXtended info' to
+                                                                      the client, a
+771 RPL_XINFO                  Ithildin                               replacement for the
+                                                                      STATS command to send
+                                                                      a large variety of
+                                                                      data and minimise
+                                                                      numeric pollution.
+
+773 RPL_XINFOSTART             Ithildin                               Start of an RPL_XINFO
+                                                                      list
+
+774 RPL_XINFOEND               Ithildin                               Termination of an
+                                                                      RPL_XINFO list
+
+                                                                      Works similarly to
+                                                                      all of KineIRCd's
+                                                                      CANNOT* numerics.
+                                                                      This one indicates
+972 ERR_CANNOTDOCOMMAND        Unreal                                 that a command could
+                                                                      not be performed for
+                                                                      an arbitrary reason.
+                                                                      For example, a halfop
+                                                                      trying to kick an op.
+
+                                                                      Reply to MODE when a
+973 ERR_CANNOTCHANGEUMODE      KineIRCd   <mode_char> :<reason>       user cannot change a
+                                                                      user mode
+
+                                                                      Reply to MODE when a
+974 ERR_CANNOTCHANGECHANMODE   KineIRCd   <mode_char> :<reason>       user cannot change a
+                                                                      channel mode
+
+                                                                      Reply to MODE when a
+975 ERR_CANNOTCHANGESERVERMODE KineIRCd   <mode_char> :<reason>       user cannot change a
+                                                                      server mode
+
+                                                                      Returned from NOTICE,
+                                                                      PRIVMSG or other
+                                                                      commands to notify
+                                                                      the user that they
+                                                                      cannot send a message
+                                                                      to a particular
+                                                                      client. Similar to
+976 ERR_CANNOTSENDTONICK       KineIRCd   <nick> :<reason>            ERR_CANNOTSENDTOCHAN.
+                                                                      KineIRCd uses this in
+                                                                      conjunction with
+                                                                      user-mode +R to allow
+                                                                      users to block people
+                                                                      who are not
+                                                                      identified to
+                                                                      services (spam
+                                                                      avoidance)
+
+                                                                      Returned by MODE to
+                                                                      inform the client
+977 ERR_UNKNOWNSERVERMODE      KineIRCd   <modechar> :<info>          they used an unknown
+                                                                      server mode
+                                                                      character.
+
+                                                                      Returned by MODE to
+                                                                      inform the client the
+                                                                      server has been set
+979 ERR_SERVERMODELOCK         KineIRCd   <target> :<info>            mode +L by an
+                                                                      administrator to stop
+                                                                      server modes being
+                                                                      changed
+
+                                                                      Returned by any
+                                                                      command which may
+                                                                      have had the given
+                                                                      data modified because
+                                                                      one or more glyphs
+                                                                      were incorrectly
+                                                                      encoded in the
+                                                                      current charset
+                                                                      (given). Such a use
+                                                                      would be where an
+980 ERR_BADCHARENCODING        KineIRCd   <command> <charset> :<info> invalid UTF-8
+                                                                      sequence was given
+                                                                      which may be
+                                                                      considered insecure,
+                                                                      or defines a
+                                                                      character which is
+                                                                      invalid within that
+                                                                      context. For safety
+                                                                      reasons, the invalid
+                                                                      character is not
+                                                                      returned to the
+                                                                      client.
+
+                                                                      Returned by the
+                                                                      LANGUAGE command to
+                                                                      tell the client they
+                                                                      cannot set as many
+                                                                      languages as they
+                                                                      have requested. To
+981 ERR_TOOMANYLANGUAGES       KineIRCd   <max_langs> :<info>         assist the client,
+                                                                      the maximum languages
+                                                                      which can be set at
+                                                                      one time is given,
+                                                                      and the language
+                                                                      settings are not
+                                                                      changed.
+
+                                                                      Returned by the
+                                                                      LANGUAGE command to
+982 ERR_NOLANGUAGE             KineIRCd   <language_code> :<info>     tell the client it
+                                                                      has specified an
+                                                                      unknown language
+                                                                      code.
+
+                                                                      Returned by any
+                                                                      command requiring
+                                                                      text (such as a
+                                                                      message or a reason),
+                                                                      which was not long
+                                                                      enough to be
+                                                                      considered valid.
+983 ERR_TEXTTOOSHORT           KineIRCd   <command> :<info>           This was created
+                                                                      initially to combat '
+                                                                      /wallops foo' abuse,
+                                                                      but is also used by
+                                                                      DIE and RESTART
+                                                                      commands to attempt
+                                                                      to encourage
+                                                                      meaningful reasons.
+
+                                                                      Also known as
+999 ERR_NUMERIC_ERR            Bahamut                                ERR_NUMERICERR
+                                                                      (Unreal)
+
+
+Return to the index
