@@ -72,42 +72,45 @@ def add_args(dict_obj):
         dict_obj['arg%d' % index] = item
         index += 1
 
+def translate(line):
+    """Translate a JSON line from the server
+    into display string.
+    """
+    line = line.strip()
+    if not line:
+        return None
+
+    obj = json.loads(line)
+    lowercase_keys(obj)
+    cmd = obj['command']
+    if cmd in IGNORE:
+        return None
+
+    add_args(obj)
+
+    if cmd in PATTERNS:
+        pattern = PATTERNS[cmd]
+    elif cmd in DEFAULT:
+        pattern = PATTERNS['__default__']
+    else:
+        #missing_cmds.add(cmd)
+        # Use default setup because we didn't account for this message
+        pattern = PATTERNS['__default__']
+
+    # Timestamp everything
+    if '--timestamp' in sys.argv:
+        pattern = '%(received)s ' + pattern
+
+    output = pattern % obj
+    return output.encode('utf8')
 
 def main():
 
-    missing_cmds = set()
-
     for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
 
-        obj = json.loads(line)
-        lowercase_keys(obj)
-        cmd = obj['command']
-        if cmd in IGNORE:
-            continue
-
-        add_args(obj)
-
-        if cmd in PATTERNS:
-            pattern = PATTERNS[cmd]
-        elif cmd in DEFAULT:
-            pattern = PATTERNS['__default__']
-        else:
-            missing_cmds.add(cmd)
-            # Use default setup because we didn't account for this message
-            pattern = PATTERNS['__default__']
-
-        # Timestamp everything
-        if '--timestamp' in sys.argv:
-            pattern = '%(received)s ' + pattern
-
-        output = pattern % obj
-        print(output.encode('utf8'))
-
-    if missing_cmds:
-        print(missing_cmds)
+        result = translate(line)
+        if result:
+            print(result)
 
 
 if __name__ == '__main__':
