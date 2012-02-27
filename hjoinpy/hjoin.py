@@ -4,7 +4,7 @@ import curses
 import curses.textpad
 #import time
 
-from hfilter import translate
+from hfilter import translate_in
 
 
 def run(stdscr):
@@ -35,7 +35,7 @@ def add_msgs(win):
 
     for line in open('/home/graham/.hatcog/client_raw.log', 'rt'):
         line = ' '.join(line.split(' ')[3:])
-        display = translate(line)
+        display = translate_in(line)
         if not display:
             continue
 
