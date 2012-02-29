@@ -1,37 +1,31 @@
 
 import sys
-import curses
-import curses.textpad
-#import time
+import logging
+from Queue import Queue
 
+import term
 from hfilter import translate_in
 
 
-def run(stdscr):
-    """Curses entry point"""
+def main():
+    """Main"""
 
-    max_height, max_width = stdscr.getmaxyx()
+    logging.basicConfig(filename="/tmp/hjoinpy.log", level=logging.DEBUG)
+    logging.debug("**** Start")
 
-    win_status = stdscr.subwin(1, max_width, 0, 0)
-    win_status.bkgdset(" ", curses.A_REVERSE)
-    win_status.addstr(" " * (max_width - 1))
-    win_status.addstr(0, 0, "Status bar goes here")
-    win_status.refresh()
+    from_user = Queue()
+    to_user = Queue()
+    term.start(from_user, to_user)
 
-    win_input = stdscr.subwin(3, max_width - 1, 1, 0)
-    textbox = curses.textpad.Textbox(win_input)
-    win_input.refresh()
+    add_msgs(to_user)
 
-    win_output = stdscr.subwin(max_height - 4, max_width, 4, 0)
-    win_output.scrollok(True)
-    win_output.idlok(True)
-    add_msgs(win_output)
+    return 0
 
-    textbox.edit()
+def add_msgs(to_user):
+    """Add IRC messages to queue"""
 
-
-def add_msgs(win):
-    """Add IRC messages to win"""
+    max_lines = 10
+    current = 0
 
     for line in open('/home/graham/.hatcog/client_raw.log', 'rt'):
         line = ' '.join(line.split(' ')[3:])
@@ -39,14 +33,12 @@ def add_msgs(win):
         if not display:
             continue
 
-        win.addstr(display + "\n")
-        win.refresh()
-        #time.sleep(0.1)
+        to_user.put(display)
 
+        current += 1
+        if current >= max_lines:
+            break
 
-def main():
-    """Main"""
-    curses.wrapper(run)
 
 if __name__ == '__main__':
     sys.exit(main())
