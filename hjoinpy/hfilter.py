@@ -90,6 +90,17 @@ def add_args(dict_obj):
 def translate_in(line, callbacks):
     """Translate a JSON line from the server
     into display string.
+
+    @param line The line received from server - usually a JSON string.
+
+    @callbacks An object that might have on_<cmd> methods, such as
+    on_join, on_privmsg, on_353, etc.
+    If that method is found, it is called with the the line as an
+    object (the parsed JSON), and the line we would return.
+    If that method returns something, we use that instead of the line
+    we got from the patterns.
+    If that method returns -1, we return nothing. -1 means the callback
+    already dealt with things.
     """
     line = line.strip()
     if not line:
@@ -112,14 +123,18 @@ def translate_in(line, callbacks):
     if cmd in PATTERNS_IN:
         pattern = PATTERNS_IN[cmd]
 
+    output = pattern % obj
+    display = output.encode('utf8')
+
     # Call a method on 'callbacks', for additional processing
+    retval = None
     func_name = 'on_' + cmd.lower()
     if hasattr(callbacks, func_name):
-        logging.debug("FOUND")
-        getattr(callbacks, func_name)(obj)
+        retval = getattr(callbacks, func_name)(obj, display)
+        if retval == -1:
+            return None
 
-    output = pattern % obj
-    return output.encode('utf8')
+    return retval or display
 
 
 def translate_out(channel, line):

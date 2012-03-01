@@ -66,8 +66,9 @@ class Client(object):
 
             try:
                 msg = self.from_user.get_nowait()
-                self.terminal.write(msg)
                 self.server.write(msg)
+
+                self.terminal.write_msg(self.nick, msg, True)
 
                 activity = True
             except Empty:
@@ -76,7 +77,9 @@ class Client(object):
             try:
                 msg = self.from_server.get_nowait()
                 logging.debug(msg)
-                self.terminal.write(translate_in(msg, self))
+                display = translate_in(msg, self)
+                if display:
+                    self.terminal.write(display)
 
                 activity = True
             except Empty:
@@ -96,11 +99,22 @@ class Client(object):
     # hfilter callbacks
     #
 
-    def on_nick(self, obj):
+    def on_nick(self, obj, display):
         """A nick change, possibly our own."""
         if not obj['user']:
             self.nick = obj['content']
             self.terminal.set_nick(self.nick)
+            return "You are now known as %s" % self.nick
+
+    def on_privmsg(self, obj, display):
+        """A message. Format it nicely."""
+        username = obj['user']
+        self.terminal.write_msg(
+                username,
+                obj['content'],
+                username == self.nick)
+        return -1
+
 
 if __name__ == '__main__':
     sys.exit(main())

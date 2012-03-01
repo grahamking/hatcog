@@ -3,8 +3,8 @@
 from threading import Thread
 import curses
 import curses.textpad
-import logging
-
+import random
+from datetime import datetime
 
 class Terminal(object):
     """Curses user interface"""
@@ -17,12 +17,11 @@ class Terminal(object):
         self.win_output = None
         self.win_input = None
         self.win_status = None
-        self.textbox = None
 
         self.start()
         self.create_gui()
 
-        args = (self.textbox, self.from_user)
+        args = (self.win_input, self.from_user)
         self.input_thread = Thread(name='term', target=input_thread, args=args)
         self.input_thread.daemon = True
         self.input_thread.start()
@@ -48,6 +47,8 @@ class Terminal(object):
         # module -- the error return from C start_color() is ignorable.
         try:
             curses.start_color()
+            for i in xrange(1, curses.COLORS):
+                curses.init_pair(i, i, curses.COLOR_BLACK)
         except:
             pass
 
@@ -81,24 +82,25 @@ class Terminal(object):
         self.win_output.scrollok(True)
         self.win_output.idlok(True)
 
-        self.win_input = self.stdscr.subwin(
-                1,
-                self.max_width,
-                self.max_height - 2, 0)
-        self.win_input.bkgdset(" ", curses.A_REVERSE)
-        #self.win_input.addstr(" " * (self.max_width - 1))
-        self.textbox = curses.textpad.Textbox(self.win_input)
-        self.win_input.refresh()
-
         self.win_status = self.stdscr.subwin(
                 1,
                 self.max_width,
-                self.max_height - 1,
+                self.max_height - 2,
                 0)
+        self.win_status.bkgdset(" ", curses.A_REVERSE)
+        self.win_status.addstr(" " * (self.max_width - 1))
         self.win_status.refresh()
 
+        self.stdscr.addstr(self.max_height - 1, 0, "> ")
+        self.stdscr.refresh()
+        self.win_input = self.stdscr.subwin(
+                1,
+                self.max_width - 2,
+                self.max_height - 1, 2)
+        self.win_input.refresh()
+
         # Move cursor to input window
-        curses.setsyx(self.max_height - 2, 0)
+        #curses.setsyx(self.max_height - 1, 2)
 
     def write(self, message):
         """Write 'message' to output window"""
@@ -106,6 +108,21 @@ class Terminal(object):
             return
         self.win_output.addstr(message + "\n")
         self.win_output.refresh()
+
+    def write_msg(self, username, content, is_me):
+        """Write a user message, with fancy formatting"""
+
+        now = datetime.now().strftime("%H:%M")
+        self.win_output.addstr(now + " ")
+
+        username = lpad(15, username)
+        if is_me:
+            self.win_output.addstr(username, curses.A_BOLD)
+        else:
+            col = random.choice(range(230))
+            self.win_output.addstr(username, curses.color_pair(col))
+
+        self.write(" " + content)
 
     def set_nick(self, nick):
         """Set user nick"""
@@ -119,11 +136,20 @@ class Terminal(object):
         self.win_status.refresh()
 
 
-def input_thread(textbox, from_user):
+def input_thread(win, from_user):
     """Listen for user input and write to queue.
     Runs in separate thread.
     """
 
+    textbox = curses.textpad.Textbox(win)
     while True:
         user_input = textbox.edit()
         from_user.put(user_input)
+        win.erase()
+
+
+def lpad(num, string):
+    """Left pad a string"""
+    needed = num - len(string)
+    return " " * needed + string
+
