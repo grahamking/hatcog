@@ -1,98 +1,129 @@
 """Terminal (UI) for hatcog"""
 
 from threading import Thread
-from Queue import Empty
 import curses
-import time
+import curses.textpad
 import logging
 
-
-def start(from_user, to_user):
-
-    args = (from_user, to_user)
-    thread = Thread(name='term', target=start_thread, args=args)
-    thread.start()
-
-def start_thread(from_user, to_user):
-    """Runs in a separate thread.
-    @param from_user a Queue where we write everything
-    the user types.
-    @param to_user a Queue where we read and display to the user.
-    """
-    term = Terminal(from_user, to_user)
-    curses.wrapper(term.start)
 
 class Terminal(object):
     """Curses user interface"""
 
-    def __init__(self, from_user, to_user):
+    def __init__(self, from_user):
         self.from_user = from_user
-        self.to_user = to_user
 
         self.stdscr = None
-        self.win_status = None
-        self.win_input = None
+        self.win_header = None
         self.win_output = None
+        self.win_input = None
+        self.win_status = None
+        self.textbox = None
 
-        self.input_pos = 1
-        self.input_str = ""
+        self.start()
+        self.create_gui()
 
-    def start(self, stdscr):
-        """Create the UI"""
+        args = (self.textbox, self.from_user)
+        self.input_thread = Thread(name='term', target=input_thread, args=args)
+        self.input_thread.daemon = True
+        self.input_thread.start()
+
+    def start(self):
+        """Initialize curses. Copied from curses/wrapper.py"""
+        # Initialize curses
+        stdscr = curses.initscr()
+
+        # Turn off echoing of keys, and enter cbreak mode,
+        # where no buffering is performed on keyboard input
+        curses.noecho()
+        curses.cbreak()
+
+        # In keypad mode, escape sequences for special keys
+        # (like the cursor keys) will be interpreted and
+        # a special value like curses.KEY_LEFT will be returned
+        stdscr.keypad(1)
+
+        # Start color, too.  Harmless if the terminal doesn't have
+        # color; user can test with has_color() later on.  The try/catch
+        # works around a minor bit of over-conscientiousness in the curses
+        # module -- the error return from C start_color() is ignorable.
+        try:
+            curses.start_color()
+        except:
+            pass
+
         self.stdscr = stdscr
-        max_height, max_width = self.stdscr.getmaxyx()
+
+    def stop(self):
+        """Stop curses, restore terminal sanity."""
+        self.stdscr.keypad(0)
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
+
+    def create_gui(self):
+        """Create the UI"""
+        self.max_height, self.max_width = self.stdscr.getmaxyx()
         self.stdscr.nodelay(True)
 
-        self.win_status = stdscr.subwin(1, max_width, 0, 0)
-        self.win_status.bkgdset(" ", curses.A_REVERSE)
-        self.win_status.addstr(" " * (max_width - 1))
-        self.win_status.addstr(0, 0, "Status bar goes here")
-        self.win_status.refresh()
+        curses.curs_set(0)
 
-        self.win_input = stdscr.subwin(3, max_width - 1, 1, 0)
-        self.win_input.border()
-        self.win_input.refresh()
+        self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
+        self.win_header.bkgdset(" ", curses.A_REVERSE)
+        self.win_header.addstr(" " * (self.max_width - 2))
+        self.win_header.addstr(0, 0, "+ hatcog v2 +")
+        self.win_header.refresh()
 
-        self.win_output = stdscr.subwin(max_height - 4, max_width, 4, 0)
+        self.win_output = self.stdscr.subwin(
+                self.max_height - 3,
+                self.max_width,
+                1,
+                0)
         self.win_output.scrollok(True)
         self.win_output.idlok(True)
 
-        #textbox.edit()
+        self.win_input = self.stdscr.subwin(
+                1,
+                self.max_width,
+                self.max_height - 2, 0)
+        self.win_input.bkgdset(" ", curses.A_REVERSE)
+        #self.win_input.addstr(" " * (self.max_width - 1))
+        self.textbox = curses.textpad.Textbox(self.win_input)
+        self.win_input.refresh()
 
-        self.main_loop()
+        self.win_status = self.stdscr.subwin(
+                1,
+                self.max_width,
+                self.max_height - 1,
+                0)
+        self.win_status.refresh()
 
-    def main_loop(self):
-        """Listen for user input or to_user queue input"""
-        while True:
-            activity = False
+        # Move cursor to input window
+        curses.setsyx(self.max_height - 2, 0)
 
-            try:
-                display = self.to_user.get_nowait()
-                self.win_output.addstr(display + "\n")
-                self.win_output.refresh()
-                activity = True
-            except Empty:
-                # Nothing to display yet
-                pass
+    def write(self, message):
+        """Write 'message' to output window"""
+        if not message:
+            return
+        self.win_output.addstr(message + "\n")
+        self.win_output.refresh()
 
-            char = self.stdscr.getch()
-            if char != -1:
-                activity = True
+    def set_nick(self, nick):
+        """Set user nick"""
+        self.win_status.addstr(0, 0, nick)
+        self.win_status.refresh()
 
-                if char == 10:
-                    logging.debug('ENTER')
-                    self.from_user.put(self.input_str)
-                    self.input_pos = 1
-                    self.input_str = ""
-                    self.win_input.erase()
-                else:
-                    logging.debug(char)
-                    self.win_input.addch(1, self.input_pos, char)
-                    self.input_pos += 1
-                    self.input_str += str(char)
+    def set_channel(self, channel):
+        """Set current channel"""
+        mid_pos = (self.max_width - (len(channel) + 1)) / 2
+        self.win_status.addstr(0, mid_pos, "#" + channel, curses.A_BOLD)
+        self.win_status.refresh()
 
-                self.win_input.refresh()
 
-            if not activity:
-                time.sleep(0.1)
+def input_thread(textbox, from_user):
+    """Listen for user input and write to queue.
+    Runs in separate thread.
+    """
 
+    while True:
+        user_input = textbox.edit()
+        from_user.put(user_input)

@@ -1,6 +1,7 @@
 
 import sys
 import json
+import logging
 
 PATTERNS_OUT = {
 
@@ -86,7 +87,7 @@ def add_args(dict_obj):
         dict_obj['arg%d' % index] = item
         index += 1
 
-def translate_in(line):
+def translate_in(line, callbacks):
     """Translate a JSON line from the server
     into display string.
     """
@@ -94,7 +95,12 @@ def translate_in(line):
     if not line:
         return None
 
-    obj = json.loads(line)
+    try:
+        obj = json.loads(line)
+    except ValueError:
+        logging.exception("JSON parse error on '" + line +"'")
+        return line
+
     lowercase_keys(obj)
     cmd = obj['command']
     if cmd in IGNORE:
@@ -106,9 +112,11 @@ def translate_in(line):
     if cmd in PATTERNS_IN:
         pattern = PATTERNS_IN[cmd]
 
-    # Timestamp everything if requested to
-    if '--timestamp' in sys.argv:
-        pattern = '%(received)s ' + pattern
+    # Call a method on 'callbacks', for additional processing
+    func_name = 'on_' + cmd.lower()
+    if hasattr(callbacks, func_name):
+        logging.debug("FOUND")
+        getattr(callbacks, func_name)(obj)
 
     output = pattern % obj
     return output.encode('utf8')
