@@ -3,14 +3,14 @@
 from threading import Thread
 import curses
 import curses.textpad
-import random
 from datetime import datetime
 
 class Terminal(object):
     """Curses user interface"""
 
-    def __init__(self, from_user):
+    def __init__(self, from_user, user_manager):
         self.from_user = from_user
+        self.users = user_manager
 
         self.stdscr = None
         self.win_header = None
@@ -119,7 +119,7 @@ class Terminal(object):
         if is_me:
             self.win_output.addstr(username, curses.A_BOLD)
         else:
-            col = random.choice(range(230))
+            col = self.users.color_for(username)
             self.win_output.addstr(username, curses.color_pair(col))
 
         self.write(" " + content)
@@ -133,6 +133,13 @@ class Terminal(object):
         """Set current channel"""
         mid_pos = (self.max_width - (len(channel) + 1)) / 2
         self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
+        self.win_status.refresh()
+
+    def set_users(self, count):
+        """Set number of users"""
+        msg = "%d users" % count
+        right_pos = self.max_width - (len(msg) + 1)
+        self.win_status.addstr(0, right_pos, msg)
         self.win_status.refresh()
 
 

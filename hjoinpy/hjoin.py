@@ -5,6 +5,7 @@ import logging
 import time
 import subprocess
 import socket
+import random
 from Queue import Queue, Empty
 
 from term import Terminal
@@ -89,6 +90,8 @@ class Client(object):
         self.daemon_addr = daemon_addr
         self.nick = None
 
+        self.users = UserManager()
+
         self.from_user = Queue()
         self.terminal = None
 
@@ -98,7 +101,7 @@ class Client(object):
     def init(self):
         """Initialize"""
 
-        self.terminal = Terminal(self.from_user)
+        self.terminal = Terminal(self.from_user, self.users)
         self.terminal.set_channel(self.channel)
 
         sock = get_daemon_connection()
@@ -166,6 +169,56 @@ class Client(object):
                 obj['content'],
                 username == self.nick)
         return -1
+
+    def on_join(self, obj, display):
+        """User joined channel"""
+        self.users.add(obj['user'])
+        self.terminal.set_users(self.users.count())
+
+    def on_part(self, obj, display):
+        """User left channel"""
+        self.users.remove(obj['user'])
+        self.terminal.set_users(self.users.count())
+
+    def on_353(self, obj, display):
+        """Reply to /names"""
+        self.users.add_all(obj['content'])
+        self.terminal.set_users(self.users.count())
+
+
+class UserManager(object):
+    """Manages users in an IRC channel"""
+
+    def __init__(self):
+        self.users = set()
+        self.colors = {}
+
+    def add(self, username):
+        """User joined channel"""
+        if username.startswith("@") or username.startswith("+"):
+            username = username[1:]
+        self.users.add(username)
+
+    def remove(self, username):
+        """User left channel"""
+        self.users.remove(username)
+
+    def add_all(self, usernames):
+        """Add a bunch of users"""
+        for username in usernames.split(" "):
+            self.add(username)
+
+        LOG.debug(self.users)
+
+    def color_for(self, username):
+        """The color to display a given user in"""
+        if not username in self.colors:
+            self.colors[username] = random.choice(range(230))
+        return self.colors[username]
+
+    def count(self):
+        """Number of users in the channel"""
+        return len(self.users)
 
 
 def get_daemon_connection():
