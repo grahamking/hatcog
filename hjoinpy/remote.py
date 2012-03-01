@@ -1,17 +1,14 @@
 """Connection to hatcogd"""
 
-import socket
 from threading import Thread
 
 
 class Server(object):
     """Local proxy for remote hatcogd server"""
 
-    PORT = 8790
+    def __init__(self, sock, from_server):
 
-    def __init__(self, from_server):
-
-        self.conn = socket.create_connection(("127.0.0.1", self.PORT))
+        self.conn = sock
 
         args = (self.conn, from_server)
         self.listen_thread = Thread(target=listen_thread, args=args)

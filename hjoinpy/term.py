@@ -71,7 +71,7 @@ class Terminal(object):
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
         self.win_header.addstr(" " * (self.max_width - 2))
-        self.win_header.addstr(0, 0, "+ hatcog v2 +")
+        self.win_header.addstr(0, 0, "+ hatcog +")
         self.win_header.refresh()
 
         self.win_output = self.stdscr.subwin(
@@ -132,7 +132,7 @@ class Terminal(object):
     def set_channel(self, channel):
         """Set current channel"""
         mid_pos = (self.max_width - (len(channel) + 1)) / 2
-        self.win_status.addstr(0, mid_pos, "#" + channel, curses.A_BOLD)
+        self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
         self.win_status.refresh()
 
 
