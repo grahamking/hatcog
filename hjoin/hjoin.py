@@ -23,11 +23,18 @@ CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin
 CMD_STOP_DAEMON = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
 
 USAGE = """
-Usage: hjoin [channel|-private=nick]
-Note there's no # in front of the channel
+Usage: hjoin [channel|-private=nick] [--logger]
+
+There's no # in front of the channel
 Examples:
- 1. Join channel test: hjoin test
- 2. Listen for private (/query) message from bob: hjoin -private=bob
+ 1. Join channel #test:
+     hjoin test
+ 2. Talk privately (/query) with bob:
+     hjoin -private=bob
+
+Add "--logger" to act as an IRC logger - gather no input, just print
+incoming messages to stdout.
+
 """
 
 SENSIBLE_AMOUNT = 25
@@ -45,7 +52,7 @@ def main(argv=None):
     print("%s logging to %s" % (VERSION, log_filename))
     logging.basicConfig(filename=log_filename, level=logging.DEBUG)
 
-    if len(argv) != 2:
+    if not len(argv) in (2, 3):
         print(USAGE)
         return 1
 
@@ -65,9 +72,17 @@ def main(argv=None):
 
     client = Client(channel, password, DAEMON_ADDR)
 
+    if len(sys.argv) == 3 and sys.argv[2] == "--logger":
+        client = Logger(channel, password, DAEMON_ADDR)
+
     try:
+
         client.init()
         client.run()
+
+    except StopException:
+        # Clean exit
+        pass
     except:
         LOG.exception("EXCEPTION")
 
@@ -97,9 +112,17 @@ class Client(object):
 
     def init(self):
         """Initialize"""
+        self.start_interface()
+        self.start_remote()
+
+    def start_interface(self):
+        """Start UI"""
 
         self.terminal = Terminal(self.from_user, self.users)
         self.terminal.set_channel(self.channel)
+
+    def start_remote(self):
+        """Connect to remote server"""
 
         sock = get_daemon_connection()
         self.server = Server(sock, self.from_server)
@@ -366,6 +389,30 @@ def stop_daemon():
 class StopException(Exception):
     """Signal that we want to stop the program."""
     pass
+
+
+class Logger(Client):
+    """Just write output to stdout"""
+
+    def start_interface(self):
+        self.terminal = None
+
+    def check_server(self):
+        """Check for server activity, acting on it if necessary"""
+        activity = False
+
+        try:
+            msg = self.from_server.get_nowait()
+            LOG.debug(msg)
+            display = translate_in(msg, None, timestamp=True)
+            if display:
+                print(display)
+
+            activity = True
+        except Empty:
+            pass
+
+        return activity
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@
 import sys
 import json
 import logging
+from datetime import datetime
 
 PATTERNS_OUT = {
 
@@ -90,7 +91,7 @@ def add_args(dict_obj):
         index += 1
 
 
-def translate_in(line, callbacks):
+def translate_in(line, callbacks, timestamp=False):
     """Translate a JSON line from the server
     into display string.
 
@@ -129,10 +130,14 @@ def translate_in(line, callbacks):
     output = pattern % obj
     display = output.encode('utf8')
 
+    if timestamp:
+        now = datetime.now().isoformat()
+        display = now + " " + display
+
     # Call a method on 'callbacks', for additional processing
     retval = None
     func_name = 'on_' + cmd.lower()
-    if hasattr(callbacks, func_name):
+    if callbacks and hasattr(callbacks, func_name):
         retval = getattr(callbacks, func_name)(obj)
         if retval == -1:
             return None
