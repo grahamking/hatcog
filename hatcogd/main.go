@@ -7,11 +7,10 @@ import (
 	"strings"
     "log"
     "syscall"
-    "../config"
 )
 
 const (
-	VERSION    = "hatcog v0.3 (github.com/grahamking/hatcog)"
+	VERSION    = "hatcog v0.5 (github.com/grahamking/hatcog)"
     DEFAULT_CONFIG = "/.hatcogrc"
     LOG_DIR = "/.hatcog/"
 )
@@ -72,12 +71,12 @@ func openLog(logFilename string) *log.Logger {
 }
 
 // Load / Parse the config file
-func loadConfig() config.Config {
+func loadConfig() Config {
 
     configFilename := HOME + DEFAULT_CONFIG
     LOG.Println("Reading config file:", configFilename)
 
-    conf, err := config.Load(configFilename)
+    conf, err := LoadConfig(configFilename)
     if err != nil {
         fmt.Println("Error parsing config file:", err)
         LOG.Println("Error parsing config file:", err)

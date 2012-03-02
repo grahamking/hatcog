@@ -1,5 +1,5 @@
 // Configuration file parser
-package config
+package main
 
 import (
     "os"
@@ -10,7 +10,7 @@ import (
 
 type Config map[string] string
 
-func Load(filename string) (Config, os.Error) {
+func LoadConfig(filename string) (Config, os.Error) {
 
     var parts []string
     var key, value string

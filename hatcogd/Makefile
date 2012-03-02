@@ -7,6 +7,7 @@ include ${GOROOT}/src/Make.inc
 TARG=hatcogd
 GOFILES=\
 	main.go\
+	config.go\
 	server.go\
 	external.go\
 	line.go\

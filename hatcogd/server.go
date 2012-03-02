@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 	"exec"
-    "../config"
 )
 
 const (
@@ -25,7 +24,7 @@ type Server struct {
     cmdPrivateChat string
 }
 
-func NewServer(conf config.Config) *Server {
+func NewServer(conf Config) *Server {
 
     server := conf.Get("server")
     nick := conf.Get("nick")
