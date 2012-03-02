@@ -76,7 +76,7 @@ class Terminal(object):
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
         self.win_header.addstr(" " * (self.max_width - 1))
-        self.win_header.addstr(0, 0, "+ hatcog +")
+        self.win_header.addstr(0, 0, "hatcog")
         self.win_header.refresh()
 
         self.win_output = self.stdscr.subwin(
@@ -258,13 +258,13 @@ def input_thread(win, from_user, terminal):
 
     while 1:
         try:
-            from_user.put( gather_input(win) )
+            from_user.put( gather_input(win, terminal) )
         except ResizeException:
             terminal.resize()
             break
 
 
-def gather_input(win):
+def gather_input(win, terminal):
     """Gather input from this window - main input loop"""
 
     current = []
@@ -304,8 +304,15 @@ def gather_input(win):
             # Curses communicates window resize via a fake keypress
             raise ResizeException()
 
-        else:
-            # Regular character
+        elif ch == 9:   # Tab - curses doesn't seem to have a constant
+            LOG.debug("auto complete")
+            nick_part = word_at_pos(''.join(current), pos)
+            nick = terminal.users.first_match(nick_part, exclude=[terminal.nick])
+            current = list(''.join(current).replace(nick_part, nick))
+            pos = pos + (len(nick) - len(nick_part))
+
+        elif curses.ascii.isprint(ch):
+            # Regular character, display it
             current.insert(pos, chr(ch))
             pos += 1
 
@@ -324,4 +331,19 @@ class ResizeException(Exception):
     because we made a new window, so we need a new thread.
     """
     pass
+
+
+def word_at_pos(string, pos):
+    """The word ending at the cursor (pos) in string"""
+    if not string:
+        return ""
+
+    string = string[:pos].strip()
+    start = string.rfind(" ")
+    if start == -1:
+        start = 0
+    if start >= pos:
+        return ""
+
+    return string[start:pos].strip()
 

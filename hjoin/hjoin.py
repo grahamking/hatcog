@@ -25,8 +25,8 @@ USAGE         = """
 Usage: hjoin [channel|-private=nick]
 Note there's no # in front of the channel
 Examples:
- 1. Join channel test: hjoinpy test
- 2. Listen for private (/query) message from bob: hjoinpy -private=bob
+ 1. Join channel test: hjoin test
+ 2. Listen for private (/query) message from bob: hjoin -private=bob
 """
 
 SENSIBLE_AMOUNT = 25
@@ -39,7 +39,7 @@ def main(argv=None):
         argv = sys.argv
 
     home = os.path.expanduser('~')
-    log_filename = home + LOG_DIR + "clientpy.log"
+    log_filename = home + LOG_DIR + "client.log"
     print("%s logging to %s" % (VERSION, log_filename))
     logging.basicConfig(filename=log_filename, level=logging.DEBUG)
 
@@ -257,6 +257,15 @@ class UserManager(object):
     def count(self):
         """Number of users in the channel"""
         return len(self.users)
+
+    def first_match(self, nick_part, exclude=[]):
+        """First nick which starts with 'nick_part'.
+        If no match, returns nick_part.
+        """
+        for nick in self.users:
+            if nick.startswith(nick_part) and not nick in exclude:
+                return nick
+        return nick_part
 
 
 def load_config(home):
