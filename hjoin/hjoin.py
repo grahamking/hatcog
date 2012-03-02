@@ -68,8 +68,9 @@ def main(argv=None):
         client.run()
     except:
         LOG.exception("EXCEPTION")
-        if client:
-            client.stop()
+
+    if client:
+        client.stop()
 
     return 0
 
@@ -120,6 +121,8 @@ class Client(object):
 
             try:
                 msg = self.from_user.get_nowait()
+                if msg == '/quit':
+                    break
 
                 if msg:
                     self.server.write(msg)
