@@ -120,11 +120,12 @@ class Client(object):
 
             try:
                 msg = self.from_user.get_nowait()
-                self.server.write(msg)
 
-                self.terminal.write_msg(self.nick, msg)
+                if msg:
+                    self.server.write(msg)
+                    self.terminal.write_msg(self.nick, msg)
+                    activity = True
 
-                activity = True
             except Empty:
                 pass
 

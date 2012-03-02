@@ -2,9 +2,10 @@
 
 from threading import Thread
 import curses
-import curses.textpad
+import curses.ascii
 from datetime import datetime
 import logging
+import time
 
 MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
 LOG = logging.getLogger(__name__)
@@ -71,9 +72,6 @@ class Terminal(object):
     def create_gui(self):
         """Create the UI"""
         self.max_height, self.max_width = self.stdscr.getmaxyx()
-        self.stdscr.nodelay(True)
-
-        #curses.curs_set(0)
 
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
@@ -104,14 +102,14 @@ class Terminal(object):
                 1,
                 self.max_width - 2,
                 self.max_height - 1, 2)
+        self.win_input.keypad(True)
+        # Have to make getch non-blocking, otherwise resize doesn't work right
+        self.win_input.nodelay(True)
         self.win_input.refresh()
-
-        # Move cursor to input window
-        #curses.setsyx(self.max_height - 1, 2)
 
     def start_input_thread(self):
         """Starts the thread that listen for user input in the textbox"""
-        args = (self.win_input, self.from_user, self.check_resize)
+        args = (self.win_input, self.from_user, self)
         thread = Thread(name='term', target=input_thread, args=args)
         thread.daemon = True
         thread.start()
@@ -212,17 +210,6 @@ class Terminal(object):
         self.win_header.addstr(0, right_pos, host)
         self.win_header.refresh()
 
-    def check_resize(self, char):
-        """Check if input character 'char' is the resize event"""
-        if char == curses.KEY_RESIZE:
-            LOG.debug("Resize")
-
-            self.resize()
-
-            raise ResizeException()
-        else:
-            return char
-
     def resize(self):
         """Resize the app"""
         self.delete_gui()
@@ -255,30 +242,81 @@ def lpad(num, string):
     return " " * needed + string
 
 
-class ResizeException(Exception):
-    """For textpad edit to tell it's thread to quit,
-    because we made a new window, so we need a new textpad and thread.
-    """
-    pass
-
 #
 # Input thread
 #
 
-def input_thread(win, from_user, validate):
+def input_thread(win, from_user, terminal):
     """Listen for user input and write to queue.
     Runs in separate thread.
     """
 
-    textbox = curses.textpad.Textbox(win, insert_mode=True)
-    while True:
+    while 1:
         try:
-            user_input = textbox.edit(validate)
+            from_user.put( gather_input(win) )
         except ResizeException:
-            LOG.debug("Resize - input thread replace.")
+            terminal.resize()
             break
 
-        from_user.put(user_input)
-        win.erase()
 
+def gather_input(win):
+    """Gather input from this window - main input loop"""
+
+    current = []
+    pos = 0
+    while 1:
+        ch = win.getch()
+        if ch == -1:
+            win.move(0, pos)
+            time.sleep(0.1)
+            continue
+
+        if ch == curses.KEY_LEFT:
+            if pos > 0:
+                pos -= 1
+
+        elif ch == curses.KEY_RIGHT:
+            if pos < len(current):
+                pos += 1
+
+        elif ch == curses.KEY_HOME:
+            pos = 0
+
+        elif ch == curses.KEY_END:
+            pos = len(current)
+
+        elif ch == curses.KEY_BACKSPACE:
+            if pos > 0 and current:
+                pos -= 1
+                del current[pos]
+
+        elif ch == curses.ascii.NL:     # Enter
+            win.erase()
+            return ''.join(current)
+
+        elif ch == curses.KEY_RESIZE:
+            LOG.debug("window resize")
+            # Curses communicates window resize via a fake keypress
+            raise ResizeException()
+
+        else:
+            # Regular character
+            current.insert(pos, chr(ch))
+            pos += 1
+
+        redisplay(win, ''.join(current), pos)
+
+
+def redisplay(win, current, pos):
+    win.erase()
+    win.addstr(current)
+    win.move(0, pos)
+    win.refresh()
+
+
+class ResizeException(Exception):
+    """For edit to tell it's thread to quit,
+    because we made a new window, so we need a new thread.
+    """
+    pass
 
