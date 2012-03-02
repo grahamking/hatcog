@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-const (
-	SYS_COMMANDS = "004 005 254 353 366 376 MODE JOIN PING"
-)
-
 var (
 	ELSHORT     = os.NewError("Line too short")
 	ELMALFORMED = os.NewError("Malformed line")

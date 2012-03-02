@@ -145,8 +145,8 @@ func (self *External) Consume() {
 func (self *External) act(line *Line) {
 
 	if line.Command == "PING" {
+        // Reply, and send message on to client
 		self.SendRaw("PONG goirc")
-		return
 	} else if line.Command == "VERSION" {
 		versionMsg := "NOTICE " + line.User + " :\u0001VERSION " + VERSION + "\u0001\n"
 		self.SendRaw(versionMsg)

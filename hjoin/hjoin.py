@@ -202,7 +202,7 @@ class Client(object):
             return -1
 
     def on_002(self, obj, display):
-        """Host"""
+        """Extract host name. The first PING will replace this"""
         host_msg = obj['content'].split(',')[0]
         host_msg = host_msg.replace("Your host is ", "").strip()
         self.terminal.set_host(host_msg)
@@ -212,6 +212,17 @@ class Client(object):
         url = obj['content']
         msg = "%s (%s)" % (self.channel, url)
         self.terminal.set_channel(msg)
+        return -1
+
+    def on_mode(self, obj, display):
+        """Block mode messages with an empty mode"""
+        if not obj['content']:
+            return -1
+
+    def on_ping(self, obj, display):
+        """Tell the UI we got a server ping"""
+        server_name = obj['content']
+        self.terminal.set_ping(server_name)
         return -1
 
 

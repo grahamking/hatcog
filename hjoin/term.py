@@ -210,6 +210,11 @@ class Terminal(object):
         self.win_header.addstr(0, right_pos, host)
         self.win_header.refresh()
 
+    def set_ping(self, server_name):
+        """Received a server ping"""
+        now = datetime.now().strftime("%H:%M")
+        self.set_host("%s (Last ping %s)" % (server_name, now))
+
     def resize(self):
         """Resize the app"""
         self.delete_gui()
