@@ -23,6 +23,7 @@ class Terminal(object):
         self.win_input = None
         self.win_status = None
 
+        self.nick = None
         self.cache = {}
         self.lines = []
 
@@ -72,7 +73,7 @@ class Terminal(object):
         self.max_height, self.max_width = self.stdscr.getmaxyx()
         self.stdscr.nodelay(True)
 
-        curses.curs_set(0)
+        #curses.curs_set(0)
 
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
@@ -138,7 +139,20 @@ class Terminal(object):
         """Write 'message' to output window"""
         if not message:
             return
-        self.win_output.addstr(message + "\n")
+
+        if self.nick in message:            # Highlight nick
+            pos = message.find(self.nick)
+
+            before = message[:pos]
+            self.win_output.addstr(before)
+
+            self.win_output.addstr(self.nick, curses.A_BOLD)
+
+            after = message[pos + len(self.nick):]
+            self.win_output.addstr(after + "\n")
+
+        else:
+            self.win_output.addstr(message + "\n")
 
         if refresh:
             self.lines.append(message)
@@ -147,7 +161,7 @@ class Terminal(object):
                 self.lines = self.lines[len(self.lines) - MAX_BUFFER : ]
             self.win_output.refresh()
 
-    def write_msg(self, username, content, is_me, now=None, refresh=True):
+    def write_msg(self, username, content, now=None, refresh=True):
         """Write a user message, with fancy formatting"""
 
         if not now:
@@ -155,22 +169,24 @@ class Terminal(object):
 
         self.win_output.addstr(now + " ")
 
-        username = lpad(15, username)
+        is_me = username == self.nick
+        padded_username = lpad(15, username)
         if is_me:
-            self.win_output.addstr(username, curses.A_BOLD)
+            self.win_output.addstr(padded_username, curses.A_BOLD)
         else:
             col = self.users.color_for(username)
-            self.win_output.addstr(username, curses.color_pair(col))
+            self.win_output.addstr(padded_username, curses.color_pair(col))
 
         self.write(" " + content, refresh=False)
 
         if refresh:
-            self.lines.append((now, username, is_me, content))
+            self.lines.append((now, username, content))
             self.win_output.refresh()
 
     def set_nick(self, nick):
         """Set user nick"""
         self.cache['set_nick'] = nick
+        self.nick = nick
         self.win_status.addstr(0, 0, nick)
         self.win_status.refresh()
 
@@ -225,20 +241,36 @@ class Terminal(object):
         # Now display the main window data
         for line in self.lines:
             if isinstance(line, tuple):
-                now, username, is_me, content = line
-                self.write_msg(username, content, is_me, now=now, refresh=False)
+                now, username, content = line
+                self.write_msg(username, content, now=now, refresh=False)
             else:
                 self.write(line, refresh=False)
 
         self.win_output.refresh()
 
 
+def lpad(num, string):
+    """Left pad a string"""
+    needed = num - len(string)
+    return " " * needed + string
+
+
+class ResizeException(Exception):
+    """For textpad edit to tell it's thread to quit,
+    because we made a new window, so we need a new textpad and thread.
+    """
+    pass
+
+#
+# Input thread
+#
+
 def input_thread(win, from_user, validate):
     """Listen for user input and write to queue.
     Runs in separate thread.
     """
 
-    textbox = curses.textpad.Textbox(win)
+    textbox = curses.textpad.Textbox(win, insert_mode=True)
     while True:
         try:
             user_input = textbox.edit(validate)
@@ -249,15 +281,4 @@ def input_thread(win, from_user, validate):
         from_user.put(user_input)
         win.erase()
 
-
-def lpad(num, string):
-    """Left pad a string"""
-    needed = num - len(string)
-    return " " * needed + string
-
-class ResizeException(Exception):
-    """For textpad edit to tell it's thread to quit,
-    because we made a new window, so we need a new textpad and thread.
-    """
-    pass
 

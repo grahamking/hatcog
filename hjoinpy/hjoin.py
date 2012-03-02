@@ -122,7 +122,7 @@ class Client(object):
                 msg = self.from_user.get_nowait()
                 self.server.write(msg)
 
-                self.terminal.write_msg(self.nick, msg, True)
+                self.terminal.write_msg(self.nick, msg)
 
                 activity = True
             except Empty:
@@ -163,10 +163,7 @@ class Client(object):
     def on_privmsg(self, obj, display):
         """A message. Format it nicely."""
         username = obj['user']
-        self.terminal.write_msg(
-                username,
-                obj['content'],
-                username == self.nick)
+        self.terminal.write_msg(username, obj['content'])
         return -1
 
     def on_join(self, obj, display):
