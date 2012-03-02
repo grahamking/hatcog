@@ -19,9 +19,10 @@ class Server(object):
         self.listen_thread.start()
 
     def write(self, msg):
+        """Send a string message to the server"""
         if not msg:
             return
-        self.conn.sendall(msg +"\n")
+        self.conn.sendall(msg + "\n")
 
     def stop(self):
         """Close server connection"""

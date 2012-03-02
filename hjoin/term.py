@@ -28,6 +28,9 @@ class Terminal(object):
         self.cache = {}
         self.lines = []
 
+        self.max_height = 0
+        self.max_width = 0
+
         self.start()
         self.create_gui()
         self.start_input_thread()
@@ -58,7 +61,6 @@ class Terminal(object):
                 curses.init_pair(i, i, -1)
         except:
             LOG.warn("Exception in curses color init")
-            pass
 
         self.stdscr = stdscr
 
@@ -156,7 +158,7 @@ class Terminal(object):
             self.lines.append(message)
             # Do "+ 10" here so that we don't slice the buffer on every line
             if len(self.lines) > MAX_BUFFER + 10:
-                self.lines = self.lines[len(self.lines) - MAX_BUFFER : ]
+                self.lines = self.lines[len(self.lines) - MAX_BUFFER:]
             self.win_output.refresh()
 
     def write_msg(self, username, content, now=None, refresh=True):
@@ -255,75 +257,140 @@ def input_thread(win, from_user, terminal):
     """Listen for user input and write to queue.
     Runs in separate thread.
     """
-
-    while 1:
-        try:
-            from_user.put( gather_input(win, terminal) )
-        except ResizeException:
-            terminal.resize()
-            break
+    TermInput(win, from_user, terminal).run()
 
 
-def gather_input(win, terminal):
-    """Gather input from this window - main input loop"""
+class TermInput(object):
+    """Gathers input from terminal"""
 
-    current = []
-    pos = 0
-    while 1:
-        ch = win.getch()
-        if ch == -1:
-            win.move(0, pos)
-            time.sleep(0.1)
-            continue
+    KEYS = {
+        curses.KEY_LEFT: "key_left",
+        curses.KEY_RIGHT: "key_right",
+        curses.KEY_HOME: "key_home",
+        curses.KEY_END: "key_end",
+        curses.KEY_BACKSPACE: "key_backspace",
+        curses.ascii.NL: "key_enter",
+        curses.KEY_RESIZE: "key_resize",
+        9: "key_tab",  # curses doesn't seem to have a constant
+    }
 
-        if ch == curses.KEY_LEFT:
-            if pos > 0:
-                pos -= 1
+    def __init__(self, win, from_user, terminal):
+        self.win = win
+        self.from_user = from_user
+        self.terminal = terminal
 
-        elif ch == curses.KEY_RIGHT:
-            if pos < len(current):
-                pos += 1
+        self.current = []
+        self.pos = 0
 
-        elif ch == curses.KEY_HOME:
-            pos = 0
+    def run(self):
+        """Main input gather loop"""
+        while 1:
+            try:
+                self.from_user.put(self.gather())
+            except ResizeException:
+                self.terminal.resize()
+                break
 
-        elif ch == curses.KEY_END:
-            pos = len(current)
+    def gather(self):
+        """Gather input from this window - main input loop"""
 
-        elif ch == curses.KEY_BACKSPACE:
-            if pos > 0 and current:
-                pos -= 1
-                del current[pos]
+        while 1:
+            char = self.win.getch()
 
-        elif ch == curses.ascii.NL:     # Enter
-            win.erase()
-            return ''.join(current)
+            if char == -1:    # No input
 
-        elif ch == curses.KEY_RESIZE:
-            LOG.debug("window resize")
-            # Curses communicates window resize via a fake keypress
-            raise ResizeException()
+                # Move cursor back to input box, in case output moved it
+                self.win.move(0, self.pos)
 
-        elif ch == 9:   # Tab - curses doesn't seem to have a constant
-            LOG.debug("auto complete")
-            nick_part = word_at_pos(''.join(current), pos)
-            nick = terminal.users.first_match(nick_part, exclude=[terminal.nick])
-            current = list(''.join(current).replace(nick_part, nick))
-            pos = pos + (len(nick) - len(nick_part))
+                time.sleep(0.1)
+                continue
 
-        elif curses.ascii.isprint(ch):
-            # Regular character, display it
-            current.insert(pos, chr(ch))
-            pos += 1
+            elif char in TermInput.KEYS:
+                key_func = getattr(self, TermInput.KEYS[char])
+                result = key_func()
+                if result:
+                    return result
 
-        redisplay(win, ''.join(current), pos)
+            elif curses.ascii.isprint(char):
+                # Regular character, display it
+                self.current.insert(self.pos, chr(char))
+                self.pos += 1
 
+            self.redisplay()
 
-def redisplay(win, current, pos):
-    win.erase()
-    win.addstr(current)
-    win.move(0, pos)
-    win.refresh()
+    def redisplay(self):
+        """Display current input in input window."""
+        self.win.erase()
+        self.win.addstr(''.join(self.current))
+        self.win.move(0, self.pos)
+        self.win.refresh()
+
+    def key_left(self):
+        """Move one char left"""
+        if self.pos > 0:
+            self.pos -= 1
+
+    def key_right(self):
+        """Move one char right"""
+        if self.pos < len(self.current):
+            self.pos += 1
+
+    def key_home(self):
+        """Move to start of line"""
+        self.pos = 0
+
+    def key_end(self):
+        """Move to end of line"""
+        self.pos = len(self.current)
+
+    def key_backspace(self):
+        """Delete char just before cursor"""
+        if self.pos > 0 and self.current:
+            self.pos -= 1
+            del self.current[self.pos]
+
+    def key_enter(self):
+        """Send input to queue, clear field"""
+
+        result = ''.join(self.current)
+
+        self.win.erase()
+        self.pos = 0
+        self.current = []
+
+        return result
+
+    def key_resize(self):
+        """Curses communicates window resize via a fake keypress"""
+        LOG.debug("window resize")
+        raise ResizeException()
+
+    def key_tab(self):
+        """Auto-complete nick"""
+        LOG.debug("auto complete")
+
+        nick_part = self.word_at_pos()
+        nick = self.terminal.users.first_match(
+                nick_part,
+                exclude=[self.terminal.nick])
+
+        self.current = list(''.join(self.current).replace(nick_part, nick))
+        self.pos += len(nick) - len(nick_part)
+
+    def word_at_pos(self):
+        """The word ending at the cursor (pos) in string"""
+        string = ''.join(self.current)
+        if not string:
+            return ""
+
+        string = string[:self.pos].strip()
+        start = string.rfind(" ")
+        if start == -1:
+            start = 0
+        if start >= self.pos:
+            return ""
+
+        return string[start:self.pos].strip()
 
 
 class ResizeException(Exception):
@@ -332,18 +399,4 @@ class ResizeException(Exception):
     """
     pass
 
-
-def word_at_pos(string, pos):
-    """The word ending at the cursor (pos) in string"""
-    if not string:
-        return ""
-
-    string = string[:pos].strip()
-    start = string.rfind(" ")
-    if start == -1:
-        start = 0
-    if start >= pos:
-        return ""
-
-    return string[start:pos].strip()
 

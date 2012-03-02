@@ -1,3 +1,4 @@
+"""Map IRC commands to display messages."""
 
 import sys
 import json
@@ -34,7 +35,7 @@ PATTERNS_IN = {
     '332': u'Topic: %(content)s',
 
     # NAMES reply
-    '353': u'Users currently in %(channel)s: %(content)s',
+    '353': u'Users in %(channel)s: %(content)s',
 
     # IRC ops online
     '252': u'%(content)s %(arg1)s',
@@ -69,6 +70,7 @@ DEFAULT = [
     '375'
 ]
 
+
 def lowercase_keys(dict_obj):
     """Convert map keys to lower case"""
     for key in dict_obj.keys():
@@ -86,6 +88,7 @@ def add_args(dict_obj):
     for item in dict_obj['args']:
         dict_obj['arg%d' % index] = item
         index += 1
+
 
 def translate_in(line, callbacks):
     """Translate a JSON line from the server
@@ -109,7 +112,7 @@ def translate_in(line, callbacks):
     try:
         obj = json.loads(line)
     except ValueError:
-        logging.exception("JSON parse error on '" + line +"'")
+        logging.exception("JSON parse error on '" + line + "'")
         return line
 
     lowercase_keys(obj)
@@ -130,7 +133,7 @@ def translate_in(line, callbacks):
     retval = None
     func_name = 'on_' + cmd.lower()
     if hasattr(callbacks, func_name):
-        retval = getattr(callbacks, func_name)(obj, display)
+        retval = getattr(callbacks, func_name)(obj)
         if retval == -1:
             return None
 
@@ -179,14 +182,14 @@ if __name__ == '__main__':
     if '--in' in sys.argv:
         func_translate = translate_in
     elif '--out' in sys.argv:
-        func_translate = lambda x : translate_out(sys.argv[2], x)
+        func_translate = lambda x: translate_out(sys.argv[2], x)
     else:
         print('Usage: some_data | hfilter.py [--in|--out] [channel]')
         sys.exit(1)
 
-    for line in sys.stdin:
+    for test_line in sys.stdin:
 
-        result = func_translate(line)
+        result = func_translate(test_line)
 
         if result:
             print(result)
