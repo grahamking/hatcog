@@ -4,6 +4,11 @@ from threading import Thread
 import curses
 import curses.textpad
 from datetime import datetime
+import logging
+
+MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
+LOG = logging.getLogger(__name__)
+
 
 class Terminal(object):
     """Curses user interface"""
@@ -18,13 +23,12 @@ class Terminal(object):
         self.win_input = None
         self.win_status = None
 
+        self.cache = {}
+        self.lines = []
+
         self.start()
         self.create_gui()
-
-        args = (self.win_input, self.from_user)
-        self.input_thread = Thread(name='term', target=input_thread, args=args)
-        self.input_thread.daemon = True
-        self.input_thread.start()
+        self.start_input_thread()
 
     def start(self):
         """Initialize curses. Copied from curses/wrapper.py"""
@@ -47,9 +51,11 @@ class Terminal(object):
         # module -- the error return from C start_color() is ignorable.
         try:
             curses.start_color()
+            curses.use_default_colors()
             for i in xrange(1, curses.COLORS):
-                curses.init_pair(i, i, curses.COLOR_BLACK)
+                curses.init_pair(i, i, -1)
         except:
+            LOG.warn("Exception in curses color init")
             pass
 
         self.stdscr = stdscr
@@ -70,7 +76,7 @@ class Terminal(object):
 
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
-        self.win_header.addstr(" " * (self.max_width - 2))
+        self.win_header.addstr(" " * (self.max_width - 1))
         self.win_header.addstr(0, 0, "+ hatcog +")
         self.win_header.refresh()
 
@@ -102,17 +108,51 @@ class Terminal(object):
         # Move cursor to input window
         #curses.setsyx(self.max_height - 1, 2)
 
-    def write(self, message):
+    def start_input_thread(self):
+        """Starts the thread that listen for user input in the textbox"""
+        args = (self.win_input, self.from_user, self.check_resize)
+        thread = Thread(name='term', target=input_thread, args=args)
+        thread.daemon = True
+        thread.start()
+        return
+
+    def delete_gui(self):
+        """Remove all windows. Called on resize."""
+
+        if self.win_header:
+            del self.win_header
+
+        if self.win_output:
+            del self.win_output
+
+        if self.win_input:
+            del self.win_input
+
+        if self.win_status:
+            del self.win_status
+
+        self.stdscr.erase()
+        self.stdscr.refresh()
+
+    def write(self, message, refresh=True):
         """Write 'message' to output window"""
         if not message:
             return
         self.win_output.addstr(message + "\n")
-        self.win_output.refresh()
 
-    def write_msg(self, username, content, is_me):
+        if refresh:
+            self.lines.append(message)
+            # Do "+ 10" here so that we don't slice the buffer on every line
+            if len(self.lines) > MAX_BUFFER + 10:
+                self.lines = self.lines[len(self.lines) - MAX_BUFFER : ]
+            self.win_output.refresh()
+
+    def write_msg(self, username, content, is_me, now=None, refresh=True):
         """Write a user message, with fancy formatting"""
 
-        now = datetime.now().strftime("%H:%M")
+        if not now:
+            now = datetime.now().strftime("%H:%M")
+
         self.win_output.addstr(now + " ")
 
         username = lpad(15, username)
@@ -122,35 +162,90 @@ class Terminal(object):
             col = self.users.color_for(username)
             self.win_output.addstr(username, curses.color_pair(col))
 
-        self.write(" " + content)
+        self.write(" " + content, refresh=False)
+
+        if refresh:
+            self.lines.append((now, username, is_me, content))
+            self.win_output.refresh()
 
     def set_nick(self, nick):
         """Set user nick"""
+        self.cache['set_nick'] = nick
         self.win_status.addstr(0, 0, nick)
         self.win_status.refresh()
 
     def set_channel(self, channel):
         """Set current channel"""
+        self.cache['set_channel'] = channel
         mid_pos = (self.max_width - (len(channel) + 1)) / 2
         self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
         self.win_status.refresh()
 
     def set_users(self, count):
         """Set number of users"""
+        self.cache['set_users'] = count
         msg = "%d users" % count
         right_pos = self.max_width - (len(msg) + 1)
         self.win_status.addstr(0, right_pos, msg)
         self.win_status.refresh()
 
+    def set_host(self, host):
+        """Set the host message"""
+        self.cache['set_host'] = host
+        right_pos = self.max_width - (len(host) + 1)
+        self.win_header.addstr(0, right_pos, host)
+        self.win_header.refresh()
 
-def input_thread(win, from_user):
+    def check_resize(self, char):
+        """Check if input character 'char' is the resize event"""
+        if char == curses.KEY_RESIZE:
+            LOG.debug("Resize")
+
+            self.resize()
+
+            raise ResizeException()
+        else:
+            return char
+
+    def resize(self):
+        """Resize the app"""
+        self.delete_gui()
+        self.create_gui()
+        self.start_input_thread()
+        self.display_from_cache()
+
+    def display_from_cache(self):
+        """GUI was re-drawn, so display all caches data.
+        The cache keys are method names, the values
+        the arguments to those methods.
+        """
+        for key, val in self.cache.items():
+            getattr(self, key)(val)
+
+        # Now display the main window data
+        for line in self.lines:
+            if isinstance(line, tuple):
+                now, username, is_me, content = line
+                self.write_msg(username, content, is_me, now=now, refresh=False)
+            else:
+                self.write(line, refresh=False)
+
+        self.win_output.refresh()
+
+
+def input_thread(win, from_user, validate):
     """Listen for user input and write to queue.
     Runs in separate thread.
     """
 
     textbox = curses.textpad.Textbox(win)
     while True:
-        user_input = textbox.edit()
+        try:
+            user_input = textbox.edit(validate)
+        except ResizeException:
+            LOG.debug("Resize - input thread replace.")
+            break
+
         from_user.put(user_input)
         win.erase()
 
@@ -159,4 +254,10 @@ def lpad(num, string):
     """Left pad a string"""
     needed = num - len(string)
     return " " * needed + string
+
+class ResizeException(Exception):
+    """For textpad edit to tell it's thread to quit,
+    because we made a new window, so we need a new textpad and thread.
+    """
+    pass
 

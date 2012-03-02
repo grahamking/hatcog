@@ -1,6 +1,9 @@
 """Connection to hatcogd"""
 
 from threading import Thread
+#import logging
+
+#LOG = logging.getLogger(__name__)
 
 
 class Server(object):

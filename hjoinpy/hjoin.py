@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 import os
 import sys
 import logging
@@ -21,12 +21,6 @@ DAEMON_ADDR        = "127.0.0.1:8790"
 CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin/hatcogd"
 CMD_STOP_DAEMON  = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
 
-ONE_SECOND_NS = 1000 * 1000 * 1000
-RPL_NAMREPLY       = "353"
-RPL_TOPIC          = "332"
-ERR_UNKNOWNCOMMAND = "421"
-CHANNEL_CMDS       = "PRIVMSG, ACTION, PART, JOIN, " + RPL_NAMREPLY
-
 USAGE         = """
 Usage: hjoin [channel|-private=nick]
 Note there's no # in front of the channel
@@ -34,6 +28,8 @@ Examples:
  1. Join channel test: hjoinpy test
  2. Listen for private (/query) message from bob: hjoinpy -private=bob
 """
+
+SENSIBLE_AMOUNT = 25
 
 LOG = logging.getLogger(__name__)
 
@@ -58,14 +54,12 @@ def main(argv=None):
         return 0
 
     if arg.startswith("-private"):
-        print('TODO: private messages')
-        #channel = *userPrivate
+        channel = arg.split("=")[1]
     else:
 		channel = "#" + arg
 
-    #TODO conf = loadConfig()
-    #TODO password = getPassword(conf)
-    password = ''
+    conf = load_config(os.getenv("HOME"))
+    password = get_password(conf)
 
     client = Client(channel, password, DAEMON_ADDR)
 
@@ -111,7 +105,12 @@ class Client(object):
             self.server.write("/pw " + self.password)
 
         time.sleep(1)
-        self.server.write("/join " + self.channel)
+
+        if self.channel.startswith("#"):
+            self.server.write("/join " + self.channel)
+        else:
+            # Private message (query). /private is not standard.
+            self.server.write("/private " + self.channel)
 
     def run(self):
         """Main loop"""
@@ -175,15 +174,44 @@ class Client(object):
         self.users.add(obj['user'])
         self.terminal.set_users(self.users.count())
 
+        # Don't display joins in large channels
+        if self.users.count() > SENSIBLE_AMOUNT:
+            return -1
+
     def on_part(self, obj, display):
         """User left channel"""
         self.users.remove(obj['user'])
         self.terminal.set_users(self.users.count())
 
+        # Don't display parts in large channels
+        if self.users.count() > SENSIBLE_AMOUNT:
+            return -1
+
+    def on_quit(self, obj, display):
+        """User quit IRC - treat it the same aw leaving the channel"""
+        return self.on_part(obj, display)
+
     def on_353(self, obj, display):
         """Reply to /names"""
         self.users.add_all(obj['content'])
         self.terminal.set_users(self.users.count())
+
+        # Don't display list of users if there's too many
+        if self.users.count() > SENSIBLE_AMOUNT:
+            return -1
+
+    def on_002(self, obj, display):
+        """Host"""
+        host_msg = obj['content'].split(',')[0]
+        host_msg = host_msg.replace("Your host is ", "").strip()
+        self.terminal.set_host(host_msg)
+
+    def on_328(self, obj, display):
+        """Channel url"""
+        url = obj['content']
+        msg = "%s (%s)" % (self.channel, url)
+        self.terminal.set_channel(msg)
+        return -1
 
 
 class UserManager(object):
@@ -208,8 +236,6 @@ class UserManager(object):
         for username in usernames.split(" "):
             self.add(username)
 
-        LOG.debug(self.users)
-
     def color_for(self, username):
         """The color to display a given user in"""
         if not username in self.colors:
@@ -219,6 +245,37 @@ class UserManager(object):
     def count(self):
         """Number of users in the channel"""
         return len(self.users)
+
+
+def load_config(home):
+    """Load / Parse the config file"""
+
+    filename = home + DEFAULT_CONFIG
+    LOG.debug("Reading config file: %s", filename)
+
+    conf = {}
+    for line in open(filename):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        key, value = line.split("=")
+        conf[key.strip()] = value.strip(" \"'")
+
+    return conf
+
+
+def get_password(conf):
+    """Get password from config file"""
+
+    password = conf["password"].strip()
+
+    if password.startswith("$("):
+        pwd_cmd = password[2:len(password)-1]
+        LOG.debug("Running command to get password: %s", pwd_cmd)
+        password = subprocess.check_output(pwd_cmd.split(' '))
+
+    return password
 
 
 def get_daemon_connection():
@@ -251,7 +308,7 @@ def start_daemon():
     is_ready = False
     while not is_ready:
         try:
-            time.sleep(0.5)
+            time.sleep(0.1)
             sock = socket.create_connection((host, port))
             is_ready = True
         except:
