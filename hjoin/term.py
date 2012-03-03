@@ -186,6 +186,12 @@ class Terminal(object):
     def set_nick(self, nick):
         """Set user nick"""
         self.cache['set_nick'] = nick
+
+        # Erase previous nick
+        if self.nick:
+            self.win_status.addstr(0, 0, " " * len(self.nick))
+
+        # Record and display new nick
         self.nick = nick
         self.win_status.addstr(0, 0, nick)
         self.win_status.refresh()

@@ -1,9 +1,17 @@
 
 ## Quickstart
 
-Copy hatcogd and hjoin.py to /usr/local/bin
+Build hatcogd. You'll need [Go](http://golang.org). Type 'gomake' in 'hatcogd'.
+
+Symlink hatcogd and hjoin in /usr/local/bin:
+ cd /usr/local/bin
+ sudo ln -s /home/username/checkout/hatcog/hjoin/hjoin.py hjoin
+ sudo ln -s /home/username/checkout/hatcog/hatcogd/hatcogd hatcogd
+
 Copy .hatcogrc to your home directory. Edit it.
+
 Run 'hjoin.py <channel>' e.g. hjoin test
+
 Log files are in ~/.hatcog/
 
 For a private message: 'hjoin.py -private=<nick>'
@@ -22,9 +30,7 @@ When someone says your name in a channel or sends you a private message, we try 
 
 ## Supported commands
 
-PRIVMSG, ACTION (/me), QUIT, PART, JOIN, NAMES, NICK
-
-Anything you prefix with / is send direct to the server, so probably many more commands are supported, which don't require special handling.
+See hjoin/hfilter.py for a list. Anything you prefix with / is send direct to the server. DCC is not supported.
 
 ## Development
 

@@ -11,7 +11,7 @@ from Queue import Queue, Empty
 
 from term import Terminal
 from remote import Server
-from hfilter import translate_in
+from hfilter import translate_in, is_irc_command
 
 VERSION = "hatcog v0.5 (github.com/grahamking/hatcog)"
 DEFAULT_CONFIG = "/.hatcogrc"
@@ -159,9 +159,11 @@ class Client(object):
                 raise StopException()
 
             if msg:
-                self.server.write(msg)
-                self.terminal.write_msg(self.nick, msg)
                 activity = True
+                self.server.write(msg)
+
+                if not is_irc_command(msg):
+                    self.terminal.write_msg(self.nick, msg)
 
         except Empty:
             pass
@@ -198,7 +200,11 @@ class Client(object):
 
     def on_nick(self, obj):
         """A nick change, possibly our own."""
-        if not obj['user']:
+
+        self.users.remove(obj['user'])
+        self.users.add(obj['content'])
+
+        if not obj['user'] or obj['user'] == self.nick:
             self.nick = obj['content']
             self.terminal.set_nick(self.nick)
             return "You are now known as %s" % self.nick
@@ -280,7 +286,10 @@ class UserManager(object):
 
     def remove(self, username):
         """User left channel"""
-        self.users.remove(username)
+        try:
+            self.users.remove(username)
+        except KeyError:
+            pass
 
     def add_all(self, usernames):
         """Add a bunch of users"""
