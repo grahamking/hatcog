@@ -28,6 +28,7 @@ PATTERNS_IN = {
     'PRIVMSG': u'[%(user)s] \t %(content)s',
     'QUIT': u'%(user)s has quit',
     'MODE': u'Mode set to %(content)s',
+    'ACTION': u'* %(user)s %(content)s',
 
     # Message of the day
     '372': u'%(content)s',
@@ -71,6 +72,8 @@ DEFAULT = [
     '375'
 ]
 
+LOG = logging.getLogger(__name__)
+
 
 def lowercase_keys(dict_obj):
     """Convert map keys to lower case"""
@@ -113,7 +116,7 @@ def translate_in(line, callbacks, timestamp=False):
     try:
         obj = json.loads(line)
     except ValueError:
-        logging.exception("JSON parse error on '" + line + "'")
+        LOG.exception("JSON parse error on '%s'", line)
         return line
 
     lowercase_keys(obj)
@@ -127,12 +130,11 @@ def translate_in(line, callbacks, timestamp=False):
     if cmd in PATTERNS_IN:
         pattern = PATTERNS_IN[cmd]
 
-    output = pattern % obj
-    display = output.encode('utf8')
+    display = pattern % obj
 
     if timestamp:
         now = datetime.now().isoformat()
-        display = now + " " + display
+        display = now + u" " + display
 
     # Call a method on 'callbacks', for additional processing
     retval = None

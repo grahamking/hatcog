@@ -6,6 +6,9 @@ import curses.ascii
 from datetime import datetime
 import logging
 import time
+import locale
+
+from hfilter import is_irc_command
 
 MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
 LOG = logging.getLogger(__name__)
@@ -36,7 +39,11 @@ class Terminal(object):
         self.start_input_thread()
 
     def start(self):
-        """Initialize curses. Copied from curses/wrapper.py"""
+        """Initialize curses. Mostly copied from curses/wrapper.py"""
+
+        # This might do some good
+        locale.setlocale(locale.LC_ALL, "")
+
         # Initialize curses
         stdscr = curses.initscr()
 
@@ -144,15 +151,15 @@ class Terminal(object):
             pos = message.find(self.nick)
 
             before = message[:pos]
-            self.win_output.addstr(before)
+            self.win_output.addstr(before.encode("utf8"))
 
-            self.win_output.addstr(self.nick, curses.A_BOLD)
+            self.win_output.addstr(self.nick.encode("utf8"), curses.A_BOLD)
 
             after = message[pos + len(self.nick):]
-            self.win_output.addstr(after + "\n")
+            self.win_output.addstr(after.encode("utf8") + "\n")
 
         else:
-            self.win_output.addstr(message + "\n")
+            self.win_output.addstr(message.encode("utf8") + "\n")
 
         if refresh:
             self.lines.append(message)
@@ -172,12 +179,16 @@ class Terminal(object):
         is_me = username == self.nick
         padded_username = lpad(15, username)
         if is_me:
-            self.win_output.addstr(padded_username, curses.A_BOLD)
+            self.win_output.addstr(
+                    padded_username.encode("utf8"),
+                    curses.A_BOLD)
         else:
             col = self.users.color_for(username)
-            self.win_output.addstr(padded_username, curses.color_pair(col))
+            self.win_output.addstr(
+                    padded_username.encode("utf8"),
+                    curses.color_pair(col))
 
-        self.write(" " + content, refresh=False)
+        self.write(u" " + content, refresh=False)
 
         if refresh:
             self.lines.append((now, username, content))
@@ -193,7 +204,7 @@ class Terminal(object):
 
         # Record and display new nick
         self.nick = nick
-        self.win_status.addstr(0, 0, nick)
+        self.win_status.addstr(0, 0, nick.encode("utf8"))
         self.win_status.refresh()
 
     def set_channel(self, channel):
@@ -221,7 +232,7 @@ class Terminal(object):
     def set_ping(self, server_name):
         """Received a server ping"""
         now = datetime.now().strftime("%H:%M")
-        self.set_host("%s (Last ping %s)" % (server_name, now))
+        self.set_host("%s (Last ping %s)" % (server_name.encode("utf8"), now))
 
     def resize(self):
         """Resize the app"""
@@ -252,7 +263,7 @@ class Terminal(object):
 def lpad(num, string):
     """Left pad a string"""
     needed = num - len(string)
-    return " " * needed + string
+    return u" " * needed + string
 
 
 #
@@ -317,17 +328,27 @@ class TermInput(object):
                 if result:
                     return result
 
-            elif curses.ascii.isprint(char):
+            else:
                 # Regular character, display it
-                self.current.insert(self.pos, chr(char))
-                self.pos += 1
+                try:
+                    self.current.insert(self.pos, chr(char))
+                    self.pos += 1
+                except ValueError:
+                    # Throw by 'chr'. Not a printable char, ignore.
+                    pass
 
             self.redisplay()
 
     def redisplay(self):
         """Display current input in input window."""
         self.win.erase()
-        self.win.addstr(''.join(self.current))
+
+        msg = ''.join(self.current)
+        if is_irc_command(msg):
+            self.win.addstr(msg, curses.A_BOLD)
+        else:
+            self.win.addstr(msg)
+
         self.win.move(0, self.pos)
         self.win.refresh()
 
@@ -364,7 +385,7 @@ class TermInput(object):
         self.pos = 0
         self.current = []
 
-        return result
+        return result.decode("utf8")
 
     def key_resize(self):
         """Curses communicates window resize via a fake keypress"""
@@ -373,8 +394,6 @@ class TermInput(object):
 
     def key_tab(self):
         """Auto-complete nick"""
-        LOG.debug("auto complete")
-
         nick_part = self.word_at_pos()
         nick = self.terminal.users.first_match(
                 nick_part,

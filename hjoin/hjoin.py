@@ -155,14 +155,19 @@ class Client(object):
 
         try:
             msg = self.from_user.get_nowait()
-            if msg == '/quit':
+
+            if msg == u"/quit":
                 raise StopException()
 
             if msg:
                 activity = True
                 self.server.write(msg)
 
-                if not is_irc_command(msg):
+                if msg.startswith(u"/me "):
+                    me_msg = u"* " + msg.replace(u"/me ", self.nick + u" ")
+                    self.terminal.write(me_msg)
+
+                elif not is_irc_command(msg):
                     self.terminal.write_msg(self.nick, msg)
 
         except Empty:
@@ -177,6 +182,7 @@ class Client(object):
         try:
             msg = self.from_server.get_nowait()
             LOG.debug(msg)
+
             display = translate_in(msg, self)
             if display:
                 self.terminal.write(display)
@@ -201,13 +207,16 @@ class Client(object):
     def on_nick(self, obj):
         """A nick change, possibly our own."""
 
-        self.users.remove(obj['user'])
-        self.users.add(obj['content'])
+        old_nick = obj['user']
+        new_nick = obj['content']
 
-        if not obj['user'] or obj['user'] == self.nick:
-            self.nick = obj['content']
+        self.users.remove(old_nick)
+        self.users.add(new_nick)
+
+        if not old_nick or old_nick == self.nick:
+            self.nick = new_nick
             self.terminal.set_nick(self.nick)
-            return "You are now known as %s" % self.nick
+            return u"You are now known as %s" % self.nick
 
     def on_privmsg(self, obj):
         """A message. Format it nicely."""
@@ -255,7 +264,7 @@ class Client(object):
     def on_328(self, obj):
         """Channel url"""
         url = obj['content']
-        msg = "%s (%s)" % (self.channel, url)
+        msg = u"%s (%s)" % (self.channel, url)
         self.terminal.set_channel(msg)
         return -1
 
@@ -280,7 +289,7 @@ class UserManager(object):
 
     def add(self, username):
         """User joined channel"""
-        if username.startswith("@") or username.startswith("+"):
+        if username.startswith(u"@") or username.startswith(u"+"):
             username = username[1:]
         self.users.add(username)
 

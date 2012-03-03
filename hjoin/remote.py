@@ -22,7 +22,7 @@ class Server(object):
         """Send a string message to the server"""
         if not msg:
             return
-        self.conn.sendall(msg + "\n")
+        self.conn.sendall(msg.encode("utf8") + "\n")
 
     def stop(self):
         """Close server connection"""
@@ -39,4 +39,5 @@ def listen_thread(conn, queue):
             data.append(char)
             char = conn.recv(1)
 
-        queue.put(''.join(data))
+        received = "".join(data)
+        queue.put(received.decode("utf8"))
