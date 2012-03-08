@@ -296,6 +296,9 @@ class TermInput(object):
         self.from_user = from_user
         self.terminal = terminal
 
+        _, win_input_width = terminal.win_input.getmaxyx()
+        self.max_len = win_input_width - 1
+
         self.current = []
         self.pos = 0
 
@@ -317,7 +320,8 @@ class TermInput(object):
             if char == -1:    # No input
 
                 # Move cursor back to input box, in case output moved it
-                self.win.move(0, self.pos)
+                move_pos = min(self.pos, self.max_len - 1)
+                self.win.move(0, move_pos)
 
                 time.sleep(0.1)
                 continue
@@ -344,12 +348,17 @@ class TermInput(object):
         self.win.erase()
 
         msg = ''.join(self.current)
+
+        if len(msg) >= self.max_len:
+            msg = msg[len(msg) - self.max_len + 1:]
+
         if is_irc_command(msg):
             self.win.addstr(msg, curses.A_BOLD)
         else:
             self.win.addstr(msg)
 
-        self.win.move(0, self.pos)
+        move_pos = min(self.pos, self.max_len - 1)
+        self.win.move(0, move_pos)
         self.win.refresh()
 
     def key_left(self):
