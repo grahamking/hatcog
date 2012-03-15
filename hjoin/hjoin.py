@@ -6,7 +6,6 @@ import logging
 import time
 import subprocess
 import socket
-import random
 from Queue import Queue, Empty
 
 from term import Terminal
@@ -300,7 +299,14 @@ class Client(object):
 class UserManager(object):
     """Manages users in an IRC channel"""
 
+    # How recently does someone have to have spoken to be considered active?
+    # Time in seconds (default 10 mins)
+    ACTIVE_TIME = 60 * 10
+
     def __init__(self):
+        # Start colors at this one because I like it
+        self.next_color = 9
+
         self.users = set()
         self.colors = {}
         self.last_active = {}
@@ -331,7 +337,9 @@ class UserManager(object):
     def color_for(self, username):
         """The color to display a given user in"""
         if not username in self.colors:
-            self.colors[username] = random.choice(range(230))
+            # Get next number in [1, 14]
+            self.colors[username] = self.next_color % 14 + 1
+            self.next_color += 1
         return self.colors[username]
 
     def count(self):
@@ -359,9 +367,9 @@ class UserManager(object):
 
     def purge_last_active(self):
         """Remove inactive users from 'last_active' map"""
-        five_mins_ago = time.time() - (60 * 5)
+        time_ago = time.time() - UserManager.ACTIVE_TIME
         for nick, last in self.last_active.items():
-            if last < five_mins_ago:
+            if last < time_ago:
                 del self.last_active[nick]
 
 
