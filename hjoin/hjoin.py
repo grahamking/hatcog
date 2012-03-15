@@ -208,6 +208,10 @@ class Client(object):
         """A nick change, possibly our own."""
 
         old_nick = obj['user']
+        if old_nick and old_nick not in self.users:
+            # User not in our channel
+            return -1
+
         new_nick = obj['content']
 
         self.users.remove(old_nick)
@@ -235,7 +239,12 @@ class Client(object):
 
     def on_part(self, obj):
         """User left channel"""
-        self.users.remove(obj['user'])
+        who_left = obj['user']
+        if who_left not in self.users:
+            # User was not in this channel
+            return -1
+
+        self.users.remove(who_left)
         self.terminal.set_users(self.users.count())
 
         # Don't display parts in large channels
@@ -243,7 +252,7 @@ class Client(object):
             return -1
 
     def on_quit(self, obj):
-        """User quit IRC - treat it the same aw leaving the channel"""
+        """User quit IRC - treat it the same as leaving the channel"""
         return self.on_part(obj)
 
     def on_353(self, obj):
@@ -286,6 +295,10 @@ class UserManager(object):
     def __init__(self):
         self.users = set()
         self.colors = {}
+
+    def __contains__(self, candidate):
+        """Support 'in' operate."""
+        return candidate in self.users
 
     def add(self, username):
         """User joined channel"""

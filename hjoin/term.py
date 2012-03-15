@@ -147,7 +147,9 @@ class Terminal(object):
         if not message:
             return
 
-        if self.nick in message:            # Highlight nick
+        if self.nick and self.nick in message:
+            # Highlight nick
+
             pos = message.find(self.nick)
 
             before = message[:pos]
