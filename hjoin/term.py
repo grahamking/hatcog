@@ -31,6 +31,9 @@ class Terminal(object):
         self.cache = {}
         self.lines = []
 
+        self.user_count = 0
+        self.active_user_count = 0
+
         self.max_height = 0
         self.max_width = 0
 
@@ -219,7 +222,20 @@ class Terminal(object):
     def set_users(self, count):
         """Set number of users"""
         self.cache['set_users'] = count
-        msg = "%d users" % count
+        self.user_count = count - 1         # -1 to not include ourselves
+        self._display_user_count()
+
+    def set_active_users(self, active_count):
+        """Set number of active users"""
+        self.cache['set_active_users'] = active_count
+        self.active_user_count = active_count
+        self._display_user_count()
+
+    def _display_user_count(self):
+        """Display number of users in UI"""
+        msg = "{user_count} users ({active_user_count} active)"\
+                .format(user_count=self.user_count,
+                        active_user_count=self.active_user_count)
         right_pos = self.max_width - (len(msg) + 1)
         self.win_status.addstr(0, right_pos, msg)
         self.win_status.refresh()

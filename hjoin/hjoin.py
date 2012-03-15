@@ -226,12 +226,17 @@ class Client(object):
         """A message. Format it nicely."""
         username = obj['user']
         self.terminal.write_msg(username, obj['content'])
+
+        self.users.mark_active(username)
+        self.terminal.set_active_users(self.users.active_count())
+
         return -1
 
     def on_join(self, obj):
         """User joined channel"""
         self.users.add(obj['user'])
         self.terminal.set_users(self.users.count())
+        self.terminal.set_active_users(self.users.active_count())
 
         # Don't display joins in large channels
         if self.users.count() > SENSIBLE_AMOUNT:
@@ -246,6 +251,7 @@ class Client(object):
 
         self.users.remove(who_left)
         self.terminal.set_users(self.users.count())
+        self.terminal.set_active_users(self.users.active_count())
 
         # Don't display parts in large channels
         if self.users.count() > SENSIBLE_AMOUNT:
@@ -259,6 +265,7 @@ class Client(object):
         """Reply to /names"""
         self.users.add_all(obj['content'])
         self.terminal.set_users(self.users.count())
+        self.terminal.set_active_users(self.users.active_count())
 
         # Don't display list of users if there's too many
         if self.users.count() > SENSIBLE_AMOUNT:
@@ -286,6 +293,7 @@ class Client(object):
         """Tell the UI we got a server ping"""
         server_name = obj['content']
         self.terminal.set_ping(server_name)
+        self.terminal.set_active_users(self.users.active_count())
         return -1
 
 
@@ -295,6 +303,7 @@ class UserManager(object):
     def __init__(self):
         self.users = set()
         self.colors = {}
+        self.last_active = {}
 
     def __contains__(self, candidate):
         """Support 'in' operate."""
@@ -310,6 +319,7 @@ class UserManager(object):
         """User left channel"""
         try:
             self.users.remove(username)
+            del self.last_active[username]
         except KeyError:
             pass
 
@@ -337,6 +347,22 @@ class UserManager(object):
             if nick.startswith(nick_part) and not exclude_it:
                 return nick
         return nick_part
+
+    def mark_active(self, nick):
+        """Record activity from given nick"""
+        self.last_active[nick] = time.time()
+
+    def active_count(self):
+        """Number of active users in the channel"""
+        self.purge_last_active()
+        return len(self.last_active)
+
+    def purge_last_active(self):
+        """Remove inactive users from 'last_active' map"""
+        five_mins_ago = time.time() - (60 * 5)
+        for nick, last in self.last_active.items():
+            if last < five_mins_ago:
+                del self.last_active[nick]
 
 
 def load_config(home):
