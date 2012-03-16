@@ -7,9 +7,12 @@ from datetime import datetime
 import logging
 import time
 import locale
+import tempfile
+import subprocess
 
 from hfilter import is_irc_command
 
+PAGER = ["/usr/bin/less", "+G"]     # Program to display scrollback
 MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
 LOG = logging.getLogger(__name__)
 
@@ -36,6 +39,9 @@ class Terminal(object):
 
         self.max_height = 0
         self.max_width = 0
+
+        # File to store what we put on screen, for external scrollback tool
+        self.scrollback = tempfile.NamedTemporaryFile()
 
         self.start()
         self.create_gui()
@@ -156,15 +162,15 @@ class Terminal(object):
             pos = message.find(self.nick)
 
             before = message[:pos]
-            self.win_output.addstr(before.encode("utf8"))
+            self._write(before.encode("utf8"))
 
-            self.win_output.addstr(self.nick.encode("utf8"), curses.A_BOLD)
+            self._write(self.nick.encode("utf8"), curses.A_BOLD)
 
             after = message[pos + len(self.nick):]
-            self.win_output.addstr(after.encode("utf8") + "\n")
+            self._write(after.encode("utf8") + "\n")
 
         else:
-            self.win_output.addstr(message.encode("utf8") + "\n")
+            self._write(message.encode("utf8") + "\n")
 
         if refresh:
             self.lines.append(message)
@@ -179,25 +185,29 @@ class Terminal(object):
         if not now:
             now = datetime.now().strftime("%H:%M")
 
-        self.win_output.addstr(now + " ")
+        self._write(now + " ")
 
         is_me = username == self.nick
         padded_username = lpad(15, username)
         if is_me:
-            self.win_output.addstr(
-                    padded_username.encode("utf8"),
-                    curses.A_BOLD)
+            self._write(padded_username.encode("utf8"), curses.A_BOLD)
         else:
             col = self.users.color_for(username)
-            self.win_output.addstr(
-                    padded_username.encode("utf8"),
-                    curses.color_pair(col))
+            self._write(padded_username.encode("utf8"), curses.color_pair(col))
 
         self.write(u" " + content, refresh=False)
 
         if refresh:
             self.lines.append((now, username, content))
             self.win_output.refresh()
+
+    def _write(self, msg, opt=None):
+        """Actually write to output window"""
+        if opt:
+            self.win_output.addstr(msg, opt)
+        else:
+            self.win_output.addstr(msg)
+        self.scrollback.write(msg)
 
     def set_nick(self, nick):
         """Set user nick"""
@@ -252,8 +262,8 @@ class Terminal(object):
         now = datetime.now().strftime("%H:%M")
         self.set_host("%s (Last ping %s)" % (server_name.encode("utf8"), now))
 
-    def resize(self):
-        """Resize the app"""
+    def rebuild(self):
+        """Rebuild the app, usually because it got resized"""
         self.delete_gui()
         self.create_gui()
         self.start_input_thread()
@@ -306,6 +316,7 @@ class TermInput(object):
         curses.KEY_BACKSPACE: "key_backspace",
         curses.ascii.NL: "key_enter",
         curses.KEY_RESIZE: "key_resize",
+        curses.KEY_PPAGE: "key_pageup",
         9: "key_tab",  # curses doesn't seem to have a constant
     }
 
@@ -325,8 +336,8 @@ class TermInput(object):
         while 1:
             try:
                 self.from_user.put(self.gather())
-            except ResizeException:
-                self.terminal.resize()
+            except RebuildException:
+                self.terminal.rebuild()
                 break
 
     def gather(self):
@@ -417,7 +428,7 @@ class TermInput(object):
     def key_resize(self):
         """Curses communicates window resize via a fake keypress"""
         LOG.debug("window resize")
-        raise ResizeException()
+        raise RebuildException()
 
     def key_tab(self):
         """Auto-complete nick"""
@@ -444,11 +455,19 @@ class TermInput(object):
 
         return string[start:self.pos].strip()
 
+    def key_pageup(self):
+        """PgUp pressed, show scrollback buffer"""
+        self.terminal.scrollback.flush()
 
-class ResizeException(Exception):
+        cmd = list(PAGER)
+        cmd.append(self.terminal.scrollback.name)
+        subprocess.call(cmd)
+
+        raise RebuildException()
+
+
+class RebuildException(Exception):
     """For edit to tell it's thread to quit,
     because we made a new window, so we need a new thread.
     """
     pass
-
-
