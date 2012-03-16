@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net"
-	"os"
-	"json"
-	"strings"
 	"bufio"
+	"encoding/json"
+	"io"
+	"net"
 	"strconv"
+	"strings"
 )
 
 type Internal struct {
@@ -27,8 +27,8 @@ func (self *Internal) Run() {
 		bufRead := bufio.NewReader(self.netConn)
 		content, err := bufRead.ReadString('\n')
 		if err != nil {
-			if err == os.EOF {
-                LOG.Println("Leaving", self.channel)
+			if err == io.EOF {
+				LOG.Println("Leaving", self.channel)
 				self.part()
 				self.manager.delete(self)
 			} else {
@@ -87,7 +87,7 @@ func (self *Internal) Special(content string) bool {
 		self.isNotify = !self.isNotify
 		line := Line{
 			Command: "NOTICE",
-			Content: "Notifications: " + strconv.Btoa(self.isNotify),
+			Content: "Notifications: " + strconv.FormatBool(self.isNotify),
 			Channel: "",
 			User:    ""}
 		jsonData, _ := json.Marshal(line)

@@ -1,16 +1,16 @@
 package main
 
 import (
-	"os"
+	"encoding/json"
+	"errors"
 	"log"
 	"strings"
-	"json"
 	"time"
 )
 
 var (
-	ELSHORT     = os.NewError("Line too short")
-	ELMALFORMED = os.NewError("Malformed line")
+	ELSHORT     = errors.New("Line too short")
+	ELMALFORMED = errors.New("Malformed line")
 )
 
 type Line struct {
@@ -41,7 +41,7 @@ func (self *Line) AsJson() []byte {
 }
 
 // Takes a raw string from IRC server and parses it
-func ParseLine(data string) (*Line, os.Error) {
+func ParseLine(data string) (*Line, error) {
 
 	var line *Line
 	var prefix, command, trailing, user, host, raw string
@@ -133,7 +133,7 @@ func ParseLine(data string) (*Line, os.Error) {
 
 	line = &Line{
 		Raw:      raw,
-		Received: time.LocalTime().Format(time.RFC3339),
+		Received: time.Now().Format(time.RFC3339),
 		User:     user,
 		Host:     host,
 		Command:  command,

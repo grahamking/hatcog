@@ -1,9 +1,6 @@
 package main
 
-import (
-	"net"
-	"os"
-)
+import "net"
 
 type InternalManager struct {
 	port        string
@@ -30,19 +27,19 @@ func (self *InternalManager) Run() {
 	var listener net.Listener
 	var netConn net.Conn
 	var internalConn *Internal
-	var err os.Error
+	var err error
 
 	listener, err = net.Listen("tcp", "127.0.0.1:"+self.port)
 
 	if err != nil {
-		panic("Error on internal listen: " + err.String())
+		panic("Error on internal listen: " + err.Error())
 	}
 	defer listener.Close()
 
 	for {
 		netConn, err = listener.Accept()
 		if err != nil {
-			panic("Listener accept error: " + err.String())
+			panic("Listener accept error: " + err.Error())
 			break
 		}
 
@@ -57,7 +54,7 @@ func (self *InternalManager) Run() {
 }
 
 // Write a message to channel connection
-func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, os.Error) {
+func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, error) {
 
 	var bytesWritten int
 
@@ -72,7 +69,7 @@ func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, os.E
 }
 
 // Write a message to all client connections
-func (self *InternalManager) WriteAll(msg []byte) (int, os.Error) {
+func (self *InternalManager) WriteAll(msg []byte) (int, error) {
 
 	var bytesWritten int
 	for _, conn := range self.connections {
@@ -118,7 +115,7 @@ func (self *InternalManager) IsNotify(channel string) bool {
 	return false
 }
 
-func (self *InternalManager) Close() os.Error {
+func (self *InternalManager) Close() error {
 	for _, conn := range self.connections {
 		conn.netConn.Close()
 	}

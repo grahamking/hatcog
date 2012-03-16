@@ -44,13 +44,19 @@ func main() {
 	go server.Run()
 
     // Wait for stop signal (Ctrl-C, kill) to exit
+    incoming := make(chan os.Signal)
+    signal.Notify(incoming, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
     for {
+        <-incoming
+        break
+        /*
         sig := (<-signal.Incoming).(os.UnixSignal)
         if sig == syscall.SIGINT ||
             sig == syscall.SIGKILL ||
             sig == syscall.SIGTERM {
             break
         }
+        */
     }
     LOG.Println("END")
 }

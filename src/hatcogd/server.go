@@ -1,39 +1,38 @@
 package main
 
 import (
-	"os"
+	"os/exec"
 	"strings"
-	"exec"
 )
 
 const (
-	RPL_NAMREPLY  = "353"
+	RPL_NAMREPLY = "353"
 )
 
 var (
-    INFO_CMDS = []string{"001", "002", "003", "004", "372", "NOTICE"}
+	INFO_CMDS = []string{"001", "002", "003", "004", "372", "NOTICE"}
 )
 
 type Server struct {
-	nick      string
-	external  *External
-	internal  *InternalManager
-	isRunning bool
-    cmdNotify string
-    cmdBeep string
-    cmdPrivateChat string
+	nick           string
+	external       *External
+	internal       *InternalManager
+	isRunning      bool
+	cmdNotify      string
+	cmdBeep        string
+	cmdPrivateChat string
 }
 
 func NewServer(conf Config) *Server {
 
-    server := conf.Get("server")
-    nick := conf.Get("nick")
-    name := conf.Get("name")
-    internalPort := conf.Get("internal_port")
+	server := conf.Get("server")
+	nick := conf.Get("nick")
+	name := conf.Get("name")
+	internalPort := conf.Get("internal_port")
 
-    cmdNotify := conf.Get("cmd_notify")
-    cmdBeep := conf.Get("cmd_beep")
-    cmdPrivateChat := conf.Get("cmd_private_chat")
+	cmdNotify := conf.Get("cmd_notify")
+	cmdBeep := conf.Get("cmd_beep")
+	cmdPrivateChat := conf.Get("cmd_private_chat")
 
 	// IRC connection to remote server
 	var external *External
@@ -68,7 +67,7 @@ func (self *Server) Run() {
 	}
 }
 
-func (self *Server) Close() os.Error {
+func (self *Server) Close() error {
 	self.internal.Close()
 	return self.external.Close()
 }
@@ -112,17 +111,17 @@ func (self *Server) onServer(line *Line) {
 // Act on user input
 func (self *Server) onUser(message Message) {
 
-    if strings.HasPrefix(message.content, "/pw ") {
-        self.external.Identify(message.content[4:])
+	if strings.HasPrefix(message.content, "/pw ") {
+		self.external.Identify(message.content[4:])
 
-    } else if strings.HasPrefix(message.content, "/me ") {
-        self.external.SendAction(message.channel, message.content[4:])
+	} else if strings.HasPrefix(message.content, "/me ") {
+		self.external.SendAction(message.channel, message.content[4:])
 
-    } else if isCommand(message.content) {
+	} else if isCommand(message.content) {
 		self.external.doCommand(message.content)
 
 	} else {
-        self.external.SendMessage(message.channel, message.content)
+		self.external.SendMessage(message.channel, message.content)
 	}
 
 }
@@ -166,12 +165,12 @@ func isCommand(content string) bool {
 // Is 'command' an IRC information command?
 func isInfoCommand(command string) bool {
 
-    for _, cmd := range INFO_CMDS {
-        if cmd == command {
-            return true
-        }
-    }
-    return false
+	for _, cmd := range INFO_CMDS {
+		if cmd == command {
+			return true
+		}
+	}
+	return false
 }
 
 // Does command require a channel

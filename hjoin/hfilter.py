@@ -89,7 +89,8 @@ def add_args(dict_obj):
     """
 
     index = 0
-    for item in dict_obj['args']:
+    args = dict_obj['args'] or []
+    for item in args:
         dict_obj['arg%d' % index] = item
         index += 1
 

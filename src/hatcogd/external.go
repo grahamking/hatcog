@@ -1,17 +1,16 @@
 package main
 
 import (
-	"net"
+	"bufio"
 	"crypto/tls"
-	"os"
 	"log"
-	"time"
+	"net"
 	"strings"
-    "bufio"
+	"time"
 )
 
 const (
-	ONE_SECOND_NS = 1000 * 1000 * 1000  // One second in nanoseconds
+	ONE_SECOND_NS = 1000 * 1000 * 1000 // One second in nanoseconds
 
 	// Standard IRC SSL port
 	// http://blog.freenode.net/2011/02/port-6697-irc-via-tlsssl/
@@ -19,25 +18,25 @@ const (
 )
 
 type External struct {
-	socket     net.Conn
-	name       string
-	isClosing  bool
-	fromServer chan *Line
-    rawLog     *log.Logger
-    isIdentified bool
+	socket       net.Conn
+	name         string
+	isClosing    bool
+	fromServer   chan *Line
+	rawLog       *log.Logger
+	isIdentified bool
 }
 
 func NewExternal(server string,
-nick string,
-name string,
-fromServer chan *Line) *External {
+	nick string,
+	name string,
+	fromServer chan *Line) *External {
 
-    logFilename := HOME + LOG_DIR + "server_raw.log"
-    rawLog := openLog(logFilename)
+	logFilename := HOME + LOG_DIR + "server_raw.log"
+	rawLog := openLog(logFilename)
 	LOG.Println("Logging raw IRC messages to:", logFilename)
 
 	var socket net.Conn
-    var err os.Error
+	var err error
 
 	if strings.HasSuffix(server, SSL_PORT) {
 		socket, err = tls.Dial("tcp", server, nil)
@@ -50,13 +49,13 @@ fromServer chan *Line) *External {
 	}
 	time.Sleep(ONE_SECOND_NS)
 
-	socket.SetReadTimeout(ONE_SECOND_NS)
+    //socket.SetReadTimeout(ONE_SECOND_NS)
 
 	conn := External{
 		socket:     socket,
 		name:       name,
 		fromServer: fromServer,
-        rawLog:     rawLog,
+		rawLog:     rawLog,
 	}
 	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
 	conn.SendRaw("NICK " + nick)
@@ -67,11 +66,11 @@ fromServer chan *Line) *External {
 
 // Identify with NickServ. Must of already sent NICK.
 func (self *External) Identify(password string) {
-    if ! self.isIdentified {
-        LOG.Println("Identifying with NickServ")
-        self.SendMessage("NickServ", "identify " + password)
-        self.isIdentified = true
-    }
+	if !self.isIdentified {
+		LOG.Println("Identifying with NickServ")
+		self.SendMessage("NickServ", "identify "+password)
+		self.isIdentified = true
+	}
 }
 
 // Send a regular (non-system command) IRC message
@@ -89,7 +88,7 @@ func (self *External) SendAction(channel, msg string) {
 // Send message down socket. Add \n at end first.
 func (self *External) SendRaw(msg string) {
 
-	var err os.Error
+	var err error
 	msg = msg + "\n"
 
 	self.rawLog.Print(" -->", msg)
@@ -104,31 +103,32 @@ func (self *External) SendRaw(msg string) {
 func (self *External) doCommand(content string) {
 
 	content = content[1:]
-    parts := strings.SplitN(content, " ", 2)
-    cmd := parts[0]
+	parts := strings.SplitN(content, " ", 2)
+	cmd := parts[0]
 
-    // "msg" is short for "privmsg"
-    if (cmd == "msg") {
-        content = strings.Replace(content, "msg", "privmsg", 1)
-    }
+	// "msg" is short for "privmsg"
+	if cmd == "msg" {
+		content = strings.Replace(content, "msg", "privmsg", 1)
+	}
 
 	self.SendRaw(content)
 }
 
-// Read IRC messages from the connection and send to stdout
+// Read IRC messages from the connection and act on them
 func (self *External) Consume() {
 
-    bufRead := bufio.NewReader(self.socket)
+	bufRead := bufio.NewReader(self.socket)
 	for {
 
 		if self.isClosing {
 			return
 		}
 
-        content, err := bufRead.ReadString('\n')
+        self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
+		content, err := bufRead.ReadString('\n')
 
 		if err != nil {
-            netErr, _ := err.(net.Error)
+			netErr, _ := err.(net.Error)
 
 			if netErr.Timeout() == true {
 				continue
@@ -137,14 +137,14 @@ func (self *External) Consume() {
 			}
 		}
 
-        self.rawLog.Println(content)
+		self.rawLog.Println(content)
 
-        line, err := ParseLine(content)
-        if err == nil {
-            self.act(line)
-        } else {
-            LOG.Println("Invalid line:", content)
-        }
+		line, err := ParseLine(content)
+		if err == nil {
+			self.act(line)
+		} else {
+			LOG.Println("Invalid line:", content)
+		}
 
 	}
 }
@@ -153,7 +153,7 @@ func (self *External) Consume() {
 func (self *External) act(line *Line) {
 
 	if line.Command == "PING" {
-        // Reply, and send message on to client
+		// Reply, and send message on to client
 		self.SendRaw("PONG goirc")
 	} else if line.Command == "VERSION" {
 		versionMsg := "NOTICE " + line.User + " :\u0001VERSION " + VERSION + "\u0001\n"
@@ -163,7 +163,7 @@ func (self *External) act(line *Line) {
 	self.fromServer <- line
 }
 
-func (self *External) Close() os.Error {
+func (self *External) Close() error {
 	return self.socket.Close()
 }
 
