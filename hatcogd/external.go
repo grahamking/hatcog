@@ -104,6 +104,14 @@ func (self *External) SendRaw(msg string) {
 func (self *External) doCommand(content string) {
 
 	content = content[1:]
+    parts := strings.SplitN(content, " ", 2)
+    cmd := parts[0]
+
+    // "msg" is short for "privmsg"
+    if (cmd == "msg") {
+        content = strings.Replace(content, "msg", "privmsg", 1)
+    }
+
 	self.SendRaw(content)
 }
 
