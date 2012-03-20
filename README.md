@@ -1,28 +1,27 @@
 
 ## Quickstart
 
-Build hatcogd. You'll need [Go](http://golang.org). Type 'gomake' in 'hatcogd'.
+Hatcogd is made up of two parts: hatcogd, a server written in Go, and hjoin, a client written in Python. hjoin connects to hatcogd, which connects to the remote IRC server.
 
-Symlink hatcogd and hjoin in /usr/local/bin:
+Build hatcogd. You'll need [Go](http://golang.org), at least 12761:0002f1f792e0. Make sure the checkout is on your GOPATH, then type 'go build hatcogd'. That will put a 'hatcogd' executable in your current directory. Copy / symlink it from /usr/local/bin.
+
+Symlink hjoin too:
  cd /usr/local/bin
  sudo ln -s /home/username/checkout/hatcog/hjoin/hjoin.py hjoin
- sudo ln -s /home/username/checkout/hatcog/hatcogd/hatcogd hatcogd
 
 Copy .hatcogrc to your home directory. Edit it.
 
-Run 'hjoin.py <channel>' e.g. hjoin test
+Run 'hjoin <channel>' e.g. hjoin test
 
 Log files are in ~/.hatcog/
 
-For a private message: 'hjoin.py -private=<nick>'
+For a private message: 'hjoin -private=<nick>'
 
 ## Details
 
-hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). The client is in Python / curses, the proxy server in Go.
+hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). The client is in Python / curses, the server in Go.
 
 hatcog is made up of two programs: `hatcogd`, which connects to your irc server, and `hjoin`, which manages input/output for a single channel.
-
-You'll need the [Go language](http://golang.org) installed to be able to use this. Run `gomake` in hatcogd/ to build it.
 
 ## Alerts
 
