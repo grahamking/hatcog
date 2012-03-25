@@ -42,7 +42,8 @@ func LoadConfig(filename string) (Config, error) {
 func (self Config) Get(key string) string {
 	val := self[key]
 	if len(val) == 0 {
-		log.Fatal("Missing configuration for '" + key + "'")
+		log.Println("Missing configuration for '" + key + "'")
+		return ""
 	}
 	return val
 }

@@ -140,6 +140,9 @@ func (self *Server) Notify(line *Line) {
 
 // Make a sound to alert user someone is talking to them
 func (self *Server) Beep() {
+	if len(self.cmdBeep) == 0 {
+		return
+	}
 	parts := strings.Split(self.cmdBeep, " ")
 	soundCmd := exec.Command(parts[0], parts[1:]...)
 	soundCmd.Run()
