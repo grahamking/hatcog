@@ -275,6 +275,7 @@ class Terminal(object):
         """Rebuild the app, usually because it got resized"""
         self.delete_gui()
         self.create_gui()
+        self.term_input.win = self.win_input
         self.display_from_cache()
 
     def display_from_cache(self):
