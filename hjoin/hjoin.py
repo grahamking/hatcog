@@ -6,13 +6,13 @@ import logging
 import time
 import subprocess
 import socket
-from Queue import Queue, Empty
+import select
 
 from term import Terminal
 from remote import Server
 from hfilter import translate_in, is_irc_command
 
-VERSION = "hatcog v0.5 (github.com/grahamking/hatcog)"
+VERSION = "hatcog v0.6 (github.com/grahamking/hatcog)"
 DEFAULT_CONFIG = "/.hatcogrc"
 LOG_DIR = "/.hatcog/"
 
@@ -103,10 +103,8 @@ class Client(object):
 
         self.users = UserManager()
 
-        self.from_user = Queue()
         self.terminal = None
 
-        self.from_server = Queue()
         self.server = None
 
     def init(self):
@@ -117,14 +115,14 @@ class Client(object):
     def start_interface(self):
         """Start UI"""
 
-        self.terminal = Terminal(self.from_user, self.users)
+        self.terminal = Terminal(self.users)
         self.terminal.set_channel(self.channel)
 
     def start_remote(self):
         """Connect to remote server"""
 
         sock = get_daemon_connection()
-        self.server = Server(sock, self.from_server)
+        self.server = Server(sock)
 
         if self.password:
             self.server.write("/pw " + self.password)
@@ -142,55 +140,47 @@ class Client(object):
 
         while 1:
 
-            is_user_activity = self.check_user()
-            is_server_activity = self.check_server()
+            try:
+                ready, _, _ = select.select(
+                        [sys.stdin, self.server.conn], [], [])
+            except:
+                # Window resize signal aborts select
+                # Curses makes the resize event a fake keypress, so read it
+                self.terminal.receive_one()
+                continue
 
-            if not (is_user_activity or is_server_activity):
-                time.sleep(0.1)
+            if self.server.conn in ready:
+                sock_data = self.server.receive_one()
+                self.act_server(sock_data)
 
-    def check_user(self):
-        """Check for user input, acting on it if necessary"""
-        activity = False
+            if sys.stdin in ready:
+                term_data = self.terminal.receive_one()
+                self.act_user(term_data)
 
-        try:
-            msg = self.from_user.get_nowait()
+    def act_user(self, msg):
+        """Act on user input"""
 
-            if msg == u"/quit":
-                raise StopException()
+        if not msg:
+            return
 
-            if msg:
-                activity = True
-                self.server.write(msg)
+        if msg == u"/quit":
+            raise StopException()
 
-                if msg.startswith(u"/me "):
-                    me_msg = u"* " + msg.replace(u"/me ", self.nick + u" ")
-                    self.terminal.write(me_msg)
+        self.server.write(msg)
 
-                elif not is_irc_command(msg):
-                    self.terminal.write_msg(self.nick, msg)
+        if msg.startswith(u"/me "):
+            me_msg = u"* " + msg.replace(u"/me ", self.nick + u" ")
+            self.terminal.write(me_msg)
 
-        except Empty:
-            pass
+        elif not is_irc_command(msg):
+            self.terminal.write_msg(self.nick, msg)
 
-        return activity
+    def act_server(self, msg):
+        """Act on server data"""
 
-    def check_server(self):
-        """Check for server activity, acting on it if necessary"""
-        activity = False
-
-        try:
-            msg = self.from_server.get_nowait()
-            LOG.debug(msg)
-
-            display = translate_in(msg, self)
-            if display:
-                self.terminal.write(display)
-
-            activity = True
-        except Empty:
-            pass
-
-        return activity
+        display = translate_in(msg, self)
+        if display:
+            self.terminal.write(display)
 
     def stop(self):
         """Close remote connection, restore terminal to sanity"""
@@ -417,6 +407,7 @@ def get_daemon_connection():
         sock = start_daemon()
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setblocking(False)     # We're using select, so no need to block
 
     return sock
 
@@ -462,22 +453,12 @@ class Logger(Client):
     def start_interface(self):
         self.terminal = None
 
-    def check_server(self):
-        """Check for server activity, acting on it if necessary"""
-        activity = False
+    def act_server(self, msg):
+        """Act on server data"""
 
-        try:
-            msg = self.from_server.get_nowait()
-            LOG.debug(msg)
-            display = translate_in(msg, None, timestamp=True)
-            if display:
-                print(display)
-
-            activity = True
-        except Empty:
-            pass
-
-        return activity
+        display = translate_in(msg, None, timestamp=True)
+        if display:
+            print(display)
 
 
 if __name__ == '__main__':

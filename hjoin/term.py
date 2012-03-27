@@ -1,11 +1,9 @@
 """Terminal (UI) for hatcog"""
 
-from threading import Thread
 import curses
 import curses.ascii
 from datetime import datetime
 import logging
-import time
 import locale
 import tempfile
 import subprocess
@@ -20,8 +18,7 @@ LOG = logging.getLogger(__name__)
 class Terminal(object):
     """Curses user interface"""
 
-    def __init__(self, from_user, user_manager):
-        self.from_user = from_user
+    def __init__(self, user_manager):
         self.users = user_manager
 
         self.stdscr = None
@@ -45,7 +42,8 @@ class Terminal(object):
 
         self.start()
         self.create_gui()
-        self.start_input_thread()
+
+        self.term_input = TermInput(self.win_input, self)
 
     def start(self):
         """Initialize curses. Mostly copied from curses/wrapper.py"""
@@ -94,7 +92,8 @@ class Terminal(object):
         self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
         self.win_header.addstr(" " * (self.max_width - 1))
-        self.win_header.addstr(0, 0, "hatcog")
+        if len("hatcog") < self.max_width:
+            self.win_header.addstr(0, 0, "hatcog")
         self.win_header.refresh()
 
         self.win_output = self.stdscr.subwin(
@@ -125,13 +124,16 @@ class Terminal(object):
         self.win_input.nodelay(True)
         self.win_input.refresh()
 
-    def start_input_thread(self):
-        """Starts the thread that listen for user input in the textbox"""
-        args = (self.win_input, self.from_user, self)
-        thread = Thread(name='term', target=input_thread, args=args)
-        thread.daemon = True
-        thread.start()
-        return
+    def receive_one(self):
+        """Main input gather loop"""
+
+        data = None
+        try:
+            data = self.term_input.gather_one()
+        except RebuildException:
+            self.rebuild()
+
+        return data
 
     def delete_gui(self):
         """Remove all windows. Called on resize."""
@@ -179,6 +181,8 @@ class Terminal(object):
                 self.lines = self.lines[len(self.lines) - MAX_BUFFER:]
             self.win_output.refresh()
 
+            self.term_input.cursor_to_input()
+
     def write_msg(self, username, content, now=None, refresh=True):
         """Write a user message, with fancy formatting"""
 
@@ -200,6 +204,7 @@ class Terminal(object):
         if refresh:
             self.lines.append((now, username, content))
             self.win_output.refresh()
+            self.term_input.cursor_to_input()
 
     def _write(self, msg, opt=None):
         """Actually write to output window"""
@@ -214,20 +219,22 @@ class Terminal(object):
         self.cache['set_nick'] = nick
 
         # Erase previous nick
-        if self.nick:
+        if self.nick and len(self.nick) < self.max_width:
             self.win_status.addstr(0, 0, " " * len(self.nick))
 
         # Record and display new nick
         self.nick = nick
-        self.win_status.addstr(0, 0, nick.encode("utf8"))
-        self.win_status.refresh()
+        if len(nick) < self.max_width:
+            self.win_status.addstr(0, 0, nick.encode("utf8"))
+            self.win_status.refresh()
 
     def set_channel(self, channel):
         """Set current channel"""
         self.cache['set_channel'] = channel
         mid_pos = (self.max_width - (len(channel) + 1)) / 2
-        self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
-        self.win_status.refresh()
+        if mid_pos > 0:
+            self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
+            self.win_status.refresh()
 
     def set_users(self, count):
         """Set number of users"""
@@ -247,15 +254,17 @@ class Terminal(object):
                 .format(user_count=self.user_count,
                         active_user_count=self.active_user_count)
         right_pos = self.max_width - (len(msg) + 1)
-        self.win_status.addstr(0, right_pos, msg)
-        self.win_status.refresh()
+        if right_pos > 0:   # Skip if window is too narrow
+            self.win_status.addstr(0, right_pos, msg)
+            self.win_status.refresh()
 
     def set_host(self, host):
         """Set the host message"""
         self.cache['set_host'] = host
         right_pos = self.max_width - (len(host) + 1)
-        self.win_header.addstr(0, right_pos, host)
-        self.win_header.refresh()
+        if right_pos > 0:
+            self.win_header.addstr(0, right_pos, host)
+            self.win_header.refresh()
 
     def set_ping(self, server_name):
         """Received a server ping"""
@@ -266,7 +275,6 @@ class Terminal(object):
         """Rebuild the app, usually because it got resized"""
         self.delete_gui()
         self.create_gui()
-        self.start_input_thread()
         self.display_from_cache()
 
     def display_from_cache(self):
@@ -286,6 +294,7 @@ class Terminal(object):
                 self.write(line, refresh=False)
 
         self.win_output.refresh()
+        self.term_input.cursor_to_input()
 
 
 def lpad(num, string):
@@ -297,12 +306,6 @@ def lpad(num, string):
 #
 # Input thread
 #
-
-def input_thread(win, from_user, terminal):
-    """Listen for user input and write to queue.
-    Runs in separate thread.
-    """
-    TermInput(win, from_user, terminal).run()
 
 
 class TermInput(object):
@@ -320,9 +323,8 @@ class TermInput(object):
         9: "key_tab",  # curses doesn't seem to have a constant
     }
 
-    def __init__(self, win, from_user, terminal):
+    def __init__(self, win, terminal):
         self.win = win
-        self.from_user = from_user
         self.terminal = terminal
 
         _, win_input_width = terminal.win_input.getmaxyx()
@@ -331,46 +333,38 @@ class TermInput(object):
         self.current = []
         self.pos = 0
 
-    def run(self):
-        """Main input gather loop"""
-        while 1:
+        self.cursor_to_input()
+
+    def cursor_to_input(self):
+        """Move cursor to input box"""
+        move_pos = min(self.pos, self.max_len - 1)
+        self.win.move(0, move_pos)
+        self.win.refresh()
+
+    def gather_one(self):
+        """Gather single character input from this window"""
+
+        char = self.win.getch()
+
+        if char == -1:    # No input
+            self.cursor_to_input()
+
+        elif char in TermInput.KEYS:
+            key_func = getattr(self, TermInput.KEYS[char])
+            result = key_func()
+            if result:
+                return result
+
+        else:
+            # Regular character, display it
             try:
-                self.from_user.put(self.gather())
-            except RebuildException:
-                self.terminal.rebuild()
-                break
+                self.current.insert(self.pos, chr(char))
+                self.pos += 1
+            except ValueError:
+                # Throw by 'chr'. Not a printable char, ignore.
+                pass
 
-    def gather(self):
-        """Gather input from this window - main input loop"""
-
-        while 1:
-            char = self.win.getch()
-
-            if char == -1:    # No input
-
-                # Move cursor back to input box, in case output moved it
-                move_pos = min(self.pos, self.max_len - 1)
-                self.win.move(0, move_pos)
-
-                time.sleep(0.1)
-                continue
-
-            elif char in TermInput.KEYS:
-                key_func = getattr(self, TermInput.KEYS[char])
-                result = key_func()
-                if result:
-                    return result
-
-            else:
-                # Regular character, display it
-                try:
-                    self.current.insert(self.pos, chr(char))
-                    self.pos += 1
-                except ValueError:
-                    # Throw by 'chr'. Not a printable char, ignore.
-                    pass
-
-            self.redisplay()
+        self.redisplay()
 
     def redisplay(self):
         """Display current input in input window."""
