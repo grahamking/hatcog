@@ -260,6 +260,8 @@ class Terminal(object):
 
     def set_host(self, host):
         """Set the host message"""
+        if not host or not host.strip():
+            return
         self.cache['set_host'] = host
         right_pos = self.max_width - (len(host) + 1)
         if right_pos > 0:
