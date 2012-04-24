@@ -338,6 +338,15 @@ class TermInput(object):
 
         self.cursor_to_input()
 
+    def addstr(self, msg, extra=curses.A_NORMAL):
+        """Add string to self.win at current position."""
+        try:
+            self.win.addstr(msg, extra)
+        except curses.error:
+            LOG.exception("TermInput: Error adding '%s' with '%s' to display",
+                    msg, extra)
+            return
+
     def cursor_to_input(self):
         """Move cursor to input box"""
         move_pos = min(self.pos, self.max_len - 1)
@@ -379,9 +388,9 @@ class TermInput(object):
             msg = msg[len(msg) - self.max_len + 1:]
 
         if is_irc_command(msg):
-            self.win.addstr(msg, curses.A_BOLD)
+            self.addstr(msg, curses.A_BOLD)
         else:
-            self.win.addstr(msg)
+            self.addstr(msg)
 
         move_pos = min(self.pos, self.max_len - 1)
         self.win.move(0, move_pos)
