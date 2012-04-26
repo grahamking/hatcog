@@ -26,6 +26,7 @@ class Terminal(object):
         self.win_output = None
         self.win_input = None
         self.win_status = None
+        self.term_input = None
 
         self.nick = None
         self.cache = {}
@@ -42,8 +43,6 @@ class Terminal(object):
 
         self.start()
         self.create_gui()
-
-        self.term_input = TermInput(self.win_input, self)
 
     def start(self):
         """Initialize curses. Mostly copied from curses/wrapper.py"""
@@ -123,6 +122,20 @@ class Terminal(object):
         # Have to make getch non-blocking, otherwise resize doesn't work right
         self.win_input.nodelay(True)
         self.win_input.refresh()
+
+        # Create the input window
+
+        previous_input = []
+        previous_pos = 0
+        if self.term_input:
+            previous_input = self.term_input.current
+            previous_pos = self.term_input.pos
+
+        self.term_input = TermInput(self.win_input, self)
+        self.term_input.current = previous_input
+        self.term_input.pos = previous_pos
+
+        self.term_input.redisplay()
 
     def receive_one(self):
         """Main input gather loop"""
@@ -277,7 +290,6 @@ class Terminal(object):
         """Rebuild the app, usually because it got resized"""
         self.delete_gui()
         self.create_gui()
-        self.term_input.win = self.win_input
         self.display_from_cache()
 
     def display_from_cache(self):
