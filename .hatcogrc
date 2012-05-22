@@ -12,7 +12,7 @@
 #
 
 # Freenode, over TLS
-#server = "irc.freenode.net:6697"
+#server = "chat.freenode.net:6697"
 
 # Local unsecured
 server = "127.0.0.1:6667"
@@ -60,4 +60,10 @@ cmd_beep = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
 
 # Split your current tmux window
 cmd_private_chat = "/usr/bin/tmux split-window -v -p 50"
+
+## cmd_url ###
+# Command to display a url. URL is appended to this command.
+# e.g. If cmd is "/bin/browser" this gets called:
+# /bin/browser http://example.com
+cmd_url = "/usr/bin/sensible-browser"
 

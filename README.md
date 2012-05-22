@@ -1,21 +1,24 @@
 
-## Quickstart
+## Install
 
 Hatcogd is made up of two parts: hatcogd, a server written in Go, and hjoin, a client written in Python. hjoin connects to hatcogd, which connects to the remote IRC server.
 
-Build hatcogd. You'll need [Go](http://golang.org), at least 12761:0002f1f792e0. Make sure the checkout is on your GOPATH, then type 'go build hatcogd'. That will put a 'hatcogd' executable in your current directory. Copy / symlink it from /usr/local/bin.
+1. Build hatcogd. You'll need [Go](http://golang.org) v1+. Make sure the checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory. Copy or symlink it from `usr/local/bin`.
 
-Symlink hjoin too:
- cd /usr/local/bin
- sudo ln -s /home/username/checkout/hatcog/hjoin/hjoin.py hjoin
+1. Symlink hjoin:
 
-Copy .hatcogrc to your home directory. Edit it.
+     cd /usr/local/bin
+     sudo ln -s /home/username/checkout/hatcog/hjoin/hjoin.py hjoin
 
-Run 'hjoin <channel>' e.g. hjoin test
+1. Copy `.hatcogrc` to your home directory. Edit it.
 
-Log files are in ~/.hatcog/
+## Run
 
-For a private message: 'hjoin -private=<nick>'
+Run `hjoin <channel>` e.g. hjoin test
+
+Log files are in `~/.hatcog/`
+
+For a private message: `hjoin -private=<nick>`
 
 ## Details
 

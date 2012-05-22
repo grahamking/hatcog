@@ -12,7 +12,7 @@ from term import Terminal
 from remote import Server
 from hfilter import translate_in, is_irc_command
 
-VERSION = "hatcog v0.6 (github.com/grahamking/hatcog)"
+VERSION = "hatcog v0.7 (github.com/grahamking/hatcog)"
 DEFAULT_CONFIG = "/.hatcogrc"
 LOG_DIR = "/.hatcog/"
 
@@ -69,7 +69,7 @@ def main(argv=None):
     conf = load_config(os.getenv("HOME"))
     password = get_password(conf)
 
-    client = Client(channel, password, DAEMON_ADDR)
+    client = Client(channel, password, DAEMON_ADDR, conf)
 
     if len(sys.argv) == 3 and sys.argv[2] == "--logger":
         client = Logger(channel, password, DAEMON_ADDR)
@@ -94,11 +94,12 @@ def main(argv=None):
 class Client(object):
     """Main"""
 
-    def __init__(self, channel, password, daemon_addr):
+    def __init__(self, channel, password, daemon_addr, conf):
 
         self.channel = channel
         self.password = password
         self.daemon_addr = daemon_addr
+        self.conf = conf
         self.nick = None
 
         self.users = UserManager()
@@ -163,8 +164,17 @@ class Client(object):
         if not msg:
             return
 
+        # Local only commands
         if msg == u"/quit":
             raise StopException()
+        elif msg == u"/url":
+            url = self.terminal.get_url()
+            if url:
+                self.terminal.write(url)
+                show_url(self.conf, url)
+            else:
+                self.terminal.write("No url found")
+            return
 
         self.server.write(msg)
 
@@ -392,6 +402,16 @@ def get_password(conf):
         password = subprocess.check_output(pwd_cmd.split(' '))
 
     return password
+
+
+def show_url(conf, url):
+    """Open url in browse"""
+
+    browser = conf["cmd_url"].strip()
+    subprocess.Popen(
+            [browser, url],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
 
 
 def get_daemon_connection():

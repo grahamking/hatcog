@@ -32,6 +32,8 @@ class Terminal(object):
         self.cache = {}
         self.lines = []
 
+        self.urls = []
+
         self.user_count = 0
         self.active_user_count = 0
 
@@ -171,21 +173,18 @@ class Terminal(object):
         if not message:
             return
 
-        if self.nick and self.nick in message:
-            # Highlight nick
-
-            pos = message.find(self.nick)
-
-            before = message[:pos]
-            self._write(before.encode("utf8"))
-
-            self._write(self.nick.encode("utf8"), curses.A_BOLD)
-
-            after = message[pos + len(self.nick):]
-            self._write(after.encode("utf8") + "\n")
-
-        else:
-            self._write(message.encode("utf8") + "\n")
+        self._write(" ")
+        for word in message.split():
+            if self.nick and word == self.nick:
+                self._write(self.nick.encode("utf8"), curses.A_BOLD)
+            elif word.startswith("http"):
+                if not word in self.urls:
+                    self.urls.append(word)
+                self._write(word.encode("utf8"), curses.A_UNDERLINE)
+            else:
+                self._write(word.encode("utf8"))
+            self._write(" ")
+        self._write("\n")
 
         if refresh:
             self.lines.append(message)
@@ -310,6 +309,12 @@ class Terminal(object):
 
         self.win_output.refresh()
         self.term_input.cursor_to_input()
+
+    def get_url(self):
+        """Most recent url"""
+        if self.urls:
+            return self.urls[-1]
+        return None
 
 
 def lpad(num, string):
