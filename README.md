@@ -1,21 +1,16 @@
-
 ## Install
 
 Hatcogd is made up of two parts: hatcogd, a server written in Go, and hjoin, a client written in Python. hjoin connects to hatcogd, which connects to the remote IRC server.
 
-1. Copy either `bin/hatcogd-32` (for 32 bit linux) or `bin/hatcogd-64 (for 64 bit linux) onto your path (`/usr/local/bin` is good), and rename it to just `hatcogd`.
-
     cd /usr/local/bin
-    sudo ln -s /home/username/checkout/hatcog/bin/hatcogd-64 hatcogd
+    sudo ln -s ~/checkout/hatcog/bin/hatcogd-64 hatcogd  # Link either hatcogd-32 or hatcogd-64
+    sudo ln -s ~/checkout/hatcog/hjoin/hjoin.py hjoin    # Link hjoin
+    cd ~
+    cp checkout/hatcogd/.hatcogrc .   # Now edit it
 
- - If on a different system, you'll need to build hatcogd. You'll need [Go](http://golang.org) v1+. Make sure the checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory. Copy or symlink it from `/usr/local/bin`.
+Binaries of `hatcogd` (the Go part) are included for i686 32-bit Linux (`bin/hatcogd-32`) and x86_64 64-bit Linux (`bin/hatcogd-64`).
 
-1. Symlink hjoin:
-
-     cd /usr/local/bin
-     sudo ln -s /home/username/checkout/hatcog/hjoin/hjoin.py hjoin
-
-1. Copy `.hatcogrc` to your home directory. Edit it.
+If on a different system (type `arch` on Linux to check), you'll need to build hatcogd. Get [Go](http://golang.org) v1+. Make sure the hatcogd checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory. Copy or symlink it from `/usr/local/bin`.
 
 ## Run
 
@@ -60,7 +55,7 @@ See hjoin/hfilter.py for a list. Anything you prefix with / is sent direct to th
 Non-standard IRC commands:
 
  - /url : Open the most recent url (urls get underlined when displayed) in a browser. Command to open the browser is in .hatcogrc.
- - /notify : Alert me on all messages. Uses the same method of alerting you when someone says your nick, to alert you of every message. Useful for quiet channels, to notice when something happens.
+ - /notify : Alert me on all messages. Uses the same method of alerting you when someone says your nick, to alert you of every message. Useful for quiet channels, to notice when something happens. Do /notify again to switch it off.
  - /pw : Send your password to identify with NickServ. The client does this for you on startup (password is in .hatcogrc), so you should never need this.
 
 ## Development
