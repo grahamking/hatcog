@@ -49,8 +49,6 @@ func NewExternal(server string,
 	}
 	time.Sleep(ONE_SECOND_NS)
 
-    //socket.SetReadTimeout(ONE_SECOND_NS)
-
 	conn := External{
 		socket:     socket,
 		name:       name,
@@ -124,7 +122,7 @@ func (self *External) Consume() {
 			return
 		}
 
-        self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
+        	self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
 		content, err := bufRead.ReadString('\n')
 
 		if err != nil {
