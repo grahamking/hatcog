@@ -13,7 +13,9 @@ from term import Terminal
 from remote import Server
 from hfilter import translate_in, is_irc_command
 
-VERSION = "hatcog v0.7 (github.com/grahamking/hatcog)"
+from hjoin import __version__
+
+VERSION = "hatcog v{} (github.com/grahamking/hatcog)".format(__version__)
 DEFAULT_CONFIG = "/.hatcogrc"
 LOG_DIR = "/.hatcog/"
 

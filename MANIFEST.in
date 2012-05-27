@@ -1,0 +1,4 @@
+include README.md
+include LICENSE.txt
+include bin/hatcogd-32
+include bin/hatcogd-64
