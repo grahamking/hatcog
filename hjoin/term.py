@@ -37,9 +37,6 @@ class Terminal(object):
         self.user_count = 0
         self.active_user_count = 0
 
-        self.max_height = 0
-        self.max_width = 0
-
         # File to store what we put on screen, for external scrollback tool
         self.scrollback = tempfile.NamedTemporaryFile()
 
@@ -86,40 +83,42 @@ class Terminal(object):
         curses.nocbreak()
         curses.endwin()
 
+    def get_max_width(self):
+        """Width in characters of main screen"""
+        _, max_width = self.stdscr.getmaxyx()
+        return max_width
+
+    def get_max_height(self):
+        """Height in characters of main screen"""
+        max_height, _ = self.stdscr.getmaxyx()
+        return max_height
+
     def create_gui(self):
         """Create the UI"""
-        self.max_height, self.max_width = self.stdscr.getmaxyx()
 
-        self.win_header = self.stdscr.subwin(1, self.max_width, 0, 0)
+        max_width = self.get_max_width()
+        max_height = self.get_max_height()
+
+        self.win_header = self.stdscr.subwin(1, max_width, 0, 0)
         self.win_header.bkgdset(" ", curses.A_REVERSE)
-        self.win_header.addstr(" " * (self.max_width - 1))
-        if len("hatcog") < self.max_width:
+        self.win_header.addstr(" " * (max_width - 1))
+        if len("hatcog") < max_width:
             self.win_header.addstr(0, 0, "hatcog")
         self.win_header.refresh()
 
-        self.win_output = self.stdscr.subwin(
-                self.max_height - 3,
-                self.max_width,
-                1,
-                0)
+        self.win_output = self.stdscr.subwin(max_height - 3, max_width, 1, 0)
         self.win_output.scrollok(True)
         self.win_output.idlok(True)
 
-        self.win_status = self.stdscr.subwin(
-                1,
-                self.max_width,
-                self.max_height - 2,
-                0)
+        self.win_status = self.stdscr.subwin(1, max_width, max_height - 2, 0)
         self.win_status.bkgdset(" ", curses.A_REVERSE)
-        self.win_status.addstr(" " * (self.max_width - 1))
+        self.win_status.addstr(" " * (max_width - 1))
         self.win_status.refresh()
 
-        self.stdscr.addstr(self.max_height - 1, 0, "> ")
+        self.stdscr.addstr(max_height - 1, 0, "> ")
         self.stdscr.refresh()
         self.win_input = self.stdscr.subwin(
-                1,
-                self.max_width - 2,
-                self.max_height - 1, 2)
+                1, max_width - 2, max_height - 1, 2)
         self.win_input.keypad(True)
         # Have to make getch non-blocking, otherwise resize doesn't work right
         self.win_input.nodelay(True)
@@ -231,19 +230,19 @@ class Terminal(object):
         self.cache['set_nick'] = nick
 
         # Erase previous nick
-        if self.nick and len(self.nick) < self.max_width:
+        if self.nick and len(self.nick) < self.get_max_width():
             self.win_status.addstr(0, 0, " " * len(self.nick))
 
         # Record and display new nick
         self.nick = nick
-        if len(nick) < self.max_width:
+        if len(nick) < self.get_max_width():
             self.win_status.addstr(0, 0, nick.encode("utf8"))
             self.win_status.refresh()
 
     def set_channel(self, channel):
         """Set current channel"""
         self.cache['set_channel'] = channel
-        mid_pos = (self.max_width - (len(channel) + 1)) / 2
+        mid_pos = (self.get_max_width() - (len(channel) + 1)) / 2
         if mid_pos > 0:
             self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
             self.win_status.refresh()
@@ -265,7 +264,7 @@ class Terminal(object):
         msg = "{user_count} users ({active_user_count} active)"\
                 .format(user_count=self.user_count,
                         active_user_count=self.active_user_count)
-        right_pos = self.max_width - (len(msg) + 1)
+        right_pos = self.get_max_width() - (len(msg) + 1)
         if right_pos > 0:   # Skip if window is too narrow
             self.win_status.addstr(0, right_pos, msg)
             self.win_status.refresh()
@@ -275,7 +274,7 @@ class Terminal(object):
         if not host or not host.strip():
             return
         self.cache['set_host'] = host
-        right_pos = self.max_width - (len(host) + 1)
+        right_pos = self.get_max_width() - (len(host) + 1)
         if right_pos > 0:
             self.win_header.addstr(0, right_pos, host)
             self.win_header.refresh()
@@ -347,13 +346,15 @@ class TermInput(object):
         self.win = win
         self.terminal = terminal
 
-        _, win_input_width = terminal.win_input.getmaxyx()
-        self.max_len = win_input_width - 1
-
         self.current = []
         self.pos = 0
 
         self.cursor_to_input()
+
+    def get_max_len(self):
+        """Maximum length of input string (win width - 1)"""
+        _, win_input_width = self.terminal.win_input.getmaxyx()
+        return win_input_width - 1
 
     def addstr(self, msg, extra=curses.A_NORMAL):
         """Add string to self.win at current position."""
@@ -366,7 +367,7 @@ class TermInput(object):
 
     def cursor_to_input(self):
         """Move cursor to input box"""
-        move_pos = min(self.pos, self.max_len - 1)
+        move_pos = min(self.pos, self.get_max_len() - 1)
         self.win.move(0, move_pos)
         self.win.refresh()
 
@@ -401,15 +402,15 @@ class TermInput(object):
 
         msg = ''.join(self.current)
 
-        if len(msg) >= self.max_len:
-            msg = msg[len(msg) - self.max_len + 1:]
+        if len(msg) >= self.get_max_len():
+            msg = msg[len(msg) - self.get_max_len() + 1:]
 
         if is_irc_command(msg):
             self.addstr(msg, curses.A_BOLD)
         else:
             self.addstr(msg)
 
-        move_pos = min(self.pos, self.max_len - 1)
+        move_pos = min(self.pos, self.get_max_len() - 1)
         self.win.move(0, move_pos)
         self.win.refresh()
 
