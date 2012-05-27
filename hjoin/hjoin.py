@@ -49,7 +49,10 @@ def main(argv=None):
     home = os.path.expanduser('~')
     log_filename = home + LOG_DIR + "client.log"
     print("%s logging to %s" % (VERSION, log_filename))
-    logging.basicConfig(filename=log_filename, level=logging.DEBUG)
+    logging.basicConfig(
+            filename=log_filename,
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s: %(message)s")
 
     if not len(argv) in (2, 3):
         print(USAGE)
