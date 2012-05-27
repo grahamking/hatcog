@@ -383,7 +383,16 @@ def load_config(home):
     LOG.debug("Reading config file: %s", filename)
 
     conf = {}
-    for line in open(filename):
+    try:
+        config_file = open(filename)
+    except IOError:
+        print("Config file not found: {}".format(filename))
+        print("Maybe you haven't created it yet.")
+        print("Here's one to get you started: " +
+              "https://github.com/grahamking/hatcog/blob/master/.hatcogrc")
+        sys.exit(1)
+
+    for line in config_file:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
