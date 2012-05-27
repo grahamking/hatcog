@@ -21,6 +21,7 @@ setup(
     description="IRC client, text based, perfect for tmux or screen",
     long_description=read('README.md'),
     packages=find_packages(),
+    data_files=[('/usr/local/bin', ['bin/hatcogd-32', 'bin/hatcogd-64'])],
     entry_points={
         'console_scripts':[
             'hjoin=hjoin.hjoin:main'
