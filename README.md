@@ -1,24 +1,27 @@
+Hatcog is the perfect IRC client if you live on the command line, and are addicted to tmux. It allows you to connect to different channels from different tmux windows, using the same IRC connection. It offers (probably) most things you'd expect your IRC client to have, such as colors, nick notification, private messages, etc.
+
 ## Install
 
-Hatcogd is made up of two parts: hatcogd, a server written in Go, and hjoin, a client written in Python. hjoin connects to hatcogd, which connects to the remote IRC server.
+Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere else.
 
-    cd /usr/local/bin
-    sudo ln -s ~/checkout/hatcog/bin/hatcogd-64 hatcogd  # Link either hatcogd-32 or hatcogd-64
-    sudo ln -s ~/checkout/hatcog/hjoin/hjoin.py hjoin    # Link hjoin
+1. Clone and install:
+
+    git clone https://github.com/grahamking/hatcog.git
+    cd hatcog
+    sudo python setup.py install
+
+2. Copy example config and edit it
+
     cd ~
-    cp checkout/hatcogd/.hatcogrc .   # Now edit it
-
-Binaries of `hatcogd` (the Go part) are included for i686 32-bit Linux (`bin/hatcogd-32`) and x86_64 64-bit Linux (`bin/hatcogd-64`).
-
-If on a different system (type `arch` on Linux to check), you'll need to build hatcogd. Get [Go](http://golang.org) v1+. Make sure the hatcogd checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory. Copy or symlink it from `/usr/local/bin`.
+    cp hatcog/.hatcogrc .   # Now edit it
 
 ## Run
 
 Run `hjoin <channel>` e.g. hjoin test. There is no hash in front of the channel name.
 
-Log files are in `~/.hatcog/`.
-
 To start a private conversation: `hjoin -private=<nick>`.
+
+Log files are in `~/.hatcog/`.
 
 The first time (after reboot) you run `hjoin`, it starts the `hatcogd` daemon. When you `/quit` hjoin, the daemon stays running. If you want to kill the daemon, use `hjoin --stop`.
 
@@ -57,6 +60,16 @@ Non-standard IRC commands:
  - /url : Open the most recent url (urls get underlined when displayed) in a browser. Command to open the browser is in .hatcogrc.
  - /notify : Alert me on all messages. Uses the same method of alerting you when someone says your nick, to alert you of every message. Useful for quiet channels, to notice when something happens. Do /notify again to switch it off.
  - /pw : Send your password to identify with NickServ. The client does this for you on startup (password is in .hatcogrc), so you should never need this.
+
+## But I don't have Linux (or not an AMD / Intel processor)
+
+The python client part (hjoin) will run anywhere you have Python 2.7+.
+
+The server part (written in Go), `hatcogd` has binaries included for i686 32-bit Linux (`bin/hatcogd-32`) and x86\_64 64-bit Linux (`bin/hatcogd-64`). Anything else you'll need to compile it yourself.
+
+Get [Go](http://golang.org) v1+. Make sure the hatcogd checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory.
+
+Copy or symlink it from `/usr/local/bin`. Finally you'll need to modify hjoin/hjoin.py so it can find your binary.
 
 ## Development
 
