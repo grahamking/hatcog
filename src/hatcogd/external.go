@@ -45,7 +45,7 @@ func NewExternal(server string,
 	}
 
 	if err != nil {
-		log.Fatal("Error on IRC connect:", err)
+		LOG.Fatal("Error connecting to IRC server:", err)
 	}
 	time.Sleep(ONE_SECOND_NS)
 
@@ -93,7 +93,7 @@ func (self *External) SendRaw(msg string) {
 
 	_, err = self.socket.Write([]byte(msg))
 	if err != nil {
-		log.Fatal("Error writing to socket", err)
+		LOG.Fatal("Error writing to socket", err)
 	}
 }
 
@@ -131,7 +131,7 @@ func (self *External) Consume() {
 			if netErr.Timeout() == true {
 				continue
 			} else {
-				log.Fatal("Consume Error:", err)
+				LOG.Fatal("Consume Error:", err)
 			}
 		}
 
