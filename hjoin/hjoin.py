@@ -12,14 +12,14 @@ import random
 from term import Terminal
 from remote import Server
 from hfilter import translate_in, is_irc_command
-
-from hjoin import __version__
+from . import __version__
 
 VERSION = "hatcog v{} (github.com/grahamking/hatcog)".format(__version__)
 DEFAULT_CONFIG = "/.hatcogrc"
 LOG_DIR = "/.hatcog/"
 
 DAEMON_ADDR = "127.0.0.1:8790"
+DAEMON_WAIT_SECS = 5
 
 CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin/hatcogd"
 CMD_STOP_DAEMON = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
@@ -116,6 +116,10 @@ class Client(object):
 
     def init(self):
         """Initialize"""
+
+        sock = get_daemon_connection()
+        self.server = Server(sock)
+
         self.start_interface()
         self.start_remote()
 
@@ -127,9 +131,6 @@ class Client(object):
 
     def start_remote(self):
         """Connect to remote server"""
-
-        sock = get_daemon_connection()
-        self.server = Server(sock)
 
         if self.password:
             self.server.write("/pw " + self.password)
@@ -430,6 +431,9 @@ def get_daemon_connection():
     """Returns a socket connection to the daemon, starting it
     if necessary.
     """
+    msg = "Connecting to daemon"
+    print(msg)
+    LOG.debug(msg)
 
     host, port = DAEMON_ADDR.split(":")
 
@@ -446,14 +450,34 @@ def get_daemon_connection():
 
 def start_daemon():
     """Start the daemon, and return a connection to it"""
-    LOG.debug("Starting the daemon: %s", CMD_START_DAEMON)
 
-    parts = CMD_START_DAEMON.split(" ")
-    subprocess.call(parts)
+    arched_start = "{}-{}".format(CMD_START_DAEMON, get_long_size())
+    msg = "Starting daemon: {}".format(arched_start)
+    print(msg)
+    LOG.debug(msg)
+
+    daemon_path = arched_start.split(' ')[-1]
+    if not os.path.exists(daemon_path):
+        msg = "Daemon not found: {}".format(daemon_path)
+        LOG.error(msg)
+        print(msg)
+        sys.exit(1)
+
+    parts = arched_start.split(" ")
+    try:
+        out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        msg = "Failed to start daemon"
+        print(msg)
+        LOG.exception(msg)
+        sys.exit(1)
+
+    LOG.debug(out)
 
     host, port = DAEMON_ADDR.split(":")
 
-    # Wait for it to be ready
+    # Wait up to DAEMON_WAIT_SECS for it to be ready
+    start_time = time.time()
     is_ready = False
     while not is_ready:
         try:
@@ -462,16 +486,50 @@ def start_daemon():
             is_ready = True
         except:
             is_ready = False
+            if int(time.time() - start_time) > DAEMON_WAIT_SECS:
+                msg = "Failed to start daemon"
+                print(msg)
+                LOG.error(msg)
+                show_server_log()
+                sys.exit(1)
 
     return sock
 
 
+def show_server_log():
+    """Print the last 5 lines of the server log, to help
+    users fix server problems.
+    """
+    slog_filename = os.path.expanduser('~') + LOG_DIR + "server.log"
+    slog = open(slog_filename)
+    last_x = slog.readlines()[-5:]
+    print("--- {}".format(slog_filename))
+    print(''.join(last_x))
+
+
 def stop_daemon():
     """Stop the daemon. This will also stop all clients."""
-    LOG.debug("Stopping the daemon: %s", CMD_STOP_DAEMON)
 
-    parts = CMD_STOP_DAEMON.split(" ")
-    subprocess.call(parts)
+    arched_stop = "{}-{}".format(CMD_STOP_DAEMON, get_long_size())
+    LOG.debug("Stopping the daemon: %s", arched_stop)
+
+    parts = arched_stop.split(" ")
+    out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
+    LOG.debug(out)
+
+
+def get_long_size():
+    """Size of a LONG in bits. Either "32" or "64".
+    Used to determine which Go daemon to run.
+    """
+    try:
+        return subprocess.check_output(["getconf", "LONG_BIT"]).strip()
+    except subprocess.CalledProcessError:
+        msg = ("Error calling shell command 'getconf LONG_BIT' to determine " +
+               "whether system is 32 or 64 bit")
+        LOG.exception(msg)
+        print(msg)
+        sys.exit(1)
 
 
 class StopException(Exception):
