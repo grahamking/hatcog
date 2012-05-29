@@ -32,14 +32,14 @@ func (self *InternalManager) Run() {
 	listener, err = net.Listen("tcp", "127.0.0.1:"+self.port)
 
 	if err != nil {
-		panic("Error on internal listen: " + err.Error())
+		LOG.Fatal("Error on internal listen: " + err.Error())
 	}
 	defer listener.Close()
 
 	for {
 		netConn, err = listener.Accept()
 		if err != nil {
-			panic("Listener accept error: " + err.Error())
+			LOG.Fatal("Listener accept error: " + err.Error())
 			break
 		}
 
