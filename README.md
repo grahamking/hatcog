@@ -1,16 +1,16 @@
-Hatcog is the perfect IRC client if you live on the command line, and are addicted to tmux. It allows you to connect to different channels from different tmux windows, using the same IRC connection. It offers (probably) most things you'd expect your IRC client to have, such as colors, nick notification, private messages, etc.
-
-## Install
+**Hatcog is the perfect IRC client if you live on the command line, and are addicted to tmux**. It allows you to connect to different channels from different tmux windows, using the same IRC connection. It offers (probably) most things you'd expect your IRC client to have, such as colors, nick notification, private messages, etc.
 
 Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere else.
 
-1. Clone and install:
+## Install
+
+**1. Clone and install:**
 
     git clone https://github.com/grahamking/hatcog.git
     cd hatcog
     sudo python setup.py install
 
-2. Copy example config and edit it
+**2. Copy example config and edit it:**
 
     cd ~
     cp hatcog/.hatcogrc .   # Now edit it
