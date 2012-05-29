@@ -1,8 +1,7 @@
+# coding: utf-8
 """Connection to hatcogd"""
 
-#import logging
-
-#LOG = logging.getLogger(__name__)
+from __future__ import unicode_literals
 
 
 class Server(object):
@@ -16,7 +15,8 @@ class Server(object):
         """Send a string message to the server"""
         if not msg:
             return
-        self.conn.sendall(msg.encode("utf8") + "\n")
+        msg += "\n"
+        self.conn.sendall(msg.encode("utf8"))
 
     def stop(self):
         """Close server connection"""

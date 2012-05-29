@@ -1,5 +1,7 @@
+# coding: utf-8
 """Terminal (UI) for hatcog"""
 
+from __future__ import unicode_literals
 import curses
 import curses.ascii
 from datetime import datetime
@@ -8,7 +10,7 @@ import locale
 import tempfile
 import subprocess
 
-from hfilter import is_irc_command
+from .hfilter import is_irc_command
 
 PAGER = ["/usr/bin/less", "+G"]     # Program to display scrollback
 MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
@@ -69,10 +71,10 @@ class Terminal(object):
         try:
             curses.start_color()
             curses.use_default_colors()
-            for i in xrange(1, curses.COLORS):
+            for i in range(1, curses.COLORS):
                 curses.init_pair(i, i, -1)
         except:
-            LOG.warn("Exception in curses color init")
+            LOG.exception("Exception in curses color init")
 
         self.stdscr = stdscr
 
@@ -100,7 +102,7 @@ class Terminal(object):
         max_height = self.get_max_height()
 
         self.win_header = self.stdscr.subwin(1, max_width, 0, 0)
-        self.win_header.bkgdset(" ", curses.A_REVERSE)
+        self.win_header.bkgdset(b" ", curses.A_REVERSE)
         self.win_header.addstr(" " * (max_width - 1))
         if len("hatcog") < max_width:
             self.win_header.addstr(0, 0, "hatcog")
@@ -111,7 +113,7 @@ class Terminal(object):
         self.win_output.idlok(True)
 
         self.win_status = self.stdscr.subwin(1, max_width, max_height - 2, 0)
-        self.win_status.bkgdset(" ", curses.A_REVERSE)
+        self.win_status.bkgdset(b" ", curses.A_REVERSE)
         self.win_status.addstr(" " * (max_width - 1))
         self.win_status.refresh()
 
@@ -210,7 +212,7 @@ class Terminal(object):
             col = self.users.color_for(username)
             self._write(padded_username.encode("utf8"), curses.color_pair(col))
 
-        self.write(u" " + content, refresh=False)
+        self.write(" " + content, refresh=False)
 
         if refresh:
             self.lines.append((now, username, content))
@@ -242,7 +244,7 @@ class Terminal(object):
     def set_channel(self, channel):
         """Set current channel"""
         self.cache['set_channel'] = channel
-        mid_pos = (self.get_max_width() - (len(channel) + 1)) / 2
+        mid_pos = int((self.get_max_width() - (len(channel) + 1)) / 2)
         if mid_pos > 0:
             self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
             self.win_status.refresh()
@@ -319,7 +321,7 @@ class Terminal(object):
 def lpad(num, string):
     """Left pad a string"""
     needed = num - len(string)
-    return u" " * needed + string
+    return " " * needed + string
 
 
 #
@@ -388,10 +390,10 @@ class TermInput(object):
         else:
             # Regular character, display it
             try:
-                self.current.insert(self.pos, chr(char))
+                self.current.insert(self.pos, to_chr(char))
                 self.pos += 1
             except ValueError:
-                # Throw by 'chr'. Not a printable char, ignore.
+                # Throw by 'to_chr'. Not a printable char, ignore.
                 pass
 
         self.redisplay()
@@ -447,7 +449,7 @@ class TermInput(object):
         self.pos = 0
         self.current = []
 
-        return result.decode("utf8")
+        return result
 
     def key_resize(self):
         """Curses communicates window resize via a fake keypress"""
@@ -471,7 +473,7 @@ class TermInput(object):
             return ""
 
         string = string[:self.pos].strip()
-        start = string.rfind(" ")
+        start = string.rfind(' ')
         if start == -1:
             start = 0
         if start >= self.pos:
@@ -495,3 +497,19 @@ class RebuildException(Exception):
     because we made a new window, so we need a new thread.
     """
     pass
+
+
+def to_chr(num):
+    """Wrap built-in 'chr' for python 2 and 3 support.
+    @param num An integer representing an ascii character
+    @return Unicode character
+    """
+
+    c = chr(num)
+    try:
+        # python 2
+        return c.decode("utf8")
+    except AttributeError:
+        # python 3
+        return c
+
