@@ -508,10 +508,11 @@ def show_server_log():
     users fix server problems.
     """
     slog_filename = os.path.expanduser('~') + LOG_DIR + "server.log"
-    slog = open(slog_filename)
-    last_x = slog.readlines()[-5:]
-    print("--- {}".format(slog_filename))
-    print(''.join(last_x))
+
+    with open(slog_filename) as slog:
+        last_x = slog.readlines()[-5:]
+        print("--- {}".format(slog_filename))
+        print(''.join(last_x))
 
 
 def stop_daemon():
