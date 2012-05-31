@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -115,6 +116,10 @@ func (self *External) doCommand(content string) {
 // Read IRC messages from the connection and act on them
 func (self *External) Consume() {
 
+	var contentData []byte
+	var content string
+	var err error
+
 	bufRead := bufio.NewReader(self.socket)
 	for {
 
@@ -122,8 +127,9 @@ func (self *External) Consume() {
 			return
 		}
 
-        	self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
-		content, err := bufRead.ReadString('\n')
+		self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
+		contentData, err = bufRead.ReadBytes('\n')
+		content = toUTF8(contentData)
 
 		if err != nil {
 			netErr, _ := err.(net.Error)
@@ -145,6 +151,29 @@ func (self *External) Consume() {
 		}
 
 	}
+}
+
+// Converts an array of bytes to a string
+// If the bytes are valid UTF-8, return those (as string),
+// otherwise assume we have ISO-8859-1 (latin1, and kinda windows-1252),
+// and use the bytes as unicode code points, because ISO-8859-1 is a
+// subset of unicode
+func toUTF8(data []byte) string {
+
+    var result string
+
+	if utf8.Valid(data) {
+		result = string(data)
+	} else {
+
+		runes := make([]rune, len(data))
+		for index, val := range data {
+			runes[index] = rune(val)
+		}
+		result = string(runes)
+	}
+
+    return result
 }
 
 // Do something with a line
