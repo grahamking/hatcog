@@ -177,13 +177,13 @@ class Terminal(object):
         self._write(" ")
         for word in message.split():
             if self.nick and word == self.nick:
-                self._write(self.nick.encode("utf8"), curses.A_BOLD)
+                self._write(self.nick, curses.A_BOLD)
             elif word.startswith("http"):
                 if not word in self.urls:
                     self.urls.append(word)
-                self._write(word.encode("utf8"), curses.A_UNDERLINE)
+                self._write(word, curses.A_UNDERLINE)
             else:
-                self._write(word.encode("utf8"))
+                self._write(word)
             self._write(" ")
         self._write("\n")
 
@@ -207,10 +207,10 @@ class Terminal(object):
         is_me = username == self.nick
         padded_username = lpad(15, username)
         if is_me:
-            self._write(padded_username.encode("utf8"), curses.A_BOLD)
+            self._write(padded_username, curses.A_BOLD)
         else:
             col = self.users.color_for(username)
-            self._write(padded_username.encode("utf8"), curses.color_pair(col))
+            self._write(padded_username, curses.color_pair(col))
 
         self.write(" " + content, refresh=False)
 
@@ -225,7 +225,7 @@ class Terminal(object):
             self.win_output.addstr(msg, opt)
         else:
             self.win_output.addstr(msg)
-        self.scrollback.write(msg)
+        self.scrollback.write(msg.encode("utf8"))
 
     def set_nick(self, nick):
         """Set user nick"""
@@ -238,7 +238,7 @@ class Terminal(object):
         # Record and display new nick
         self.nick = nick
         if len(nick) < self.get_max_width():
-            self.win_status.addstr(0, 0, nick.encode("utf8"))
+            self.win_status.addstr(0, 0, nick)
             self.win_status.refresh()
 
     def set_channel(self, channel):
@@ -284,7 +284,7 @@ class Terminal(object):
     def set_ping(self, server_name):
         """Received a server ping"""
         now = datetime.now().strftime("%H:%M")
-        self.set_host("%s (Last ping %s)" % (server_name.encode("utf8"), now))
+        self.set_host("%s (Last ping %s)" % (server_name, now))
 
     def rebuild(self):
         """Rebuild the app, usually because it got resized"""
@@ -358,6 +358,10 @@ class TermInput(object):
         _, win_input_width = self.terminal.win_input.getmaxyx()
         return win_input_width - 1
 
+    def current_str(self):
+        """Current input as unicode string"""
+        return bytes(self.current).decode("utf8", errors="ignore")
+
     def addstr(self, msg, extra=curses.A_NORMAL):
         """Add string to self.win at current position."""
         try:
@@ -376,25 +380,21 @@ class TermInput(object):
     def gather_one(self):
         """Gather single character input from this window"""
 
-        char = self.win.getch()
+        byte = self.win.getch()
 
-        if char == -1:    # No input
+        if byte == -1:    # No input
             self.cursor_to_input()
 
-        elif char in TermInput.KEYS:
-            key_func = getattr(self, TermInput.KEYS[char])
+        elif byte in TermInput.KEYS:
+            key_func = getattr(self, TermInput.KEYS[byte])
             result = key_func()
             if result:
                 return result
 
         else:
-            # Regular character, display it
-            try:
-                self.current.insert(self.pos, to_chr(char))
-                self.pos += 1
-            except ValueError:
-                # Throw by 'to_chr'. Not a printable char, ignore.
-                pass
+            # Other, either character, or byte of multi-byte char
+            self.current.insert(self.pos, byte)
+            self.pos = len(self.current_str())
 
         self.redisplay()
 
@@ -402,7 +402,7 @@ class TermInput(object):
         """Display current input in input window."""
         self.win.erase()
 
-        msg = ''.join(self.current)
+        msg = self.current_str()
 
         if len(msg) >= self.get_max_len():
             msg = msg[len(msg) - self.get_max_len() + 1:]
@@ -423,7 +423,7 @@ class TermInput(object):
 
     def key_right(self):
         """Move one char right"""
-        if self.pos < len(self.current):
+        if self.pos < len(self.current_str()):
             self.pos += 1
 
     def key_home(self):
@@ -432,7 +432,7 @@ class TermInput(object):
 
     def key_end(self):
         """Move to end of line"""
-        self.pos = len(self.current)
+        self.pos = len(self.current_str())
 
     def key_backspace(self):
         """Delete char just before cursor"""
@@ -443,7 +443,7 @@ class TermInput(object):
     def key_enter(self):
         """Send input to queue, clear field"""
 
-        result = ''.join(self.current)
+        result = self.current_str()
 
         self.win.erase()
         self.pos = 0
@@ -458,28 +458,30 @@ class TermInput(object):
 
     def key_tab(self):
         """Auto-complete nick"""
-        nick_part = self.word_at_pos()
+
+        current = self.current_str()
+
+        nick_part = self.word_at_pos(current)
         nick = self.terminal.users.first_match(
                 nick_part,
                 exclude=[self.terminal.nick])
 
-        self.current = list(''.join(self.current).replace(nick_part, nick))
+        self.current = bytes(current.replace(nick_part, nick))
         self.pos += len(nick) - len(nick_part)
 
-    def word_at_pos(self):
+    def word_at_pos(self, current):
         """The word ending at the cursor (pos) in string"""
-        string = ''.join(self.current)
-        if not string:
+        if not current:
             return ""
 
-        string = string[:self.pos].strip()
-        start = string.rfind(' ')
+        current = current[:self.pos].strip()
+        start = current.rfind(' ')
         if start == -1:
             start = 0
         if start >= self.pos:
             return ""
 
-        return string[start:self.pos].strip()
+        return current[start:self.pos].strip()
 
     def key_pageup(self):
         """PgUp pressed, show scrollback buffer"""
@@ -497,18 +499,3 @@ class RebuildException(Exception):
     because we made a new window, so we need a new thread.
     """
     pass
-
-
-def to_chr(num):
-    """Wrap built-in 'chr' for python 2 and 3 support.
-    @param num An integer representing an ascii character
-    @return Unicode character
-    """
-
-    c = chr(num)
-    try:
-        # python 2
-        return c.decode("utf8")
-    except AttributeError:
-        # python 3
-        return c

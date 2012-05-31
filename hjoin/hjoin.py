@@ -511,14 +511,10 @@ def show_server_log():
     slog_filename = os.path.expanduser('~') + LOG_DIR + "server.log"
 
     # Open server.log as binary because old version of hatcogd logged iso8859
-    with open(slog_filename, "rb") as slog:
+    with open(slog_filename, errors="ignore") as slog:
         last_x = slog.readlines()[-5:]
         print("--- {}".format(slog_filename))
-        for line in last_x:
-            try:
-                print(line.decode("utf8"), end='')
-            except UnicodeDecodeError:
-                print(line.decode("latin1", errors="ignore"), end='')
+        print("".join(last_x))
 
 
 def stop_daemon():
