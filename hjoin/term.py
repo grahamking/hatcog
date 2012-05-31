@@ -512,4 +512,3 @@ def to_chr(num):
     except AttributeError:
         # python 3
         return c
-

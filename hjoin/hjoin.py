@@ -162,7 +162,8 @@ class Client(object):
 
             if self.server.conn in ready:
                 sock_data = self.server.receive_one()
-                self.act_server(sock_data)
+                if sock_data:
+                    self.act_server(sock_data)
 
             if sys.stdin in ready:
                 term_data = self.terminal.receive_one()
@@ -509,10 +510,15 @@ def show_server_log():
     """
     slog_filename = os.path.expanduser('~') + LOG_DIR + "server.log"
 
-    with open(slog_filename) as slog:
+    # Open server.log as binary because old version of hatcogd logged iso8859
+    with open(slog_filename, "rb") as slog:
         last_x = slog.readlines()[-5:]
         print("--- {}".format(slog_filename))
-        print(''.join(last_x))
+        for line in last_x:
+            try:
+                print(line.decode("utf8"), end='')
+            except UnicodeDecodeError:
+                print(line.decode("latin1", errors="ignore"), end='')
 
 
 def stop_daemon():
