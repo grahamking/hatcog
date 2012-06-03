@@ -128,7 +128,7 @@ class Terminal(object):
 
         # Create the input window
 
-        previous_input = []
+        previous_input = ""
         previous_pos = 0
         if self.term_input:
             previous_input = self.term_input.current
@@ -348,7 +348,7 @@ class TermInput(object):
         self.win = win
         self.terminal = terminal
 
-        self.current = []   # array of str (unicode)
+        self.current = ""
         self.pending = []   # array of int, partial utf8 characters
         self.pos = 0
 
@@ -358,10 +358,6 @@ class TermInput(object):
         """Maximum length of input string (win width - 1)"""
         _, win_input_width = self.terminal.win_input.getmaxyx()
         return win_input_width - 1
-
-    #def current_str(self):
-    #    """Current input as unicode string"""
-    #    return bytes(self.current).decode("utf8", errors="ignore")
 
     def addstr(self, msg, extra=curses.A_NORMAL):
         """Add string to self.win at current position."""
@@ -375,7 +371,8 @@ class TermInput(object):
     def cursor_to_input(self):
         """Move cursor to input box"""
         move_pos = min(self.pos, self.get_max_len() - 1)
-        self.win.move(0, move_pos)
+        self.win.move(0, 0)
+        self.addstr(self.current[:move_pos])
         self.win.refresh()
 
     def gather_one(self):
@@ -397,7 +394,7 @@ class TermInput(object):
             self.pending.append(byte)
             try:
                 char = bytes(self.pending).decode("utf8")
-                self.current.insert(self.pos, char)
+                self.current = self.current[:self.pos] + char + self.current[self.pos:]
                 self.pos += 1
                 self.pending = []
             except UnicodeDecodeError:
@@ -413,22 +410,20 @@ class TermInput(object):
         """Display current input in input window."""
         self.win.erase()
 
-        msg = "".join(self.current)
+        msg = self.current
 
         if len(msg) >= self.get_max_len():
             msg = msg[len(msg) - self.get_max_len() + 1:]
 
-        if is_irc_command("".join(self.current)):
-            self.addstr(msg, curses.A_BOLD)
-        else:
-            self.addstr(msg)
+        extra = curses.A_NORMAL
+        if is_irc_command(self.current):
+            extra = curses.A_BOLD
 
-        logging.debug(self.current)
-        logging.debug(self.pos)
+        self.addstr(msg, extra=extra)
 
         move_pos = min(self.pos, self.get_max_len() - 1)
-        logging.debug(move_pos)
-        self.win.move(0, move_pos)
+        self.win.move(0, 0)
+        self.addstr(msg[:move_pos], extra=extra)
         self.win.refresh()
 
     def key_left(self):
@@ -453,16 +448,16 @@ class TermInput(object):
         """Delete char just before cursor"""
         if self.pos > 0 and self.current:
             self.pos -= 1
-            del self.current[self.pos]
+            self.current = self.current[:self.pos] + self.current[self.pos + 1:]
 
     def key_enter(self):
         """Send input to queue, clear field"""
 
-        result = "".join(self.current)
+        result = self.current
 
         self.win.erase()
         self.pos = 0
-        self.current = []
+        self.current = ""
 
         return result
 
@@ -474,14 +469,12 @@ class TermInput(object):
     def key_tab(self):
         """Auto-complete nick"""
 
-        current = "".join(self.current)
-
         nick_part = self.word_at_pos(self.current)
         nick = self.terminal.users.first_match(
                 nick_part,
                 exclude=[self.terminal.nick])
 
-        self.current = current.replace(nick_part, nick)
+        self.current = self.current.replace(nick_part, nick)
         self.pos += len(nick) - len(nick_part)
 
     def word_at_pos(self, current):
