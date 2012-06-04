@@ -1,7 +1,6 @@
 # coding: utf-8
 """Terminal (UI) for hatcog"""
 
-from __future__ import unicode_literals
 import curses
 import curses.ascii
 from datetime import datetime

@@ -1,8 +1,6 @@
 # coding: utf-8
 """Connection to hatcogd"""
 
-from __future__ import unicode_literals
-
 
 class Server(object):
     """Local proxy for remote hatcogd server"""

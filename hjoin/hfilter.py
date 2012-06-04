@@ -1,7 +1,6 @@
 # coding: utf-8
 """Map IRC commands to display messages."""
 
-from __future__ import unicode_literals
 import sys
 import json
 import logging

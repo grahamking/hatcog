@@ -1,8 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 """Main part of hatcog IRC client. Run this to start."""
 
-from __future__ import unicode_literals
 import os
 import sys
 import logging
