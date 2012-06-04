@@ -411,18 +411,22 @@ class TermInput(object):
 
         msg = self.current
 
+        start = 0
+        end = len(msg)
         if len(msg) >= self.get_max_len():
-            msg = msg[len(msg) - self.get_max_len() + 1:]
+            if self.pos < self.get_max_len():
+                end = self.get_max_len() - 1
+            else:
+                start = min(self.pos, len(msg) - self.get_max_len() + 1)
 
         extra = curses.A_NORMAL
         if is_irc_command(self.current):
             extra = curses.A_BOLD
 
-        self.addstr(msg, extra=extra)
+        self.addstr(msg[start:end], extra=extra)
 
-        move_pos = min(self.pos, self.get_max_len() - 1)
         self.win.move(0, 0)
-        self.addstr(msg[:move_pos], extra=extra)
+        self.addstr(msg[start:self.pos], extra=extra)
         self.win.refresh()
 
     def key_left(self):
