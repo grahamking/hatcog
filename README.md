@@ -8,7 +8,7 @@ Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere el
 
     git clone https://github.com/grahamking/hatcog.git
     cd hatcog
-    sudo python setup.py install
+    sudo python3 setup.py install   # Yes, python3!
 
 2. Copy example config and edit it
 
@@ -27,7 +27,7 @@ The first time (after reboot) you run `hjoin`, it starts the `hatcogd` daemon. W
 
 ## Details
 
-hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). The client is in Python / curses, the server in Go.
+hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). The client is in Python3 / curses, the server in Go.
 
 hatcog is made up of two programs: `hatcogd`, which connects to your irc server, and `hjoin`, which manages input/output for a single channel. `hatcogd` is started for you in the background, so usually you only interact with the curses client, `hjoin`.
 
@@ -70,6 +70,10 @@ The server part (written in Go), `hatcogd` has binaries included for i686 32-bit
 Get [Go](http://golang.org) v1+. Make sure the hatcogd checkout is on your GOPATH, then type `go build hatcogd`. That will put a `hatcogd` executable in your current directory.
 
 Copy or symlink it from `/usr/local/bin`. Finally you'll need to modify hjoin/hjoin.py so it can find your binary.
+
+## But I only have Python 2
+
+Most likely you already have python3, and if not it's easy to install it and run both versions of python side by side. That's what I do. They don't conflict.
 
 ## Development
 
