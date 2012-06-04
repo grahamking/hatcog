@@ -376,11 +376,13 @@ class UserManager(object):
         """Remove inactive users from 'last_active' map"""
         time_ago = time.time() - UserManager.ACTIVE_TIME
         remove = []
-        for nick, last in self.last_active.items():
+        active = self.last_active.copy()
+        for nick, last in active.items():
             if last < time_ago:
                 remove.append(nick)
         for nick in remove:
-            del self.last_active[nick]
+            del active[nick]
+        self.last_active = active
 
 
 def load_config(home):
