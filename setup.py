@@ -36,7 +36,7 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Operating System :: POSIX',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Go',
         'Topic :: Communications :: Chat :: Internet Relay Chat',
     ]
