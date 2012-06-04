@@ -1,3 +1,4 @@
+# coding: utf-8
 """Map IRC commands to display messages."""
 
 import sys
@@ -8,47 +9,47 @@ from datetime import datetime
 PATTERNS_OUT = {
 
         # Custom command for us to send the password
-        '/pw': u'PRIVMSG NickServ :identify %(msg)s',
+        '/pw': 'PRIVMSG NickServ :identify %(msg)s',
 
         # User ACTION
-        '/me': u'PRIVMSG %(channel)s :\u0001ACTION %(msg)s\u0001',
+        '/me': 'PRIVMSG %(channel)s :\u0001ACTION %(msg)s\u0001',
 
         # Any command
-        '__default_cmd__': u'%(cmd)s %(msg)s',
+        '__default_cmd__': '%(cmd)s %(msg)s',
 
         # A regular message
-        '__default_msg__': u'PRIVMSG %(channel)s :%(msg)s',
+        '__default_msg__': 'PRIVMSG %(channel)s :%(msg)s',
 }
 
 PATTERNS_IN = {
-    'NOTICE': u'%(content)s',
-    'NICK': u'* %(user)s is now known as %(content)s',
-    'JOIN': u'* %(user)s joined the channel',
-    'PART': u'* %(user)s left the channel',
-    'PRIVMSG': u'[%(user)s] \t %(content)s',
-    'QUIT': u'%(user)s has quit',
-    'MODE': u'Mode set to %(content)s',
-    'ACTION': u'* %(user)s %(content)s',
+    'NOTICE': '%(content)s',
+    'NICK': '* %(user)s is now known as %(content)s',
+    'JOIN': '* %(user)s joined the channel',
+    'PART': '* %(user)s left the channel',
+    'PRIVMSG': '[%(user)s] \t %(content)s',
+    'QUIT': '%(user)s has quit',
+    'MODE': 'Mode set to %(content)s',
+    'ACTION': '* %(user)s %(content)s',
 
     # Message of the day
-    '372': u'%(content)s',
+    '372': '%(content)s',
 
     # Topic
-    '332': u'Topic: %(content)s',
+    '332': 'Topic: %(content)s',
 
     # NAMES reply
-    '353': u'Users in %(channel)s: %(content)s',
+    '353': 'Users in %(channel)s: %(content)s',
 
     # IRC ops online
-    '252': u'%(content)s %(arg1)s',
+    '252': '%(content)s %(arg1)s',
 
     # Who set the topic
-    '333': u'Topic set by %(arg2)s',
+    '333': 'Topic set by %(arg2)s',
 
     # This channel's URL
-    '328': u'Channel url: %(content)s',
+    '328': 'Channel url: %(content)s',
 
-    '__default__': u'%(content)s'
+    '__default__': '%(content)s'
 }
 
 IGNORE = [
@@ -135,7 +136,7 @@ def translate_in(line, callbacks, timestamp=False):
 
     if timestamp:
         now = datetime.now().isoformat()
-        display = now + u" " + display
+        display = now + " " + display
 
     # Call a method on 'callbacks', for additional processing
     retval = None

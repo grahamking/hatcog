@@ -1,3 +1,4 @@
+# coding: utf-8
 """Terminal (UI) for hatcog"""
 
 import curses
@@ -8,7 +9,7 @@ import locale
 import tempfile
 import subprocess
 
-from hfilter import is_irc_command
+from .hfilter import is_irc_command
 
 PAGER = ["/usr/bin/less", "+G"]     # Program to display scrollback
 MAX_BUFFER = 100    # Max number of lines to cache for resize / redraw
@@ -69,10 +70,10 @@ class Terminal(object):
         try:
             curses.start_color()
             curses.use_default_colors()
-            for i in xrange(1, curses.COLORS):
+            for i in range(1, curses.COLORS):
                 curses.init_pair(i, i, -1)
         except:
-            LOG.warn("Exception in curses color init")
+            LOG.exception("Exception in curses color init")
 
         self.stdscr = stdscr
 
@@ -100,7 +101,7 @@ class Terminal(object):
         max_height = self.get_max_height()
 
         self.win_header = self.stdscr.subwin(1, max_width, 0, 0)
-        self.win_header.bkgdset(" ", curses.A_REVERSE)
+        self.win_header.bkgdset(b" ", curses.A_REVERSE)
         self.win_header.addstr(" " * (max_width - 1))
         if len("hatcog") < max_width:
             self.win_header.addstr(0, 0, "hatcog")
@@ -111,7 +112,7 @@ class Terminal(object):
         self.win_output.idlok(True)
 
         self.win_status = self.stdscr.subwin(1, max_width, max_height - 2, 0)
-        self.win_status.bkgdset(" ", curses.A_REVERSE)
+        self.win_status.bkgdset(b" ", curses.A_REVERSE)
         self.win_status.addstr(" " * (max_width - 1))
         self.win_status.refresh()
 
@@ -126,7 +127,7 @@ class Terminal(object):
 
         # Create the input window
 
-        previous_input = []
+        previous_input = ""
         previous_pos = 0
         if self.term_input:
             previous_input = self.term_input.current
@@ -175,13 +176,13 @@ class Terminal(object):
         self._write(" ")
         for word in message.split():
             if self.nick and word == self.nick:
-                self._write(self.nick.encode("utf8"), curses.A_BOLD)
+                self._write(self.nick, curses.A_BOLD)
             elif word.startswith("http"):
                 if not word in self.urls:
                     self.urls.append(word)
-                self._write(word.encode("utf8"), curses.A_UNDERLINE)
+                self._write(word, curses.A_UNDERLINE)
             else:
-                self._write(word.encode("utf8"))
+                self._write(word)
             self._write(" ")
         self._write("\n")
 
@@ -205,12 +206,12 @@ class Terminal(object):
         is_me = username == self.nick
         padded_username = lpad(15, username)
         if is_me:
-            self._write(padded_username.encode("utf8"), curses.A_BOLD)
+            self._write(padded_username, curses.A_BOLD)
         else:
             col = self.users.color_for(username)
-            self._write(padded_username.encode("utf8"), curses.color_pair(col))
+            self._write(padded_username, curses.color_pair(col))
 
-        self.write(u" " + content, refresh=False)
+        self.write(" " + content, refresh=False)
 
         if refresh:
             self.lines.append((now, username, content))
@@ -223,7 +224,7 @@ class Terminal(object):
             self.win_output.addstr(msg, opt)
         else:
             self.win_output.addstr(msg)
-        self.scrollback.write(msg)
+        self.scrollback.write(msg.encode("utf8"))
 
     def set_nick(self, nick):
         """Set user nick"""
@@ -236,13 +237,13 @@ class Terminal(object):
         # Record and display new nick
         self.nick = nick
         if len(nick) < self.get_max_width():
-            self.win_status.addstr(0, 0, nick.encode("utf8"))
+            self.win_status.addstr(0, 0, nick)
             self.win_status.refresh()
 
     def set_channel(self, channel):
         """Set current channel"""
         self.cache['set_channel'] = channel
-        mid_pos = (self.get_max_width() - (len(channel) + 1)) / 2
+        mid_pos = int((self.get_max_width() - (len(channel) + 1)) / 2)
         if mid_pos > 0:
             self.win_status.addstr(0, mid_pos, channel, curses.A_BOLD)
             self.win_status.refresh()
@@ -282,7 +283,7 @@ class Terminal(object):
     def set_ping(self, server_name):
         """Received a server ping"""
         now = datetime.now().strftime("%H:%M")
-        self.set_host("%s (Last ping %s)" % (server_name.encode("utf8"), now))
+        self.set_host("%s (Last ping %s)" % (server_name, now))
 
     def rebuild(self):
         """Rebuild the app, usually because it got resized"""
@@ -319,7 +320,7 @@ class Terminal(object):
 def lpad(num, string):
     """Left pad a string"""
     needed = num - len(string)
-    return u" " * needed + string
+    return " " * needed + string
 
 
 #
@@ -346,7 +347,8 @@ class TermInput(object):
         self.win = win
         self.terminal = terminal
 
-        self.current = []
+        self.current = ""
+        self.pending = []   # array of int, partial utf8 characters
         self.pos = 0
 
         self.cursor_to_input()
@@ -368,31 +370,38 @@ class TermInput(object):
     def cursor_to_input(self):
         """Move cursor to input box"""
         move_pos = min(self.pos, self.get_max_len() - 1)
-        self.win.move(0, move_pos)
+        self.win.move(0, 0)
+        self.addstr(self.current[:move_pos])
         self.win.refresh()
 
     def gather_one(self):
         """Gather single character input from this window"""
 
-        char = self.win.getch()
+        byte = self.win.getch()
 
-        if char == -1:    # No input
+        if byte == -1:    # No input
             self.cursor_to_input()
 
-        elif char in TermInput.KEYS:
-            key_func = getattr(self, TermInput.KEYS[char])
+        elif byte in TermInput.KEYS:
+            key_func = getattr(self, TermInput.KEYS[byte])
             result = key_func()
             if result:
                 return result
 
         else:
-            # Regular character, display it
+            # Other, either character, or byte of multi-byte char
+            self.pending.append(byte)
             try:
-                self.current.insert(self.pos, chr(char))
+                char = bytes(self.pending).decode("utf8")
+                self.current = self.current[:self.pos] + char + self.current[self.pos:]
                 self.pos += 1
-            except ValueError:
-                # Throw by 'chr'. Not a printable char, ignore.
+                self.pending = []
+            except UnicodeDecodeError:
+                # byte is part of multi-byte character
                 pass
+            except ValueError:
+                # byte wasn't valid anything (?)
+                self.pending = []
 
         self.redisplay()
 
@@ -400,18 +409,24 @@ class TermInput(object):
         """Display current input in input window."""
         self.win.erase()
 
-        msg = ''.join(self.current)
+        msg = self.current
 
+        start = 0
+        end = len(msg)
         if len(msg) >= self.get_max_len():
-            msg = msg[len(msg) - self.get_max_len() + 1:]
+            if self.pos < self.get_max_len():
+                end = self.get_max_len() - 1
+            else:
+                start = min(self.pos, len(msg) - self.get_max_len() + 1)
 
-        if is_irc_command(msg):
-            self.addstr(msg, curses.A_BOLD)
-        else:
-            self.addstr(msg)
+        extra = curses.A_NORMAL
+        if is_irc_command(self.current):
+            extra = curses.A_BOLD
 
-        move_pos = min(self.pos, self.get_max_len() - 1)
-        self.win.move(0, move_pos)
+        self.addstr(msg[start:end], extra=extra)
+
+        self.win.move(0, 0)
+        self.addstr(msg[start:self.pos], extra=extra)
         self.win.refresh()
 
     def key_left(self):
@@ -436,18 +451,18 @@ class TermInput(object):
         """Delete char just before cursor"""
         if self.pos > 0 and self.current:
             self.pos -= 1
-            del self.current[self.pos]
+            self.current = self.current[:self.pos] + self.current[self.pos + 1:]
 
     def key_enter(self):
         """Send input to queue, clear field"""
 
-        result = ''.join(self.current)
+        result = self.current
 
         self.win.erase()
         self.pos = 0
-        self.current = []
+        self.current = ""
 
-        return result.decode("utf8")
+        return result
 
     def key_resize(self):
         """Curses communicates window resize via a fake keypress"""
@@ -456,28 +471,28 @@ class TermInput(object):
 
     def key_tab(self):
         """Auto-complete nick"""
-        nick_part = self.word_at_pos()
+
+        nick_part = self.word_at_pos(self.current)
         nick = self.terminal.users.first_match(
                 nick_part,
                 exclude=[self.terminal.nick])
 
-        self.current = list(''.join(self.current).replace(nick_part, nick))
+        self.current = self.current.replace(nick_part, nick)
         self.pos += len(nick) - len(nick_part)
 
-    def word_at_pos(self):
+    def word_at_pos(self, current):
         """The word ending at the cursor (pos) in string"""
-        string = ''.join(self.current)
-        if not string:
+        if not current:
             return ""
 
-        string = string[:self.pos].strip()
-        start = string.rfind(" ")
+        current = current[:self.pos].strip()
+        start = current.rfind(' ')
         if start == -1:
             start = 0
         if start >= self.pos:
             return ""
 
-        return string[start:self.pos].strip()
+        return current[start:self.pos].strip()
 
     def key_pageup(self):
         """PgUp pressed, show scrollback buffer"""

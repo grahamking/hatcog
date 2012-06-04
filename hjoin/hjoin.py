@@ -1,5 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# coding: utf-8
 """Main part of hatcog IRC client. Run this to start."""
+
 import os
 import sys
 import logging
@@ -9,9 +11,9 @@ import socket
 import select
 import random
 
-from term import Terminal
-from remote import Server
-from hfilter import translate_in, is_irc_command
+from .term import Terminal
+from .remote import Server
+from .hfilter import translate_in, is_irc_command
 from . import __version__
 
 VERSION = "hatcog v{} (github.com/grahamking/hatcog)".format(__version__)
@@ -78,7 +80,7 @@ def main(argv=None):
     client = Client(channel, password, DAEMON_ADDR, conf)
 
     if len(sys.argv) == 3 and sys.argv[2] == "--logger":
-        client = Logger(channel, password, DAEMON_ADDR)
+        client = Logger(channel, password, DAEMON_ADDR, conf)
 
     try:
 
@@ -159,7 +161,8 @@ class Client(object):
 
             if self.server.conn in ready:
                 sock_data = self.server.receive_one()
-                self.act_server(sock_data)
+                if sock_data:
+                    self.act_server(sock_data)
 
             if sys.stdin in ready:
                 term_data = self.terminal.receive_one()
@@ -172,9 +175,9 @@ class Client(object):
             return
 
         # Local only commands
-        if msg == u"/quit":
+        if msg == "/quit":
             raise StopException()
-        elif msg == u"/url":
+        elif msg == "/url":
             url = self.terminal.get_url()
             if url:
                 self.terminal.write(url)
@@ -185,8 +188,8 @@ class Client(object):
 
         self.server.write(msg)
 
-        if msg.startswith(u"/me "):
-            me_msg = u"* " + msg.replace(u"/me ", self.nick + u" ")
+        if msg.startswith("/me "):
+            me_msg = "* " + msg.replace("/me ", self.nick + " ")
             self.terminal.write(me_msg)
 
         elif not is_irc_command(msg):
@@ -226,7 +229,7 @@ class Client(object):
         if not old_nick or old_nick == self.nick:
             self.nick = new_nick
             self.terminal.set_nick(self.nick)
-            return u"You are now known as %s" % self.nick
+            return "You are now known as %s" % self.nick
 
     def on_privmsg(self, obj):
         """A message. Format it nicely."""
@@ -286,7 +289,7 @@ class Client(object):
     def on_328(self, obj):
         """Channel url"""
         url = obj['content']
-        msg = u"%s (%s)" % (self.channel, url)
+        msg = "%s (%s)" % (self.channel, url)
         self.terminal.set_channel(msg)
         return -1
 
@@ -323,7 +326,7 @@ class UserManager(object):
 
     def add(self, username):
         """User joined channel"""
-        if username.startswith(u"@") or username.startswith(u"+"):
+        if username.startswith("@") or username.startswith("+"):
             username = username[1:]
         self.users.add(username)
 
@@ -393,13 +396,15 @@ def load_config(home):
               "https://github.com/grahamking/hatcog/blob/master/.hatcogrc")
         sys.exit(1)
 
-    for line in config_file:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
+    with config_file:
 
-        key, value = line.split("=")
-        conf[key.strip()] = value.strip(" \"'")
+        for line in config_file:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            key, value = line.split("=")
+            conf[key.strip()] = value.strip(" \"'")
 
     return conf
 
@@ -414,7 +419,7 @@ def get_password(conf):
         LOG.debug("Running command to get password: %s", pwd_cmd)
         password = subprocess.check_output(pwd_cmd.split(' '))
 
-    return password
+    return password.decode("utf8")
 
 
 def show_url(conf, url):
@@ -438,8 +443,9 @@ def get_daemon_connection():
     host, port = DAEMON_ADDR.split(":")
 
     try:
-        sock = socket.create_connection((host, port))
+        sock = socket.create_connection((host.encode("utf8"), int(port)))
     except:
+        LOG.exception("Could not connect")
         sock = start_daemon()
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -466,6 +472,7 @@ def start_daemon():
     parts = arched_start.split(" ")
     try:
         out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
+        out = out.decode("utf8")
     except subprocess.CalledProcessError:
         msg = "Failed to start daemon"
         print(msg)
@@ -501,10 +508,12 @@ def show_server_log():
     users fix server problems.
     """
     slog_filename = os.path.expanduser('~') + LOG_DIR + "server.log"
-    slog = open(slog_filename)
-    last_x = slog.readlines()[-5:]
-    print("--- {}".format(slog_filename))
-    print(''.join(last_x))
+
+    # Open server.log as binary because old version of hatcogd logged iso8859
+    with open(slog_filename, errors="ignore") as slog:
+        last_x = slog.readlines()[-5:]
+        print("--- {}".format(slog_filename))
+        print("".join(last_x))
 
 
 def stop_daemon():
@@ -515,6 +524,7 @@ def stop_daemon():
 
     parts = arched_stop.split(" ")
     out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
+    out = out.decode("utf8")
     LOG.debug(out)
 
 
@@ -523,13 +533,15 @@ def get_long_size():
     Used to determine which Go daemon to run.
     """
     try:
-        return subprocess.check_output(["getconf", "LONG_BIT"]).strip()
+        bytestr = subprocess.check_output(["getconf", "LONG_BIT"]).strip()
     except subprocess.CalledProcessError:
         msg = ("Error calling shell command 'getconf LONG_BIT' to determine " +
                "whether system is 32 or 64 bit")
         LOG.exception(msg)
         print(msg)
         sys.exit(1)
+
+    return bytestr.decode("utf8")
 
 
 class StopException(Exception):
