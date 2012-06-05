@@ -129,7 +129,6 @@ func (self *External) Consume() {
 
 		self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
 		contentData, err = bufRead.ReadBytes('\n')
-		content = toUTF8(contentData)
 
 		if err != nil {
 			netErr, _ := err.(net.Error)
@@ -140,6 +139,12 @@ func (self *External) Consume() {
 				LOG.Fatal("Consume Error:", err)
 			}
 		}
+
+		if len(contentData) == 0 {
+			continue
+		}
+
+		content = toUnicode(contentData)
 
 		self.rawLog.Println(content)
 
@@ -158,14 +163,13 @@ func (self *External) Consume() {
 // otherwise assume we have ISO-8859-1 (latin1, and kinda windows-1252),
 // and use the bytes as unicode code points, because ISO-8859-1 is a
 // subset of unicode
-func toUTF8(data []byte) string {
+func toUnicode(data []byte) string {
 
-    var result string
+	var result string
 
 	if utf8.Valid(data) {
 		result = string(data)
 	} else {
-
 		runes := make([]rune, len(data))
 		for index, val := range data {
 			runes[index] = rune(val)
@@ -173,7 +177,7 @@ func toUTF8(data []byte) string {
 		result = string(runes)
 	}
 
-    return result
+	return result
 }
 
 // Do something with a line
