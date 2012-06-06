@@ -144,7 +144,9 @@ func (self *External) Consume() {
 			continue
 		}
 
+        LOG.Println(contentData)
 		content = toUnicode(contentData)
+        LOG.Println(content)
 
 		self.rawLog.Println(content)
 
@@ -168,8 +170,10 @@ func toUnicode(data []byte) string {
 	var result string
 
 	if utf8.Valid(data) {
+        LOG.Println("Valid")
 		result = string(data)
 	} else {
+        LOG.Println("Convert")
 		runes := make([]rune, len(data))
 		for index, val := range data {
 			runes[index] = rune(val)
