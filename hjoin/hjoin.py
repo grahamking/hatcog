@@ -136,11 +136,12 @@ class Client(object):
 
         if self.password:
             self.server.write("/pw " + self.password)
-
-        time.sleep(1)
+            time.sleep(1)
 
         if self.channel.startswith("#"):
             self.server.write("/join " + self.channel)
+            time.sleep(1)
+            self.server.write("/motd")          # Start with Message Of The Day
         else:
             # Private message (query). /private is not standard.
             self.server.write("/private " + self.channel)
