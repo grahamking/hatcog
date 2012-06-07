@@ -52,11 +52,13 @@ PATTERNS_IN = {
     # LINKS reply
     '364': '%(arg1)s: %(content)s',
 
+    # VERSION reply
+    '351': 'Server version: %(arg1)s Comment: %(content)s',
+
     '__default__': '%(content)s'
 }
 
 IGNORE = [
-    '005',  # Extensions server supports
     '253',  # Num unknown connections
     '254',  # Num channels
     '255',  # Num clients and servers

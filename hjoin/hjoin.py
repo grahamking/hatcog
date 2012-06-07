@@ -306,6 +306,12 @@ class Client(object):
         self.terminal.set_active_users(self.users.active_count())
         return -1
 
+    def on_005(self, obj):
+        """Display server settings"""
+        settings = ", ".join(obj["args"][1:])
+        self.terminal.write("Server settings: {}".format(settings))
+        return -1
+
 
 class UserManager(object):
     """Manages users in an IRC channel"""
