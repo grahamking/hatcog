@@ -55,6 +55,10 @@ PATTERNS_IN = {
     # VERSION reply
     '351': 'Server version: %(arg1)s Comment: %(content)s',
 
+    # LIST reply
+    '321': '%(arg1)s %(content)s',
+    '322': '%(arg1)s %(arg2)s %(content)s',
+
     '__default__': '%(content)s'
 }
 
@@ -62,6 +66,7 @@ IGNORE = [
     '253',  # Num unknown connections
     '254',  # Num channels
     '255',  # Num clients and servers
+    '323',  # End of LIST
     '366',  # End of NAMES
     '376',  # End of MOTD
 ]
