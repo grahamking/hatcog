@@ -417,6 +417,9 @@ def load_config(home):
 def get_password(conf):
     """Get password from config file"""
 
+    if not "password" in conf:
+        return None
+
     password = conf["password"].strip()
 
     if password.startswith("$("):
