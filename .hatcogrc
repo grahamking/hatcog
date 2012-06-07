@@ -14,6 +14,9 @@
 # Freenode, over TLS
 #server = "chat.freenode.net:6697"
 
+# OFTC, over TLS
+#server = "irc.oftc.net:6697"
+
 # Local unsecured
 server = "127.0.0.1:6667"
 
