@@ -49,6 +49,9 @@ PATTERNS_IN = {
     # This channel's URL
     '328': 'Channel url: %(content)s',
 
+    # LINKS reply
+    '364': '%(arg1)s: %(content)s',
+
     '__default__': '%(content)s'
 }
 
