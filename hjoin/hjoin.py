@@ -115,11 +115,12 @@ class Client(object):
         self.terminal = None
 
         self.server = None
+        self.is_created = None
 
     def init(self):
         """Initialize"""
 
-        sock = get_daemon_connection()
+        sock, self.is_created = get_daemon_connection()
         self.server = Server(sock)
 
         self.start_interface()
@@ -134,17 +135,35 @@ class Client(object):
     def start_remote(self):
         """Connect to remote server"""
 
-        if self.password:
-            self.server.write("/pw " + self.password)
-            time.sleep(1)
+        if self.is_created:
+            # New daemon, introduce ourselves
+            self.register()
+
+        self.join()
+
+    def join(self):
+        """Join channel or private message"""
 
         if self.channel.startswith("#"):
             self.server.write("/join " + self.channel)
             time.sleep(1)
-            self.server.write("/motd")          # Start with Message Of The Day
         else:
             # Private message (query). /private is not standard.
             self.server.write("/private " + self.channel)
+
+    def register(self):
+        """Register ourselves with the server"""
+
+        nick = self.conf["nick"]
+        self.server.write("/nick {}".format(nick))
+        self.server.write("/user {nick} 0 * {name}".format(
+            nick=nick,
+            name=self.conf["name"]))
+
+        if self.password:
+            self.server.write("/pw " + self.password)
+            time.sleep(1)
+
 
     def run(self):
         """Main loop"""
@@ -312,6 +331,15 @@ class Client(object):
         self.terminal.write("Server settings: {}".format(settings))
         return -1
 
+    def on_451(self, obj):
+        """Server demands that we register"""
+        self.register()
+        return -1
+
+    def on_001(self, obj):
+        """RPL_WELCOME, server welcomes us, we can now join a channel."""
+        self.join()
+
 
 class UserManager(object):
     """Manages users in an IRC channel"""
@@ -448,25 +476,27 @@ def show_url(conf, url):
 
 
 def get_daemon_connection():
-    """Returns a socket connection to the daemon, starting it
-    if necessary.
+    """Returns a tuple of a socket connection to the daemon, starting it
+    if necessary, and a boolean saying whether we just started the daemon.
     """
     msg = "Connecting to daemon"
     print(msg)
-    LOG.debug(msg)
+    LOG.info(msg)
 
     host, port = DAEMON_ADDR.split(":")
+    is_created = False
 
     try:
         sock = socket.create_connection((host.encode("utf8"), int(port)))
     except:
         LOG.exception("Could not connect")
         sock = start_daemon()
+        is_created = True
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setblocking(False)     # We're using select, so no need to block
 
-    return sock
+    return (sock, is_created)
 
 
 def start_daemon():

@@ -20,7 +20,6 @@ const (
 
 type External struct {
 	socket       net.Conn
-	name         string
 	isClosing    bool
 	fromServer   chan *Line
 	rawLog       *log.Logger
@@ -29,7 +28,6 @@ type External struct {
 
 func NewExternal(server string,
 	nick string,
-	name string,
 	fromServer chan *Line) *External {
 
 	logFilename := HOME + LOG_DIR + "server_raw.log"
@@ -52,13 +50,9 @@ func NewExternal(server string,
 
 	conn := External{
 		socket:     socket,
-		name:       name,
 		fromServer: fromServer,
 		rawLog:     rawLog,
 	}
-	conn.SendRaw("USER " + nick + " localhost localhost :" + name)
-	conn.SendRaw("NICK " + nick)
-	time.Sleep(ONE_SECOND_NS)
 
 	return &conn
 }

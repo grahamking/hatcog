@@ -27,7 +27,6 @@ func NewServer(conf Config) *Server {
 
 	server := conf.Get("server")
 	nick := conf.Get("nick")
-	name := conf.Get("name")
 	internalPort := conf.Get("internal_port")
 
 	cmdNotify := conf.Get("cmd_notify")
@@ -36,7 +35,7 @@ func NewServer(conf Config) *Server {
 
 	// IRC connection to remote server
 	var external *External
-	external = NewExternal(server, nick, name, fromServer)
+	external = NewExternal(server, nick, fromServer)
 	LOG.Println("Connected to IRC server " + server)
 
 	// Socket connections from client programs
