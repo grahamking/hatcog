@@ -154,10 +154,10 @@ class Client(object):
     def register(self):
         """Register ourselves with the server"""
 
-        nick = self.conf["nick"]
-        self.server.write("/nick {}".format(nick))
+        self.nick = self.conf["nick"]
+        self.server.write("/nick {}".format(self.nick))
         self.server.write("/user {nick} 0 * {name}".format(
-            nick=nick,
+            nick=self.nick,
             name=self.conf["name"]))
 
         if self.password:

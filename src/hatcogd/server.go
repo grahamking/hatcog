@@ -26,7 +26,6 @@ type Server struct {
 func NewServer(conf Config) *Server {
 
 	server := conf.Get("server")
-	nick := conf.Get("nick")
 	internalPort := conf.Get("internal_port")
 
 	cmdNotify := conf.Get("cmd_notify")
@@ -35,16 +34,16 @@ func NewServer(conf Config) *Server {
 
 	// IRC connection to remote server
 	var external *External
-	external = NewExternal(server, nick, fromServer)
+	external = NewExternal(server, fromServer)
 	LOG.Println("Connected to IRC server " + server)
 
 	// Socket connections from client programs
 	var internal *InternalManager
-	internal = NewInternalManager(internalPort, fromUser, nick)
+	internal = NewInternalManager(internalPort, fromUser)
 
 	LOG.Println("Listening for internal connection on port " + internalPort)
 
-	return &Server{nick, external, internal, false, cmdNotify, cmdBeep, cmdPrivateChat}
+	return &Server{"", external, internal, false, cmdNotify, cmdBeep, cmdPrivateChat}
 }
 
 // Main loop
@@ -76,11 +75,6 @@ func (self *Server) onServer(line *Line) {
 
 	if isInfoCommand(line.Command) {
 		LOG.Println(line.Content)
-	}
-
-	if line.Command == "NICK" && line.User == self.nick {
-		self.nick = line.Content
-		self.internal.Nick = self.nick
 	}
 
 	if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
@@ -115,6 +109,14 @@ func (self *Server) onUser(message Message) {
 
 	} else if strings.HasPrefix(message.content, "/me ") {
 		self.external.SendAction(message.channel, message.content[4:])
+
+    } else if strings.HasPrefix(message.content, "/nick ") {
+        newNick := message.content[6:]
+        LOG.Println("New nick: ", newNick)
+		self.nick = newNick
+		self.internal.Nick = newNick
+
+		self.external.doCommand(message.content)
 
 	} else if isCommand(message.content) {
 		self.external.doCommand(message.content)

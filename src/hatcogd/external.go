@@ -26,9 +26,7 @@ type External struct {
 	isIdentified bool
 }
 
-func NewExternal(server string,
-	nick string,
-	fromServer chan *Line) *External {
+func NewExternal(server string, fromServer chan *Line) *External {
 
 	logFilename := HOME + LOG_DIR + "server_raw.log"
 	rawLog := openLog(logFilename)

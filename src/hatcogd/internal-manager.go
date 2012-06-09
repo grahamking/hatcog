@@ -15,10 +15,10 @@ type Message struct {
 	content string
 }
 
-func NewInternalManager(port string, fromUser chan Message, nick string) *InternalManager {
+func NewInternalManager(port string, fromUser chan Message) *InternalManager {
 
 	var connections = make([]*Internal, 0)
-	return &InternalManager{port, connections, fromUser, nick, nil}
+	return &InternalManager{port, connections, fromUser, "", nil}
 }
 
 // Act as a server, forward data to irc connection
