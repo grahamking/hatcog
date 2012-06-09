@@ -49,10 +49,8 @@ internal_port = "8790"
 #  /home/bob/bin/sayIt Message "Some text here"
 cmd_notify = "/usr/bin/notify-send"
 
-## cmd_beep ###
-# Command to alert you that your name was mentioned in a chat.
-# Download a beep from here: http://darkcoding.net/beep.wav
-cmd_beep = "/usr/bin/aplay -q /home/graham/SpiderOak/xchat_sounds/beep.wav"
+# just make a beep
+#cmd_notify = "/usr/bin/aplay -q /home/bob/sounds/beep.wav"
 
 ### cmd_private_chat ###
 # Command to open a private chat window, when someone /query or /msg you

@@ -38,7 +38,7 @@ The `hjoin` curses interface will display the following information, if availabl
 
 ## Alerts
 
-When someone says your name in a channel or sends you a private message, we try to play a sound and display a notification. You'll need to customise the sound command in .hatcogrc. The notification command should work as-is on Ubuntu.
+When someone says your name in a channel or sends you a private message, we notify you. You'll need to customise the command in .hatcogrc.
 
 A common way to display a notification in Ubuntu is using `notify-send`. I prefer to send myself an IM message, that way Pidgin handles displaying it on my desktop and making a sound. It works even if I am using hatcog on a remote machine over ssh. I use `sendxmpp` wrapped in a small bash script.
 

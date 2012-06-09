@@ -18,8 +18,6 @@ type Server struct {
 	external       *External
 	internal       *InternalManager
 	isRunning      bool
-	cmdNotify      string
-	cmdBeep        string
 	cmdPrivateChat string
 }
 
@@ -28,8 +26,6 @@ func NewServer(conf Config) *Server {
 	server := conf.Get("server")
 	internalPort := conf.Get("internal_port")
 
-	cmdNotify := conf.Get("cmd_notify")
-	cmdBeep := conf.Get("cmd_beep")
 	cmdPrivateChat := conf.Get("cmd_private_chat")
 
 	// IRC connection to remote server
@@ -43,7 +39,7 @@ func NewServer(conf Config) *Server {
 
 	LOG.Println("Listening for internal connection on port " + internalPort)
 
-	return &Server{"", external, internal, false, cmdNotify, cmdBeep, cmdPrivateChat}
+	return &Server{"", external, internal, false, cmdPrivateChat}
 }
 
 // Main loop
@@ -91,14 +87,6 @@ func (self *Server) onServer(line *Line) {
 		go self.openPrivate(line.User)
 	}
 
-	if isPrivate || (isMsg && strings.Contains(line.Content, self.nick)) {
-		go self.Notify(line)
-		go self.Beep()
-
-	} else if isMsg && self.internal.IsNotify(line.Channel) {
-		go self.Notify(line)
-	}
-
 }
 
 // Act on user input
@@ -125,28 +113,6 @@ func (self *Server) onUser(message Message) {
 		self.external.SendMessage(message.channel, message.content)
 	}
 
-}
-
-// Display this line as an OS notification
-func (self *Server) Notify(line *Line) {
-
-	title := line.User
-	// Private message have Channel == User so don't repeat it
-	if line.Channel != line.User {
-		title += " " + line.Channel
-	}
-	notifyCmd := exec.Command(self.cmdNotify, title, line.Content)
-	notifyCmd.Run()
-}
-
-// Make a sound to alert user someone is talking to them
-func (self *Server) Beep() {
-	if len(self.cmdBeep) == 0 {
-		return
-	}
-	parts := strings.Split(self.cmdBeep, " ")
-	soundCmd := exec.Command(parts[0], parts[1:]...)
-	soundCmd.Run()
 }
 
 // Ask window manager to open a new pane for private messages with given user

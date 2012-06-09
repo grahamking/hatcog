@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net"
-	"strconv"
 	"strings"
 )
 
@@ -13,7 +12,6 @@ type Internal struct {
 	netConn   net.Conn
 	channel   string // channel or nick (for private/query messages)
 	isPrivate bool   // if True, channel is the nick
-	isNotify  bool   // display all messages with OS notifications
 	manager   *InternalManager
 }
 
@@ -83,24 +81,14 @@ func (self *Internal) Special(content string) bool {
 		}
 	}
 
-	if strings.HasPrefix(content, "/notify") {
-		self.isNotify = !self.isNotify
-		line := Line{
-			Command: "NOTICE",
-			Content: "Notifications: " + strconv.FormatBool(self.isNotify),
-			Channel: "",
-			User:    ""}
-		jsonData, _ := json.Marshal(line)
-		self.netConn.Write(append(jsonData, '\n'))
-
-		// Not an IRC server command, so don't send to IRC server
-		return true
-	}
-
 	return false
 }
 
 func (self *Internal) sendNick() {
+
+    if len(self.manager.Nick) == 0 {
+        return
+    }
 
 	line := Line{
 		Command: "NICK",

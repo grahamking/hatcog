@@ -106,15 +106,6 @@ func (self *InternalManager) HasChannel(channel string) bool {
 	return self.GetChannelConnection(channel) != nil
 }
 
-// Does channel require notifications?
-func (self *InternalManager) IsNotify(channel string) bool {
-	internal := self.GetChannelConnection(channel)
-	if internal != nil {
-		return internal.isNotify
-	}
-	return false
-}
-
 func (self *InternalManager) Close() error {
 	for _, conn := range self.connections {
 		conn.netConn.Close()

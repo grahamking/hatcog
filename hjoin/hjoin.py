@@ -108,7 +108,7 @@ class Client(object):
         self.password = password
         self.daemon_addr = daemon_addr
         self.conf = conf
-        self.nick = None
+        self.nick = conf["nick"]
 
         self.users = UserManager()
 
@@ -116,6 +116,9 @@ class Client(object):
 
         self.server = None
         self.is_created = None
+
+        # Support custom /notify command
+        self.is_notify = False
 
     def init(self):
         """Initialize"""
@@ -154,7 +157,6 @@ class Client(object):
     def register(self):
         """Register ourselves with the server"""
 
-        self.nick = self.conf["nick"]
         self.server.write("/nick {}".format(self.nick))
         self.server.write("/user {nick} 0 * {name}".format(
             nick=self.nick,
@@ -164,6 +166,7 @@ class Client(object):
             self.server.write("/pw " + self.password)
             time.sleep(1)
 
+        self.on_nick({"content": self.nick, "user": ""})
 
     def run(self):
         """Main loop"""
@@ -195,8 +198,10 @@ class Client(object):
             return
 
         # Local only commands
+
         if msg == "/quit":
             raise StopException()
+
         elif msg == "/url":
             url = self.terminal.get_url()
             if url:
@@ -204,6 +209,11 @@ class Client(object):
                 show_url(self.conf, url)
             else:
                 self.terminal.write("No url found")
+            return
+
+        elif msg == "/notify":
+            self.is_notify = not self.is_notify
+            self.terminal.write("Notifications: {}".format(self.is_notify))
             return
 
         self.server.write(msg)
@@ -258,6 +268,9 @@ class Client(object):
 
         self.users.mark_active(username)
         self.terminal.set_active_users(self.users.active_count())
+
+        if self.nick in obj['content'] or self.is_notify: # TODO: or self.is_private:
+            notify(self.conf, obj)
 
         return -1
 
@@ -471,6 +484,23 @@ def show_url(conf, url):
     browser = conf["cmd_url"].strip()
     subprocess.Popen(
             [browser, url],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+
+def notify(conf, obj):
+    """Notify user of message, usually using desktop notifications."""
+
+    notifier = conf["cmd_notify"]
+
+    user = obj["user"]
+    channel = obj["channel"]
+
+    title = user
+    if channel != user:    #Private messages have channel == user
+        title += " " + channel
+
+    subprocess.Popen(
+            [notifier, title, obj["content"]],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
 
