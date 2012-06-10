@@ -41,28 +41,20 @@ func (self *ExternalManager) Connect(addr string) {
 	}
 }
 
-func (self *ExternalManager) Identify(password string) {
-	for _, conn := range self.connections {
-		conn.Identify(password)
-	}
+func (self *ExternalManager) Identify(network, password string) {
+	self.connections[network].Identify(password)
 }
 
-func (self *ExternalManager) SendMessage(channel, msg string) {
-	for _, conn := range self.connections {
-		conn.SendMessage(channel, msg)
-	}
+func (self *ExternalManager) SendMessage(network, channel, msg string) {
+	self.connections[network].SendMessage(channel, msg)
 }
 
-func (self *ExternalManager) SendAction(channel, msg string) {
-	for _, conn := range self.connections {
-		conn.SendAction(channel, msg)
-	}
+func (self *ExternalManager) SendAction(network, channel, msg string) {
+	self.connections[network].SendAction(channel, msg)
 }
 
-func (self *ExternalManager) doCommand(content string) {
-	for _, conn := range self.connections {
-		conn.doCommand(content)
-	}
+func (self *ExternalManager) doCommand(network, content string) {
+	self.connections[network].doCommand(content)
 }
 
 func (self *ExternalManager) Close() error {

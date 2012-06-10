@@ -108,28 +108,28 @@ func (self *Server) onUser(message Message) {
 		}
 
 		if cmd == "pw" {
-			self.external.Identify(content)
+			self.external.Identify(message.network, content)
 
 		} else if cmd == "me" {
-			self.external.SendAction(message.channel, content)
+			self.external.SendAction(message.network, message.channel, content)
 
 		} else if cmd == "nick" {
 			newNick := content
 			self.nick = newNick
 			self.internal.Nick = newNick
 
-			self.external.doCommand(message.content)
+			self.external.doCommand(message.network, message.content)
 
 		} else if cmd == "connect" {
 			// Connect to a remote IRC server
 			self.external.Connect(content)
 
 		} else {
-			self.external.doCommand(message.content)
+			self.external.doCommand(message.network, message.content)
 		}
 
 	} else {
-		self.external.SendMessage(message.channel, message.content)
+		self.external.SendMessage(message.network, message.channel, message.content)
 	}
 
 }

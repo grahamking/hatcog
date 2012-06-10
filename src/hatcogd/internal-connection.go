@@ -12,6 +12,7 @@ import (
 type Internal struct {
 	netConn   net.Conn
 	channel   string // channel or nick (for private/query messages)
+	network   string // address of remote we use (e.g. "irc.freenode.net:6697")
 	isPrivate bool   // if True, channel is the nick
 	manager   *InternalManager
 }
@@ -41,22 +42,32 @@ func (self *Internal) Run() {
 			continue
 		}
 
-		self.manager.fromUser <- Message{self.channel, content}
+		self.manager.fromUser <- Message{self.network, self.channel, content}
 	}
 }
 
 /* Special incoming command processing, used to implement
-non-standard function, mostly about communication between go-connect
+non-standard function, mostly about communication between hjoin
 and client.
 
 @return true if no further processing should occur, false otherwise. true
 means don't send this message to the IRC server, it was internal only.
+
+TODO: This should move to Server.onUser.
 */
 func (self *Internal) Special(content string) bool {
 
+	var parts []string
+
+	if self.network == "" && strings.HasPrefix(content, "/connect") {
+		parts = strings.Split(content, " ")
+		if len(parts) == 2 {
+			self.network = parts[1]
+			log.Println("Network is", self.network)
+		}
+	}
+
 	if self.channel == "" {
-		// First message from client is either /join or /private,
-		// telling us which channel or user this client is talking to
 
 		isPrivate := strings.HasPrefix(content, "/private")
 		self.isPrivate = isPrivate
@@ -64,7 +75,7 @@ func (self *Internal) Special(content string) bool {
 		isJoin := strings.HasPrefix(content, "/join")
 
 		if isJoin || isPrivate {
-			parts := strings.Split(content, " ")
+			parts = strings.Split(content, " ")
 			if len(parts) == 2 {
 				self.channel = parts[1]
 			}
@@ -108,5 +119,5 @@ func (self *Internal) part() {
 		return
 	}
 
-	self.manager.fromUser <- Message{self.channel, "/part " + self.channel}
+	self.manager.fromUser <- Message{self.network, self.channel, "/part " + self.channel}
 }

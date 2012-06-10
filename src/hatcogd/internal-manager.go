@@ -14,6 +14,7 @@ type InternalManager struct {
 }
 
 type Message struct {
+	network string
 	channel string
 	content string
 }
@@ -49,6 +50,7 @@ func (self *InternalManager) Run() {
 		internalConn = &Internal{
 			netConn: netConn,
 			channel: "",
+			network: "",
 			manager: self}
 		self.connections = append(self.connections, internalConn)
 		go internalConn.Run()
