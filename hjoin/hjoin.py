@@ -163,9 +163,11 @@ class Client(object):
         """Register ourselves with the server"""
 
         self.server.write("/nick {}".format(self.nick))
+        time.sleep(1)
         self.server.write("/user {nick} 0 * {name}".format(
             nick=self.nick,
             name=self.conf["name"]))
+        time.sleep(1)
 
         if self.password:
             self.server.write("/pw " + self.password)
