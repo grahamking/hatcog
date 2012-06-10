@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -20,7 +21,6 @@ const (
 
 type External struct {
 	socket       net.Conn
-	isClosing    bool
 	fromServer   chan *Line
 	rawLog       *log.Logger
 	isIdentified bool
@@ -115,18 +115,17 @@ func (self *External) Consume() {
 	bufRead := bufio.NewReader(self.socket)
 	for {
 
-		if self.isClosing {
-			return
-		}
-
 		self.socket.SetReadDeadline(time.Now().Add(ONE_SECOND_NS))
 		contentData, err = bufRead.ReadBytes('\n')
 
 		if err != nil {
-			netErr, _ := err.(net.Error)
-
-			if netErr.Timeout() == true {
+			netErr, ok := err.(net.Error)
+			if ok && netErr.Timeout() == true {
 				continue
+			} else if err == io.EOF {
+				LOG.Println("IRC server closed connection.")
+				self.Close()
+				return // Exit main loop, quit working this connection
 			} else {
 				LOG.Fatal("Consume Error:", err)
 			}
@@ -188,10 +187,4 @@ func (self *External) act(line *Line) {
 
 func (self *External) Close() error {
 	return self.socket.Close()
-}
-
-/* Close connection, return from event loop.
- */
-func (self *External) Quit() {
-	self.isClosing = true
 }

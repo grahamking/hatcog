@@ -31,9 +31,6 @@ PATTERNS_IN = {
     'MODE': 'Mode set to %(content)s',
     'ACTION': '* %(user)s %(content)s',
 
-    # Message of the day
-    '372': '%(content)s',
-
     # Topic
     '332': 'Topic: %(content)s',
 

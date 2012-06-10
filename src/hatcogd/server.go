@@ -17,21 +17,14 @@ type Server struct {
 	nick           string
 	external       *External
 	internal       *InternalManager
-	isRunning      bool
 	cmdPrivateChat string
 }
 
 func NewServer(conf Config) *Server {
 
-	server := conf.Get("server")
 	internalPort := conf.Get("internal_port")
 
 	cmdPrivateChat := conf.Get("cmd_private_chat")
-
-	// IRC connection to remote server
-	var external *External
-	external = NewExternal(server, fromServer)
-	LOG.Println("Connected to IRC server " + server)
 
 	// Socket connections from client programs
 	var internal *InternalManager
@@ -39,17 +32,16 @@ func NewServer(conf Config) *Server {
 
 	LOG.Println("Listening for internal connection on port " + internalPort)
 
-	return &Server{"", external, internal, false, cmdPrivateChat}
+	return &Server{"", nil, internal, cmdPrivateChat}
 }
 
 // Main loop
 func (self *Server) Run() {
-	self.isRunning = true
 
-	go self.external.Consume()
+	//go self.external.Consume()
 	go self.internal.Run()
 
-	for self.isRunning {
+	for {
 
 		select {
 		case serverLine := <-fromServer:
@@ -62,8 +54,12 @@ func (self *Server) Run() {
 }
 
 func (self *Server) Close() error {
+	var err error
 	self.internal.Close()
-	return self.external.Close()
+	if self.external != nil {
+		err = self.external.Close()
+	}
+	return err
 }
 
 // Act on server messages
@@ -92,22 +88,39 @@ func (self *Server) onServer(line *Line) {
 // Act on user input
 func (self *Server) onUser(message Message) {
 
-	if strings.HasPrefix(message.content, "/pw ") {
-		self.external.Identify(message.content[4:])
+	var cmd, content string
 
-	} else if strings.HasPrefix(message.content, "/me ") {
-		self.external.SendAction(message.channel, message.content[4:])
+	if isCommand(message.content) {
 
-    } else if strings.HasPrefix(message.content, "/nick ") {
-        newNick := message.content[6:]
-        LOG.Println("New nick: ", newNick)
-		self.nick = newNick
-		self.internal.Nick = newNick
+		parts := strings.SplitN(message.content[1:], " ", 2)
+		cmd = parts[0]
+		if len(parts) == 2 {
+			content = parts[1]
+		}
 
-		self.external.doCommand(message.content)
+		if cmd == "pw" {
+			self.external.Identify(content)
 
-	} else if isCommand(message.content) {
-		self.external.doCommand(message.content)
+		} else if cmd == "me" {
+			self.external.SendAction(message.channel, content)
+
+		} else if cmd == "nick" {
+			newNick := content
+			self.nick = newNick
+			self.internal.Nick = newNick
+
+			self.external.doCommand(message.content)
+
+		} else if cmd == "connect" {
+			// Connect to a remote IRC server
+
+			self.external = NewExternal(content, fromServer)
+			LOG.Println("Connected to IRC server", content)
+			go self.external.Consume()
+
+		} else {
+			self.external.doCommand(message.content)
+		}
 
 	} else {
 		self.external.SendMessage(message.channel, message.content)

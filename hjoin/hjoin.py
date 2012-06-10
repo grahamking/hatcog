@@ -126,6 +126,11 @@ class Client(object):
         sock, self.is_created = get_daemon_connection()
         self.server = Server(sock)
 
+        server_addr = self.conf["server"]
+        print("Requesting connection to {}".format(server_addr))
+        self.server.write("/connect {}".format(server_addr))
+        time.sleep(2)
+
         self.start_interface()
         self.start_remote()
 
@@ -352,6 +357,13 @@ class Client(object):
     def on_001(self, obj):
         """RPL_WELCOME, server welcomes us, we can now join a channel."""
         self.join()
+
+    def on_372(self, obj):
+        """Message Of The Day. Multiple spaces are sometimes used to
+        format these, and we don't need to look for our nick or urls in
+        them, so display them raw."""
+        self.terminal._write(obj["content"] + "\n")
+        return -1
 
 
 class UserManager(object):
