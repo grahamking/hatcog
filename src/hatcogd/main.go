@@ -1,94 +1,94 @@
 package main
 
 import (
+	"exp/terminal"
 	"fmt"
+	"log"
 	"os"
-    "os/signal"
+	"os/signal"
 	"strings"
-    "log"
-    "syscall"
+	"syscall"
 )
 
 const (
-	VERSION    = "hatcog v0.5 (github.com/grahamking/hatcog)"
-    DEFAULT_CONFIG = "/.hatcogrc"
-    LOG_DIR = "/.hatcog/"
+	VERSION        = "hatcog v0.5 (github.com/grahamking/hatcog)"
+	DEFAULT_CONFIG = "/.hatcogrc"
+	LOG_DIR        = "/.hatcog/"
 )
 
 var (
-    HOME string
-    LOG *log.Logger
-
-    fromServer chan *Line
-    fromUser chan Message
+	HOME string
 )
-
 
 func main() {
 
-    HOME = os.Getenv("HOME")
+	HOME = os.Getenv("HOME")
 
-    logFilename := HOME + LOG_DIR + "server.log"
-    fmt.Println(VERSION, "logging to", logFilename)
-    LOG = openLog(logFilename)
+	if !terminal.IsTerminal(syscall.Stdin) {
+		logFilename := HOME + LOG_DIR + "server.log"
+		fmt.Println(VERSION, "logging to", logFilename)
 
-    LOG.Println("START")
+		logfile := openLogFile(logFilename)
+		log.SetOutput(logfile)
 
-    conf := loadConfig()
+	} else {
+		fmt.Println(VERSION, "logging to console")
+	}
 
-    fromServer = make(chan *Line)
-    fromUser = make(chan Message)
+	log.Println("START")
 
-    server := NewServer(conf)
+	conf := loadConfig()
+
+	server := NewServer(conf)
 	defer server.Close()
 	go server.Run()
 
-    // Wait for stop signal (Ctrl-C, kill) to exit
-    incoming := make(chan os.Signal)
-    signal.Notify(incoming, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
-    for {
-        <-incoming
-        break
-        /*
-        sig := (<-signal.Incoming).(os.UnixSignal)
-        if sig == syscall.SIGINT ||
-            sig == syscall.SIGKILL ||
-            sig == syscall.SIGTERM {
-            break
-        }
-        */
-    }
-    LOG.Println("END")
+	// Wait for stop signal (Ctrl-C, kill) to exit
+	incoming := make(chan os.Signal)
+	signal.Notify(incoming, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	for {
+		<-incoming
+		break
+		/*
+		   sig := (<-signal.Incoming).(os.UnixSignal)
+		   if sig == syscall.SIGINT ||
+		       sig == syscall.SIGKILL ||
+		       sig == syscall.SIGTERM {
+		       break
+		   }
+		*/
+	}
+	log.Println("END")
 }
 
-// Open the main log file
-func openLog(logFilename string) *log.Logger {
-    os.Mkdir(HOME + LOG_DIR, 0750)
+// Open a file to log to
+func openLogFile(logFilename string) *os.File {
+	os.Mkdir(HOME+LOG_DIR, 0750)
 
-    logFile, err := os.OpenFile(
-        logFilename,
-        os.O_RDWR|os.O_APPEND|os.O_CREATE,
-        0650)
-    if err != nil {
-        fmt.Println("Error creating log file:", logFilename, err)
-        os.Exit(1)
-    }
-    return log.New(logFile, "", log.LstdFlags)
+	logFile, err := os.OpenFile(
+		logFilename,
+		os.O_RDWR|os.O_APPEND|os.O_CREATE,
+		0650)
+	if err != nil {
+		fmt.Println("Error creating log file:", logFilename, err)
+		os.Exit(1)
+	}
+	return logFile
 }
 
 // Load / Parse the config file
 func loadConfig() Config {
 
-    configFilename := HOME + DEFAULT_CONFIG
-    LOG.Println("Reading config file:", configFilename)
+	configFilename := HOME + DEFAULT_CONFIG
+	log.Println("Reading config file:", configFilename)
 
-    conf, err := LoadConfig(configFilename)
-    if err != nil {
-        fmt.Println("Error parsing config file:", err)
-        LOG.Println("Error parsing config file:", err)
-        os.Exit(1)
-    }
-    return conf
+	conf, err := LoadConfig(configFilename)
+	if err != nil {
+		fmt.Println("Error parsing config file:", err)
+		log.Println("Error parsing config file:", err)
+		os.Exit(1)
+	}
+	return conf
 }
 
 /* Trims a string to not include junk such as:

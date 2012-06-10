@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os/exec"
 	"strings"
 )
@@ -15,9 +16,11 @@ var (
 
 type Server struct {
 	nick           string
-	external       *External
+	external       *ExternalManager
 	internal       *InternalManager
 	cmdPrivateChat string
+	fromServer     chan *Line
+	fromUser       chan Message
 }
 
 func NewServer(conf Config) *Server {
@@ -26,47 +29,53 @@ func NewServer(conf Config) *Server {
 
 	cmdPrivateChat := conf.Get("cmd_private_chat")
 
+	fromServer := make(chan *Line)
+	fromUser := make(chan Message)
+
 	// Socket connections from client programs
-	var internal *InternalManager
-	internal = NewInternalManager(internalPort, fromUser)
+	internal := NewInternalManager(internalPort, fromUser)
 
-	LOG.Println("Listening for internal connection on port " + internalPort)
+	// Socket connections to IRC servers
+	external := NewExternalManager(fromServer)
 
-	return &Server{"", nil, internal, cmdPrivateChat}
+	log.Println("Listening for internal connection on port " + internalPort)
+
+	return &Server{
+		"",
+		external,
+		internal,
+		cmdPrivateChat,
+		fromServer,
+		fromUser}
 }
 
 // Main loop
 func (self *Server) Run() {
 
-	//go self.external.Consume()
 	go self.internal.Run()
 
 	for {
 
 		select {
-		case serverLine := <-fromServer:
+		case serverLine := <-self.fromServer:
 			self.onServer(serverLine)
 
-		case userMessage := <-fromUser:
+		case userMessage := <-self.fromUser:
 			self.onUser(userMessage)
 		}
 	}
 }
 
 func (self *Server) Close() error {
-	var err error
 	self.internal.Close()
-	if self.external != nil {
-		err = self.external.Close()
-	}
-	return err
+	return self.external.Close()
 }
 
 // Act on server messages
 func (self *Server) onServer(line *Line) {
 
 	if isInfoCommand(line.Command) {
-		LOG.Println(line.Content)
+		log.Println(line.Content)
 	}
 
 	if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
@@ -113,10 +122,7 @@ func (self *Server) onUser(message Message) {
 
 		} else if cmd == "connect" {
 			// Connect to a remote IRC server
-
-			self.external = NewExternal(content, fromServer)
-			LOG.Println("Connected to IRC server", content)
-			go self.external.Consume()
+			self.external.Connect(content)
 
 		} else {
 			self.external.doCommand(message.content)

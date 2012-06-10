@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
+	"log"
 	"net"
 	"strings"
 )
@@ -26,11 +27,11 @@ func (self *Internal) Run() {
 		content, err := bufRead.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				LOG.Println("Leaving", self.channel)
+				log.Println("Leaving", self.channel)
 				self.part()
 				self.manager.delete(self)
 			} else {
-				LOG.Println(err)
+				log.Println(err)
 			}
 			return
 		}
@@ -86,9 +87,9 @@ func (self *Internal) Special(content string) bool {
 
 func (self *Internal) sendNick() {
 
-    if len(self.manager.Nick) == 0 {
-        return
-    }
+	if len(self.manager.Nick) == 0 {
+		return
+	}
 
 	line := Line{
 		Command: "NICK",

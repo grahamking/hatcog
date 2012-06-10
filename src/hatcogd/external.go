@@ -19,6 +19,64 @@ const (
 	SSL_PORT = "6697"
 )
 
+/*******************
+ * ExternalManager *
+ *******************/
+
+type ExternalManager struct {
+	connections map[string]*External
+	fromServer  chan *Line
+}
+
+func NewExternalManager(fromServer chan *Line) *ExternalManager {
+	return &ExternalManager{make(map[string]*External), fromServer}
+}
+
+func (self *ExternalManager) Connect(addr string) {
+
+	if self.connections[addr] == nil {
+		self.connections[addr] = NewExternal(addr, self.fromServer)
+		log.Println("Connected to IRC server", addr)
+		go self.connections[addr].Consume()
+	}
+}
+
+func (self *ExternalManager) Identify(password string) {
+	for _, conn := range self.connections {
+		conn.Identify(password)
+	}
+}
+
+func (self *ExternalManager) SendMessage(channel, msg string) {
+	for _, conn := range self.connections {
+		conn.SendMessage(channel, msg)
+	}
+}
+
+func (self *ExternalManager) SendAction(channel, msg string) {
+	for _, conn := range self.connections {
+		conn.SendAction(channel, msg)
+	}
+}
+
+func (self *ExternalManager) doCommand(content string) {
+	for _, conn := range self.connections {
+		conn.doCommand(content)
+	}
+}
+
+func (self *ExternalManager) Close() error {
+	for _, conn := range self.connections {
+		conn.Close()
+	}
+	self.connections = nil
+	return nil
+}
+
+/************
+ * External *
+ ************/
+
 type External struct {
 	socket       net.Conn
 	fromServer   chan *Line
@@ -29,8 +87,9 @@ type External struct {
 func NewExternal(server string, fromServer chan *Line) *External {
 
 	logFilename := HOME + LOG_DIR + "server_raw.log"
-	rawLog := openLog(logFilename)
-	LOG.Println("Logging raw IRC messages to:", logFilename)
+	logFile := openLogFile(logFilename)
+	rawLog := log.New(logFile, "", log.LstdFlags)
+	log.Println("Logging raw IRC messages to:", logFilename)
 
 	var socket net.Conn
 	var err error
@@ -42,7 +101,7 @@ func NewExternal(server string, fromServer chan *Line) *External {
 	}
 
 	if err != nil {
-		LOG.Fatal("Error connecting to IRC server:", err)
+		log.Fatal("Error connecting to IRC server:", err)
 	}
 	time.Sleep(ONE_SECOND_NS)
 
@@ -58,7 +117,7 @@ func NewExternal(server string, fromServer chan *Line) *External {
 // Identify with NickServ. Must of already sent NICK.
 func (self *External) Identify(password string) {
 	if !self.isIdentified {
-		LOG.Println("Identifying with NickServ")
+		log.Println("Identifying with NickServ")
 		self.SendMessage("NickServ", "identify "+password)
 		self.isIdentified = true
 	}
@@ -86,7 +145,7 @@ func (self *External) SendRaw(msg string) {
 
 	_, err = self.socket.Write([]byte(msg))
 	if err != nil {
-		LOG.Fatal("Error writing to socket", err)
+		log.Fatal("Error writing to socket", err)
 	}
 }
 
@@ -123,11 +182,11 @@ func (self *External) Consume() {
 			if ok && netErr.Timeout() == true {
 				continue
 			} else if err == io.EOF {
-				LOG.Println("IRC server closed connection.")
+				log.Println("IRC server closed connection.")
 				self.Close()
 				return // Exit main loop, quit working this connection
 			} else {
-				LOG.Fatal("Consume Error:", err)
+				log.Fatal("Consume Error:", err)
 			}
 		}
 
@@ -143,7 +202,7 @@ func (self *External) Consume() {
 		if err == nil {
 			self.act(line)
 		} else {
-			LOG.Println("Invalid line:", content)
+			log.Println("Invalid line:", content)
 		}
 
 	}

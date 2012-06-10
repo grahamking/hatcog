@@ -1,6 +1,9 @@
 package main
 
-import "net"
+import (
+	"log"
+	"net"
+)
 
 type InternalManager struct {
 	port        string
@@ -32,14 +35,14 @@ func (self *InternalManager) Run() {
 	listener, err = net.Listen("tcp", "127.0.0.1:"+self.port)
 
 	if err != nil {
-		LOG.Fatal("Error on internal listen: " + err.Error())
+		log.Fatal("Error on internal listen: " + err.Error())
 	}
 	defer listener.Close()
 
 	for {
 		netConn, err = listener.Accept()
 		if err != nil {
-			LOG.Fatal("Listener accept error: " + err.Error())
+			log.Fatal("Listener accept error: " + err.Error())
 			break
 		}
 
