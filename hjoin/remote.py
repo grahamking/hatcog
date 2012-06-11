@@ -1,6 +1,10 @@
 # coding: utf-8
 """Connection to hatcogd"""
 
+import logging
+
+LOG = logging.getLogger(__name__)
+
 
 class Server(object):
     """Local proxy for remote hatcogd server"""

@@ -79,9 +79,9 @@ func (self *Server) onServer(line *Line) {
 	}
 
 	if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
-		self.internal.WriteAll(line.AsJson())
+		self.internal.WriteAll(line.Network, line.AsJson())
 	} else {
-		self.internal.WriteChannel(line.Channel, line.AsJson())
+		self.internal.WriteChannel(line.Network, line.Channel, line.AsJson())
 	}
 
 	isMsg := (line.Command == "PRIVMSG")

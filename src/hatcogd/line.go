@@ -14,6 +14,7 @@ var (
 )
 
 type Line struct {
+	Network  string
 	Raw      string
 	Received string
 	User     string
@@ -132,6 +133,7 @@ func ParseLine(data string) (*Line, error) {
 	}
 
 	line = &Line{
+		Network:  "", // Set later by External
 		Raw:      raw,
 		Received: time.Now().Format(time.RFC3339),
 		User:     user,

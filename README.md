@@ -17,7 +17,7 @@ Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere el
 
 ## Run
 
-Run `hjoin <channel>` e.g. hjoin test. There is no hash in front of the channel name.
+Run `hjoin <network.channel>` e.g. hjoin freenode.test. There is no hash in front of the channel name. If your channel starts with two hashes, use one and backslash escape it.
 
 To start a private conversation: `hjoin -private=<nick>`.
 
@@ -60,6 +60,7 @@ Non-standard IRC commands:
  - /url : Open the most recent url (urls get underlined when displayed) in a browser. Command to open the browser is in .hatcogrc.
  - /notify : Alert me on all messages. Uses the same method of alerting you when someone says your nick, to alert you of every message. Useful for quiet channels, to notice when something happens. Do /notify again to switch it off.
  - /pw : Send your password to identify with NickServ. The client does this for you on startup (password is in .hatcogrc), so you should never need this.
+ - /connect : Hatcog subverts the CONNECT command, so it's probably not the best client for a network operator.
 
 ## But I don't have Linux (or not an AMD / Intel processor)
 

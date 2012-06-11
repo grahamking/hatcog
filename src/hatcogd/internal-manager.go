@@ -59,12 +59,12 @@ func (self *InternalManager) Run() {
 }
 
 // Write a message to channel connection
-func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, error) {
+func (self *InternalManager) WriteChannel(network, channel string, msg []byte) (int, error) {
 
 	var bytesWritten int
 
 	for _, conn := range self.connections {
-		if conn.channel == channel {
+		if conn.channel == channel && conn.network == network {
 			conn.netConn.Write(msg)
 			bytesWritten += len(msg)
 		}
@@ -73,13 +73,15 @@ func (self *InternalManager) WriteChannel(channel string, msg []byte) (int, erro
 	return bytesWritten, nil
 }
 
-// Write a message to all client connections
-func (self *InternalManager) WriteAll(msg []byte) (int, error) {
+// Write a message to all client connections on a given network
+func (self *InternalManager) WriteAll(network string, msg []byte) (int, error) {
 
 	var bytesWritten int
 	for _, conn := range self.connections {
-		conn.netConn.Write(msg)
-		bytesWritten += len(msg)
+		if conn.network == network {
+			conn.netConn.Write(msg)
+			bytesWritten += len(msg)
+		}
 	}
 
 	return bytesWritten, nil
@@ -87,6 +89,10 @@ func (self *InternalManager) WriteAll(msg []byte) (int, error) {
 
 // Remove a connection from our list, probably because user closed it
 func (self *InternalManager) delete(internalConn *Internal) {
+	if len(self.connections) == 0 {
+		return
+	}
+
 	newConnections := make([]*Internal, 0, len(self.connections)-1)
 	for _, conn := range self.connections {
 		if conn.channel != internalConn.channel {

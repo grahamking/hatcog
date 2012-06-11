@@ -27,13 +27,16 @@ CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin
 CMD_STOP_DAEMON = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
 
 USAGE = """
-Usage: hjoin [channel|-private=nick] [--logger]
+Usage: hjoin [network.channel|-private=nick] [--logger]
 
+Network is one of the keys in the config file: "freenode", "oftc", etc.
 There's no # in front of the channel
 Examples:
- 1. Join channel #test:
-     hjoin test
- 2. Talk privately (/query) with bob:
+ 1. Join channel #test on local dev server:
+     hjoin local.test
+ 2. Join #ubuntu on freenode:
+     hjoin freenode.ubuntu
+ 3. Talk privately (/query) with bob:
      hjoin -private=bob
 
 Add "--logger" to act as an IRC logger - gather no input, just print
@@ -69,20 +72,25 @@ def main(argv=None):
         stop_daemon()
         return 0
 
+    network = None
     if arg.startswith("-private"):
         channel = arg.split("=")[1]
     else:
-        channel = "#" + arg
+        if "." not in arg:
+            print(USAGE)
+            return 1
+        network, channel = arg.split(".")
+        channel = "#" + channel
 
     conf = load_config(os.getenv("HOME"))
     password = get_password(conf)
 
-    client = Client(channel, password, DAEMON_ADDR, conf)
-
-    if len(sys.argv) == 3 and sys.argv[2] == "--logger":
-        client = Logger(channel, password, DAEMON_ADDR, conf)
-
     try:
+
+        client = Client(network, channel, password, DAEMON_ADDR, conf)
+
+        if len(sys.argv) == 3 and sys.argv[2] == "--logger":
+            client = Logger(channel, password, DAEMON_ADDR, conf)
 
         client.init()
         client.run()
@@ -92,6 +100,10 @@ def main(argv=None):
         pass
     except:
         LOG.exception("EXCEPTION")
+        if client:
+            client.stop()
+        print("EXCEPTION: See ~{}client.log".format(LOG_DIR))
+        show_server_log()
 
     if client:
         client.stop()
@@ -102,13 +114,25 @@ def main(argv=None):
 class Client(object):
     """Main"""
 
-    def __init__(self, channel, password, daemon_addr, conf):
+    def __init__(self, network, channel, password, daemon_addr, conf):
 
         self.channel = channel
         self.password = password
         self.daemon_addr = daemon_addr
+
         self.conf = conf
-        self.nick = conf["nick"]
+        self.network = network
+        try:
+            ident_parts = conf[network].split(" ")
+        except KeyError:
+            print("Network '{}' not found.")
+            print("It must be a key in the configuration file.")
+            print("Keys found: {}".format(conf.keys()))
+            raise StopException()
+
+        self.server_addr = ident_parts[0]
+        self.nick = ident_parts[1]
+        self.name = " ".join(ident_parts[2:])
 
         self.users = UserManager()
 
@@ -116,6 +140,7 @@ class Client(object):
 
         self.server = None
         self.is_created = None
+        self.is_private = False
 
         # Support custom /notify command
         self.is_notify = False
@@ -126,9 +151,8 @@ class Client(object):
         sock, self.is_created = get_daemon_connection()
         self.server = Server(sock)
 
-        server_addr = self.conf["server"]
-        print("Requesting connection to {}".format(server_addr))
-        self.server.write("/connect {}".format(server_addr))
+        print("Requesting connection to {}".format(self.server_addr))
+        self.server.write("/connect {}".format(self.server_addr))
         time.sleep(2)
 
         self.start_interface()
@@ -138,7 +162,8 @@ class Client(object):
         """Start UI"""
 
         self.terminal = Terminal(self.users)
-        self.terminal.set_channel(self.channel)
+        self.terminal.set_channel("{}{}".format(
+            self.network, self.channel))
 
     def start_remote(self):
         """Connect to remote server"""
@@ -157,6 +182,7 @@ class Client(object):
             time.sleep(1)
         else:
             # Private message (query). /private is not standard.
+            self.is_private = True
             self.server.write("/private " + self.channel)
 
     def register(self):
@@ -166,7 +192,7 @@ class Client(object):
         time.sleep(1)
         self.server.write("/user {nick} 0 * {name}".format(
             nick=self.nick,
-            name=self.conf["name"]))
+            name=self.name))
         time.sleep(1)
 
         if self.password:
@@ -276,7 +302,7 @@ class Client(object):
         self.users.mark_active(username)
         self.terminal.set_active_users(self.users.active_count())
 
-        if self.nick in obj['content'] or self.is_notify: # TODO: or self.is_private:
+        if self.nick in obj['content'] or self.is_notify or self.is_private:
             notify(self.conf, obj)
 
         return -1
@@ -359,13 +385,6 @@ class Client(object):
     def on_001(self, obj):
         """RPL_WELCOME, server welcomes us, we can now join a channel."""
         self.join()
-
-    def on_372(self, obj):
-        """Message Of The Day. Multiple spaces are sometimes used to
-        format these, and we don't need to look for our nick or urls in
-        them, so display them raw."""
-        self.terminal._write(obj["content"] + "\n")
-        return -1
 
 
 class UserManager(object):

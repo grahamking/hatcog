@@ -70,6 +70,7 @@ func (self *ExternalManager) Close() error {
  ************/
 
 type External struct {
+	network      string
 	socket       net.Conn
 	fromServer   chan *Line
 	rawLog       *log.Logger
@@ -98,6 +99,7 @@ func NewExternal(server string, fromServer chan *Line) *External {
 	time.Sleep(ONE_SECOND_NS)
 
 	conn := External{
+		network:    server,
 		socket:     socket,
 		fromServer: fromServer,
 		rawLog:     rawLog,
@@ -192,6 +194,7 @@ func (self *External) Consume() {
 
 		line, err := ParseLine(content)
 		if err == nil {
+			line.Network = self.network
 			self.act(line)
 		} else {
 			log.Println("Invalid line:", content)

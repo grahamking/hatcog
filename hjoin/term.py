@@ -174,7 +174,7 @@ class Terminal(object):
             return
 
         self._write(" ")
-        for word in message.split():
+        for word in message.split(' '):
             if self.nick and word == self.nick:
                 self._write(self.nick, curses.A_BOLD)
             elif word.startswith("http"):
