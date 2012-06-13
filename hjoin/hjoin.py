@@ -27,7 +27,7 @@ CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin
 CMD_STOP_DAEMON = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
 
 USAGE = """
-Usage: hjoin [network.channel|-private=nick] [--logger]
+Usage: hjoin [network.channel|-private=network.nick] [--logger]
 
 Network is one of the keys in the config file: "freenode", "oftc", etc.
 There's no # in front of the channel
@@ -36,8 +36,8 @@ Examples:
      hjoin local.test
  2. Join #ubuntu on freenode:
      hjoin freenode.ubuntu
- 3. Talk privately (/query) with bob:
-     hjoin -private=bob
+ 3. Talk privately (/query) with bob on freenode:
+     hjoin -private=freenode.bob
 
 Add "--logger" to act as an IRC logger - gather no input, just print
 incoming messages to stdout.
@@ -72,13 +72,15 @@ def main(argv=None):
         stop_daemon()
         return 0
 
+    if "." not in arg:  # Argument must be <network_name>.<channel_name>
+        print(USAGE)
+        return 1
+
     network = None
-    if arg.startswith("-private"):
-        channel = arg.split("=")[1]
+    if arg.startswith("-private="):
+        arg = arg[len("-private="):]
+        network, channel = arg.split(".")
     else:
-        if "." not in arg:
-            print(USAGE)
-            return 1
         network, channel = arg.split(".")
         channel = "#" + channel
 
