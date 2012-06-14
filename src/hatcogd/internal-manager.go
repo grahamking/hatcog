@@ -6,6 +6,7 @@ import (
 )
 
 type InternalManager struct {
+    host        string
 	port        string
 	connections []*Internal
 	fromUser    chan Message
@@ -19,10 +20,10 @@ type Message struct {
 	content string
 }
 
-func NewInternalManager(port string, fromUser chan Message) *InternalManager {
+func NewInternalManager(host, port string, fromUser chan Message) *InternalManager {
 
 	var connections = make([]*Internal, 0)
-	return &InternalManager{port, connections, fromUser, "", nil}
+	return &InternalManager{host, port, connections, fromUser, "", nil}
 }
 
 // Act as a server, forward data to irc connection
@@ -33,7 +34,7 @@ func (self *InternalManager) Run() {
 	var internalConn *Internal
 	var err error
 
-	listener, err = net.Listen("tcp", "127.0.0.1:"+self.port)
+	listener, err = net.Listen("tcp", self.host + ":" + self.port)
 
 	if err != nil {
 		log.Fatal("Error on internal listen: " + err.Error())

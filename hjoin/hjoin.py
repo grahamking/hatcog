@@ -20,11 +20,14 @@ VERSION = "hatcog v{} (github.com/grahamking/hatcog)".format(__version__)
 DEFAULT_CONFIG = "/.hatcogrc"
 LOG_DIR = "/.hatcog/"
 
-DAEMON_ADDR = "127.0.0.1:8790"
+DAEMON_HOST = "127.0.0.1"
+DAEMON_PORT = "8790"
+
 DAEMON_WAIT_SECS = 5
 
-CMD_START_DAEMON = "start-stop-daemon --start --background --exec /usr/local/bin/hatcogd"
-CMD_STOP_DAEMON = "start-stop-daemon --stop --exec /usr/local/bin/hatcogd"
+DAEMON = "/usr/local/bin/hatcogd-{arch}"
+CMD_START_DAEMON = "start-stop-daemon --start --background --exec {daemon} -- -host={host} -port={port}"
+CMD_STOP_DAEMON = "start-stop-daemon --stop --exec {daemon}"
 
 USAGE = """
 Usage: hjoin [network.channel|-private=network.nick] [--logger]
@@ -87,12 +90,20 @@ def main(argv=None):
     conf = load_config(os.getenv("HOME"))
     password = get_password(conf)
 
+    host = conf.get("daemon_host", DAEMON_HOST)
+    port = conf.get("daemon_port", DAEMON_PORT)
     try:
 
-        client = Client(network, channel, password, DAEMON_ADDR, conf)
+        client = Client(
+                network,
+                channel,
+                password,
+                conf.get("daemon_host", DAEMON_HOST),
+                conf.get("daemon_port", DAEMON_PORT),
+                conf)
 
         if len(sys.argv) == 3 and sys.argv[2] == "--logger":
-            client = Logger(channel, password, DAEMON_ADDR, conf)
+            client = Logger(channel, password, host, port, conf)
 
         client.init()
         client.run()
@@ -116,11 +127,18 @@ def main(argv=None):
 class Client(object):
     """Main"""
 
-    def __init__(self, network, channel, password, daemon_addr, conf):
+    def __init__(self,
+            network,
+            channel,
+            password,
+            daemon_addr,
+            daemon_port,
+            conf):
 
         self.channel = channel
         self.password = password
         self.daemon_addr = daemon_addr
+        self.daemon_port = daemon_port
 
         self.conf = conf
         self.network = network
@@ -150,7 +168,8 @@ class Client(object):
     def init(self):
         """Initialize"""
 
-        sock, self.is_created = get_daemon_connection()
+        sock, self.is_created = get_daemon_connection(
+                self.daemon_addr, self.daemon_port)
         self.server = Server(sock)
 
         print("Requesting connection to {}".format(self.server_addr))
@@ -540,7 +559,7 @@ def notify(conf, obj):
             stderr=subprocess.STDOUT)
 
 
-def get_daemon_connection():
+def get_daemon_connection(host, port):
     """Returns a tuple of a socket connection to the daemon, starting it
     if necessary, and a boolean saying whether we just started the daemon.
     """
@@ -548,14 +567,13 @@ def get_daemon_connection():
     print(msg)
     LOG.info(msg)
 
-    host, port = DAEMON_ADDR.split(":")
     is_created = False
 
     try:
         sock = socket.create_connection((host.encode("utf8"), int(port)))
     except:
         LOG.exception("Could not connect")
-        sock = start_daemon()
+        sock = start_daemon(host, port)
         is_created = True
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -564,22 +582,22 @@ def get_daemon_connection():
     return (sock, is_created)
 
 
-def start_daemon():
+def start_daemon(host, port):
     """Start the daemon, and return a connection to it"""
 
-    arched_start = "{}-{}".format(CMD_START_DAEMON, get_long_size())
-    msg = "Starting daemon: {}".format(arched_start)
+    daemon = DAEMON.format(arch=get_long_size())
+    cmd = CMD_START_DAEMON.format(daemon=daemon, host=host, port=port)
+    msg = "Starting daemon: {}".format(cmd)
     print(msg)
     LOG.debug(msg)
 
-    daemon_path = arched_start.split(' ')[-1]
-    if not os.path.exists(daemon_path):
-        msg = "Daemon not found: {}".format(daemon_path)
+    if not os.path.exists(daemon):
+        msg = "Daemon not found: {}".format(daemon)
         LOG.error(msg)
         print(msg)
         sys.exit(1)
 
-    parts = arched_start.split(" ")
+    parts = cmd.split(" ")
     try:
         out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
         out = out.decode("utf8")
@@ -590,8 +608,6 @@ def start_daemon():
         sys.exit(1)
 
     LOG.debug(out)
-
-    host, port = DAEMON_ADDR.split(":")
 
     # Wait up to DAEMON_WAIT_SECS for it to be ready
     start_time = time.time()

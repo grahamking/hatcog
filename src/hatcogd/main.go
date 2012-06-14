@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+    "flag"
 )
 
 const (
@@ -18,9 +19,13 @@ const (
 
 var (
 	HOME string
+    host = flag.String("host", "127.0.0.1", "Internal address to bind")
+    port = flag.String("port", "8790", "Internal port to listen on")
 )
 
 func main() {
+
+    flag.Parse()
 
 	HOME = os.Getenv("HOME")
 
@@ -38,8 +43,9 @@ func main() {
 	log.Println("START")
 
 	conf := loadConfig()
+	cmdPrivateChat := conf.Get("cmd_private_chat")
 
-	server := NewServer(conf)
+	server := NewServer(*host, *port, cmdPrivateChat)
 	defer server.Close()
 	go server.Run()
 

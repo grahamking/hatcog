@@ -23,22 +23,18 @@ type Server struct {
 	fromUser       chan Message
 }
 
-func NewServer(conf Config) *Server {
-
-	internalPort := conf.Get("internal_port")
-
-	cmdPrivateChat := conf.Get("cmd_private_chat")
+func NewServer(host, port, cmdPrivateChat string) *Server {
 
 	fromServer := make(chan *Line)
 	fromUser := make(chan Message)
 
 	// Socket connections from client programs
-	internal := NewInternalManager(internalPort, fromUser)
+	internal := NewInternalManager(host, port, fromUser)
 
 	// Socket connections to IRC servers
 	external := NewExternalManager(fromServer)
 
-	log.Println("Listening for internal connection on port " + internalPort)
+    log.Println("Listening for internal connection on " + host + ":" + port)
 
 	return &Server{
 		"",

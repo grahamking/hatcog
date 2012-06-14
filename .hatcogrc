@@ -8,7 +8,10 @@
 # network_name = address nick Your Name
 # Where:
 #   network_name -> Whatever you want to call that network. It's just for you.
-#   address -> IRC server and port to connect to. Example: irc.example.com:6667. The Format is anything Go's net.Dial understands: http://golang.org/pkg/net/#Dial. If the port is 6697, it's a secure connection using TLS. You must always include a port.
+#   address -> IRC server and port to connect to. Example: irc.example.com:6667.
+#     The Format is anything Go's net.Dial understands: http://golang.org/pkg/net/#Dial.
+#     If the port is 6697, it's a secure connection using TLS.
+#     You must always include a port.
 #   nick -> Nickname to use on that network
 #   You Name -> Name to use on that network. Anything after the address and nick is considered your name.
 #
@@ -28,12 +31,15 @@ local = 127.0.0.1:6667 hatcog_user Hatcog User
 # password = "S3cret"
 password = $(gpg -d /home/graham/SpiderOak/.ircpw.asc)
 
-### internal_port ###
+### daemon_host ###
+# Address hatcogd binds to. Must be on local machine.
+# Default: 127.0.0.1
+#daemon_host = "127.0.0.1"
+
+### daemon_port ###
 # Port hatcogd listens on for hjoin connections.
-# You'll only need to change this if you have something else on that
-# port (unlikely), or if you're running multiple hatcogd
-# (for example to connect to several networks)
-internal_port = "8790"
+# Default: 8790
+#daemon_port = "8790"
 
 ### cmd_notify ###
 # Command to run to display a notification.
