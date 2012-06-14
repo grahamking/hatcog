@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	VERSION        = "hatcog v0.5 (github.com/grahamking/hatcog)"
+	VERSION        = "hatcog v0.8 (github.com/grahamking/hatcog)"
 	DEFAULT_CONFIG = "/.hatcogrc"
 	LOG_DIR        = "/.hatcog/"
 )
