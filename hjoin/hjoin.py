@@ -270,7 +270,18 @@ class Client(object):
             self.terminal.write("Notifications: {}".format(self.is_notify))
             return
 
+        # Command alternates
+
+        elif msg.startswith("/msg "):
+            # /MSG means a PRIVMSG to a specific user
+            msg_cmd, msg_user, msg_content = msg.split(' ', 2)
+            msg = "/privmsg {} :{}".format(msg_user, msg_content)
+
+        # Send to server
+
         self.server.write(msg)
+
+        # Output to screen
 
         if msg.startswith("/me "):
             me_msg = "* " + msg.replace("/me ", self.nick + " ")
@@ -645,10 +656,11 @@ def show_server_log():
 def stop_daemon():
     """Stop the daemon. This will also stop all clients."""
 
-    arched_stop = "{}-{}".format(CMD_STOP_DAEMON, get_long_size())
-    LOG.debug("Stopping the daemon: %s", arched_stop)
+    daemon = DAEMON.format(arch=get_long_size())
+    cmd = CMD_STOP_DAEMON.format(daemon=daemon)
+    LOG.debug("Stopping the daemon: %s", cmd)
 
-    parts = arched_stop.split(" ")
+    parts = cmd.split(" ")
     out = subprocess.check_output(parts, stderr=subprocess.STDOUT)
     out = out.decode("utf8")
     LOG.debug(out)
