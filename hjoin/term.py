@@ -340,6 +340,8 @@ class TermInput(object):
         curses.ascii.NL: "key_enter",
         curses.KEY_RESIZE: "key_resize",
         curses.KEY_PPAGE: "key_pageup",
+        curses.KEY_UP: "key_up",
+        curses.KEY_DOWN: "key_down",
         9: "key_tab",  # curses doesn't seem to have a constant
     }
 
@@ -350,6 +352,7 @@ class TermInput(object):
         self.current = ""
         self.pending = []   # array of int, partial utf8 characters
         self.pos = 0
+        self.previous = ""
 
         self.cursor_to_input()
 
@@ -457,6 +460,7 @@ class TermInput(object):
         """Send input to queue, clear field"""
 
         result = self.current
+        self.previous = self.current
 
         self.win.erase()
         self.pos = 0
@@ -503,6 +507,16 @@ class TermInput(object):
         subprocess.call(cmd)
 
         raise RebuildException()
+
+    def key_up(self):
+        """Replace current with previous line"""
+        self.current = self.previous
+        self.pos = len(self.current)
+
+    def key_down(self):
+        """Replace current line with nothing"""
+        self.current = ""
+        self.pos = 0
 
 
 class RebuildException(Exception):
