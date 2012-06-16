@@ -270,12 +270,16 @@ class Client(object):
             self.terminal.write("Notifications: {}".format(self.is_notify))
             return
 
-        # Command alternates
+        # Command massaging
 
         elif msg.startswith("/msg "):
             # /MSG means a PRIVMSG to a specific user
             msg_cmd, msg_user, msg_content = msg.split(' ', 2)
             msg = "/privmsg {} :{}".format(msg_user, msg_content)
+
+        elif msg == "/names":
+            # A blank /names list ALL channels, which is a massive query
+            msg = "/names {}".format(self.channel)
 
         # Send to server
 
