@@ -6,7 +6,7 @@ import (
 )
 
 type InternalManager struct {
-    host        string
+	host        string
 	port        string
 	connections []*Internal
 	fromUser    chan Message
@@ -34,7 +34,7 @@ func (self *InternalManager) Run() {
 	var internalConn *Internal
 	var err error
 
-	listener, err = net.Listen("tcp", self.host + ":" + self.port)
+	listener, err = net.Listen("tcp", self.host+":"+self.port)
 
 	if err != nil {
 		log.Fatal("Error on internal listen: " + err.Error())

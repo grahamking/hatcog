@@ -1,41 +1,35 @@
 package main
 
 import (
-	"exp/terminal"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-    "flag"
 )
 
 const (
 	VERSION        = "hatcog v0.8 (github.com/grahamking/hatcog)"
 	DEFAULT_CONFIG = "/.hatcogrc"
-	LOG_DIR        = "/.hatcog/"
 )
 
 var (
-	HOME string
-    host = flag.String("host", "127.0.0.1", "Internal address to bind")
-    port = flag.String("port", "8790", "Internal port to listen on")
+	host   = flag.String("host", "127.0.0.1", "Internal address to bind")
+	port   = flag.String("port", "8790", "Internal port to listen on")
+	logdir = flag.String("logdir", "", "Directory for log files")
 )
 
 func main() {
 
-    flag.Parse()
+	flag.Parse()
 
-	HOME = os.Getenv("HOME")
-
-	if !terminal.IsTerminal(syscall.Stdin) {
-		logFilename := HOME + LOG_DIR + "server.log"
+	if len(*logdir) != 0 {
+		logFilename := *logdir + "/server.log"
 		fmt.Println(VERSION, "logging to", logFilename)
-
 		logfile := openLogFile(logFilename)
 		log.SetOutput(logfile)
-
 	} else {
 		fmt.Println(VERSION, "logging to console")
 	}
@@ -69,7 +63,7 @@ func main() {
 
 // Open a file to log to
 func openLogFile(logFilename string) *os.File {
-	os.Mkdir(HOME+LOG_DIR, 0750)
+	os.Mkdir(*logdir, 0750)
 
 	logFile, err := os.OpenFile(
 		logFilename,
@@ -85,7 +79,9 @@ func openLogFile(logFilename string) *os.File {
 // Load / Parse the config file
 func loadConfig() Config {
 
-	configFilename := HOME + DEFAULT_CONFIG
+	home := os.Getenv("HOME")
+
+	configFilename := home + DEFAULT_CONFIG
 	log.Println("Reading config file:", configFilename)
 
 	conf, err := LoadConfig(configFilename)

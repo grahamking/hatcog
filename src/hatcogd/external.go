@@ -79,7 +79,7 @@ type External struct {
 
 func NewExternal(server string, fromServer chan *Line) *External {
 
-	logFilename := HOME + LOG_DIR + "server_raw.log"
+	logFilename := *logdir + "/server_raw.log"
 	logFile := openLogFile(logFilename)
 	rawLog := log.New(logFile, "", log.LstdFlags)
 	log.Println("Logging raw IRC messages to:", logFilename)

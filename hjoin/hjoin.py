@@ -26,7 +26,7 @@ DAEMON_PORT = "8790"
 DAEMON_WAIT_SECS = 5
 
 DAEMON = "/usr/local/bin/hatcogd-{arch}"
-CMD_START_DAEMON = "start-stop-daemon --start --background --exec {daemon} -- -host={host} -port={port}"
+CMD_START_DAEMON = "start-stop-daemon --start --background --exec {daemon} -- -host={host} -port={port} --logdir {logdir}"
 CMD_STOP_DAEMON = "start-stop-daemon --stop --exec {daemon}"
 
 USAGE = """
@@ -596,8 +596,15 @@ def get_daemon_connection(host, port):
 def start_daemon(host, port):
     """Start the daemon, and return a connection to it"""
 
+    home = os.path.expanduser('~')
+    logdir = home + LOG_DIR
+
     daemon = DAEMON.format(arch=get_long_size())
-    cmd = CMD_START_DAEMON.format(daemon=daemon, host=host, port=port)
+    cmd = CMD_START_DAEMON.format(
+            daemon=daemon,
+            host=host,
+            port=port,
+            logdir=logdir)
     msg = "Starting daemon: {}".format(cmd)
     print(msg)
     LOG.debug(msg)

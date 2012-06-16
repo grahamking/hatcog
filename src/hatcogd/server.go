@@ -34,7 +34,7 @@ func NewServer(host, port, cmdPrivateChat string) *Server {
 	// Socket connections to IRC servers
 	external := NewExternalManager(fromServer)
 
-    log.Println("Listening for internal connection on " + host + ":" + port)
+	log.Println("Listening for internal connection on " + host + ":" + port)
 
 	return &Server{
 		"",
