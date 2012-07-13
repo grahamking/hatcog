@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	VERSION        = "hatcog v0.8 (github.com/grahamking/hatcog)"
-	DEFAULT_CONFIG = "/.hatcogrc"
+	VERSION        = "hatcog v0.9 (github.com/grahamking/hatcog)"
 )
 
 var (
@@ -36,10 +35,7 @@ func main() {
 
 	log.Println("START")
 
-	conf := loadConfig()
-	cmdPrivateChat := conf.Get("cmd_private_chat")
-
-	server := NewServer(*host, *port, cmdPrivateChat)
+	server := NewServer(*host, *port)
 	defer server.Close()
 	go server.Run()
 
@@ -74,23 +70,6 @@ func openLogFile(logFilename string) *os.File {
 		os.Exit(1)
 	}
 	return logFile
-}
-
-// Load / Parse the config file
-func loadConfig() Config {
-
-	home := os.Getenv("HOME")
-
-	configFilename := home + DEFAULT_CONFIG
-	log.Println("Reading config file:", configFilename)
-
-	conf, err := LoadConfig(configFilename)
-	if err != nil {
-		fmt.Println("Error parsing config file:", err)
-		log.Println("Error parsing config file:", err)
-		os.Exit(1)
-	}
-	return conf
 }
 
 /* Trims a string to not include junk such as:

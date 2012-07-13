@@ -88,6 +88,24 @@ func (self *InternalManager) WriteAll(network string, msg []byte) (int, error) {
 	return bytesWritten, nil
 }
 
+// Write a message to only the first channel.
+// This is used when a message has to go to the client, but it doesn't
+// matter which one it goes to. Used to open a private chat window.
+func (self *InternalManager) WriteFirst(network string, msg []byte) (int, error) {
+
+    var bytesWritten int
+    var err error
+
+	for _, conn := range self.connections {
+		if conn.network == network {
+            bytesWritten, err = conn.netConn.Write(msg)
+            break
+		}
+	}
+
+	return bytesWritten, err
+}
+
 // Remove a connection from our list, probably because user closed it
 func (self *InternalManager) delete(internalConn *Internal) {
 	if len(self.connections) == 0 {

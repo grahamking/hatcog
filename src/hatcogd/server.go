@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os/exec"
 	"strings"
 )
 
@@ -18,12 +17,11 @@ type Server struct {
 	nick           string
 	external       *ExternalManager
 	internal       *InternalManager
-	cmdPrivateChat string
 	fromServer     chan *Line
 	fromUser       chan Message
 }
 
-func NewServer(host, port, cmdPrivateChat string) *Server {
+func NewServer(host, port string) *Server {
 
 	fromServer := make(chan *Line)
 	fromUser := make(chan Message)
@@ -40,7 +38,6 @@ func NewServer(host, port, cmdPrivateChat string) *Server {
 		"",
 		external,
 		internal,
-		cmdPrivateChat,
 		fromServer,
 		fromUser}
 }
@@ -74,18 +71,19 @@ func (self *Server) onServer(line *Line) {
 		log.Println(line.Content)
 	}
 
-	if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
-		self.internal.WriteAll(line.Network, line.AsJson())
-	} else {
-		self.internal.WriteChannel(line.Network, line.Channel, line.AsJson())
-	}
-
 	isMsg := (line.Command == "PRIVMSG")
 	isPrivate := isMsg && (line.User == line.Channel)
 
 	if isPrivate && !self.internal.HasChannel(line.Channel) {
 		self.internal.lastPrivate = []byte(line.AsJson())
-		go self.openPrivate(line.User)
+		//go self.openPrivate(line.Network, line.User)
+		self.internal.WriteFirst(line.Network, line.AsJson())
+
+	} else if len(line.Channel) == 0 && !isChannelRequired(line.Command) {
+		self.internal.WriteAll(line.Network, line.AsJson())
+
+	} else {
+		self.internal.WriteChannel(line.Network, line.Channel, line.AsJson())
 	}
 
 }
@@ -128,18 +126,6 @@ func (self *Server) onUser(message Message) {
 		self.external.SendMessage(message.network, message.channel, message.content)
 	}
 
-}
-
-// Ask window manager to open a new pane for private messages with given user
-func (self *Server) openPrivate(nick string) {
-
-	// TODO: Sanitise nick to prevent command execution
-
-	parts := strings.Split(self.cmdPrivateChat, " ")
-	parts = append(parts, "/usr/local/bin/hjoin -private="+nick)
-
-	command := exec.Command(parts[0], parts[1:]...)
-	command.Run()
 }
 
 // Is 'content' an IRC command?

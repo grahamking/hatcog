@@ -296,7 +296,6 @@ class Client(object):
 
     def act_server(self, msg):
         """Act on server data"""
-
         display = translate_in(msg, self)
         if display:
             self.terminal.write(display)
@@ -333,7 +332,13 @@ class Client(object):
     def on_privmsg(self, obj):
         """A message. Format it nicely."""
         username = obj['user']
-        self.terminal.write_msg(username, obj['content'])
+
+        if username == obj['channel']:  # New private message
+            open_private(self.conf, self.network, username)
+            self.terminal.write("[Private message from {}]".format(username))
+
+        else:
+            self.terminal.write_msg(username, obj['content'])
 
         self.users.mark_active(username)
         self.terminal.set_active_users(self.users.active_count())
@@ -556,6 +561,7 @@ def show_url(conf, url):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
 
+
 def notify(conf, obj):
     """Notify user of message, usually using desktop notifications."""
 
@@ -570,6 +576,17 @@ def notify(conf, obj):
 
     subprocess.Popen(
             [notifier, title, obj["content"]],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+
+
+def open_private(conf, network, nick):
+    """Open a private chat window."""
+    priv_cmd = conf["cmd_private_chat"]
+    args = priv_cmd.split(" ")
+    args.append("/usr/local/bin/hjoin -private={}.{}".format(network, nick))
+    LOG.info(args)
+    subprocess.Popen(args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
 
