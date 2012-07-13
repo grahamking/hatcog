@@ -548,8 +548,9 @@ def get_password(conf):
         pwd_cmd = password[2:len(password) - 1]
         LOG.debug("Running command to get password: %s", pwd_cmd)
         password = subprocess.check_output(pwd_cmd.split(' '))
+        return password.decode("utf8")
 
-    return password.decode("utf8")
+    return password
 
 
 def show_url(conf, url):
