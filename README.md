@@ -19,7 +19,7 @@ Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere el
 
 Run `hjoin <network.channel>` e.g. hjoin freenode.test. There is no hash in front of the channel name. If your channel starts with two hashes, use one and backslash escape it.
 
-To start a private conversation: `hjoin -private=<nick>`.
+To start a private conversation: `hjoin -private=<network.nick>` e.g. hjoin -private=freenode.bob.
 
 Log files are in `~/.hatcog/`.
 
@@ -27,7 +27,7 @@ The first time (after reboot) you run `hjoin`, it starts the `hatcogd` daemon. W
 
 ## Details
 
-hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux). The client is in Python3 / curses, the server in Go.
+hatcog is a text-based IRC client which plays well with [tmux](http://www.google.ca/search?q=tmux), or any other window manager. It lets you manage your chat windows. The client is in Python3 / curses, the server in Go.
 
 hatcog is made up of two programs: `hatcogd`, which connects to your irc server, and `hjoin`, which manages input/output for a single channel. `hatcogd` is started for you in the background, so usually you only interact with the curses client, `hjoin`.
 
