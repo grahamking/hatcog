@@ -343,6 +343,7 @@ class TermInput(object):
         curses.KEY_UP: "key_up",
         curses.KEY_DOWN: "key_down",
         9: "key_tab",  # curses doesn't seem to have a constant
+        4: "key_ctrl_d",
     }
 
     def __init__(self, win, terminal):
@@ -483,6 +484,9 @@ class TermInput(object):
 
         self.current = self.current.replace(nick_part, nick)
         self.pos += len(nick) - len(nick_part)
+
+    def key_ctrl_d(self):
+        return "/quit"
 
     def word_at_pos(self, current):
         """The word ending at the cursor (pos) in string"""
