@@ -333,7 +333,8 @@ class Client(object):
         """A message. Format it nicely."""
         username = obj['user']
 
-        if username == obj['channel']:  # New private message
+        if username != self.channel and username == obj['channel']:
+            # New private message
             open_private(self.conf, self.network, username)
             self.terminal.write("[Private message from {}]".format(username))
 
@@ -586,7 +587,6 @@ def open_private(conf, network, nick):
     priv_cmd = conf["cmd_private_chat"]
     args = priv_cmd.split(" ")
     args.append("/usr/local/bin/hjoin -private={}.{}".format(network, nick))
-    LOG.info(args)
     subprocess.Popen(args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
