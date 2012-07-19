@@ -31,6 +31,9 @@ PATTERNS_IN = {
     'MODE': 'Mode set to %(content)s',
     'ACTION': '* %(user)s %(content)s',
 
+    # RPL_AWAY
+    '301': '%(arg1)s is away: %(content)s',
+
     # Topic
     '332': 'Topic: %(content)s',
 
