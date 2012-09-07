@@ -27,7 +27,7 @@ PATTERNS_IN = {
     'JOIN': '* %(user)s joined the channel',
     'PART': '* %(user)s left the channel',
     'PRIVMSG': '[%(user)s] \t %(content)s',
-    'QUIT': '%(user)s has quit',
+    'QUIT': '%(user)s has quit: %(content)s',
     'MODE': 'Mode set to %(content)s',
     'ACTION': '* %(user)s %(content)s',
 
