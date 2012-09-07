@@ -110,12 +110,20 @@ func ParseLine(data string) (*Line, error) {
 	}
 
 	if len(channel) == 0 {
+
 		if command == "PRIVMSG" {
 			// A /query message, fake the user as the channel
 			channel = user
+
 		} else if command == "JOIN" {
 			// JOIN commands say which channel in content part of msg
 			channel = trailing
+
+		} else if command == "301" {
+			// AWAY messages have the user as second argument
+			user = args[1]
+			// Fake channel as user, as only interesting in private chat
+			channel = user
 		}
 	}
 

@@ -32,7 +32,7 @@ PATTERNS_IN = {
     'ACTION': '* %(user)s %(content)s',
 
     # RPL_AWAY
-    '301': '%(arg1)s is away: %(content)s',
+    '301': '%(user)s is away: %(content)s',
 
     # Topic
     '332': 'Topic: %(content)s',

@@ -71,3 +71,22 @@ func TestParseLine_list(t *testing.T) {
 		t.Error("Args incorrect. Got", line.Args)
 	}
 }
+
+func TestParseLine_away(t *testing.T) {
+	line1 := ":hybrid7.debian.local 301 graham_king graham :Not here"
+	line, err := ParseLine(line1)
+
+	if err != nil {
+		t.Error("ParseLine error: ", err)
+	}
+
+	if line.Command != "301" {
+		t.Error("Command incorrect. Got", line.Command)
+	}
+	if line.Channel != "graham" {
+		t.Error("Channel incorrect. Got", line.Channel)
+	}
+	if line.User != "graham" {
+		t.Error("User incorrect. Got", line.User)
+	}
+}
