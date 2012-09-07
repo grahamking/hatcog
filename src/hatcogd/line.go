@@ -111,8 +111,8 @@ func ParseLine(data string) (*Line, error) {
 
 	if len(channel) == 0 {
 		if command == "PRIVMSG" {
-			// A /query message, fake the user as the channel
-			channel = user
+			// A /query or /msg message, channel is first arg
+			channel = args[0]
 		} else if command == "JOIN" {
 			// JOIN commands say which channel in content part of msg
 			channel = trailing
