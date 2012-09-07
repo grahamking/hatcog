@@ -259,7 +259,7 @@ class Client(object):
         elif msg == "/url":
             url = self.terminal.get_url()
             if url:
-                self.terminal.write(url)
+                #self.terminal.write(url)
                 show_url(self.conf, url)
             else:
                 self.terminal.write("No url found")
