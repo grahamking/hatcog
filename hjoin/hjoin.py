@@ -259,7 +259,7 @@ class Client(object):
         elif msg == "/url":
             url = self.terminal.get_url()
             if url:
-                self.terminal.write(url)
+                #self.terminal.write(url)
                 show_url(self.conf, url)
             else:
                 self.terminal.write("No url found")
@@ -576,10 +576,17 @@ def notify(conf, obj):
     if channel != user:    #Private messages have channel == user
         title += " " + channel
 
+    cmdline = "{cmd} '{title}' '{content}'".format(
+            cmd=notifier,
+            title=title,
+            content=obj["content"])
+    LOG.info("notify cmd: %s", cmdline)
+
     subprocess.Popen(
-            [notifier, title, obj["content"]],
+            cmdline,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT,
+            shell=True)
 
 
 def open_private(conf, network, nick):
