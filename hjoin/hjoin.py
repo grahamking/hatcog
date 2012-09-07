@@ -576,10 +576,17 @@ def notify(conf, obj):
     if channel != user:    #Private messages have channel == user
         title += " " + channel
 
+    cmdline = "{cmd} '{title}' '{content}'".format(
+            cmd=notifier,
+            title=title,
+            content=obj["content"])
+    LOG.info("notify cmd: %s", cmdline)
+
     subprocess.Popen(
-            [notifier, title, obj["content"]],
+            cmdline,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT,
+            shell=True)
 
 
 def open_private(conf, network, nick):
