@@ -2,6 +2,14 @@
 
 Hatcog targets 32-bit and 64-bit Linux. I don't know if it will work anywhere else.
 
+## Screenshots
+
+Single channel in Gnome Terminal: [View basic hatcog screenshot](https://github.com/grahamking/hatcog/raw/master/screenshots/hatcog-single.png)
+
+Three channels in two Gnome Terminals, one with `screen` split: [View hatcog with screen screenshot](https://github.com/grahamking/hatcog/raw/master/screenshots/hatcog-screen.png)
+
+Three channels in `tmux` panes - now we're talking! [View hatcog with tmux screenshot](https://github.com/grahamking/hatcog/raw/master/screenshots/hatcog-tmux.png)
+
 ## Install
 
 **1. Clone and install:**
