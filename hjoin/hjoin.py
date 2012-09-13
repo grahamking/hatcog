@@ -260,6 +260,7 @@ class Client(object):
             url = self.terminal.get_url()
             if url:
                 #self.terminal.write(url)
+                self.terminal.term_input.cursor_to_input()
                 show_url(self.conf, url)
             else:
                 self.terminal.write("No url found")
