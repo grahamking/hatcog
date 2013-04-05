@@ -2,3 +2,4 @@ build
 dist
 hatcog.egg-info
 tags
+*.pyc
