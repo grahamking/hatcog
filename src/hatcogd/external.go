@@ -222,7 +222,7 @@ func (self *External) act(line *Line) {
 
 	if line.Command == "PING" {
 		// Reply, and send message on to client
-		self.SendRaw("PONG goirc")
+		self.SendRaw("PONG " + line.Content)
 	} else if line.Command == "VERSION" {
 		versionMsg := "NOTICE " + line.User + " :\u0001VERSION " + VERSION + "\u0001\n"
 		self.SendRaw(versionMsg)
