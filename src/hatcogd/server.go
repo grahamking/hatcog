@@ -112,7 +112,7 @@ func (self *Server) onUser(message Message) {
 		} else if cmd == "nick" {
 			newNick := content
 			self.nick = newNick
-			self.internal.Nick = newNick
+			self.internal.SetNick(message.network, newNick)
 
 			self.external.doCommand(message.network, message.content)
 

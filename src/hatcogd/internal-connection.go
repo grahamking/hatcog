@@ -100,13 +100,14 @@ func (self *Internal) Special(content string) bool {
 
 func (self *Internal) sendNick() {
 
-	if len(self.manager.Nick) == 0 {
+	nick := self.manager.GetNick(self.network)
+	if nick == "" {
 		return
 	}
 
 	line := Line{
 		Command: "NICK",
-		Content: self.manager.Nick,
+		Content: nick,
 		Channel: "",
 		User:    ""}
 

@@ -9,8 +9,8 @@ type InternalManager struct {
 	host        string
 	port        string
 	connections []*Internal
+	nicks       map[string]string
 	fromUser    chan Message
-	Nick        string // Need to know, to tell client
 	lastPrivate []byte // Most recent private message
 }
 
@@ -23,7 +23,13 @@ type Message struct {
 func NewInternalManager(host, port string, fromUser chan Message) *InternalManager {
 
 	var connections = make([]*Internal, 0)
-	return &InternalManager{host, port, connections, fromUser, "", nil}
+	return &InternalManager{
+		host:        host,
+		port:        port,
+		connections: connections,
+		nicks:       make(map[string]string),
+		fromUser:    fromUser,
+		lastPrivate: nil}
 }
 
 // Act as a server, forward data to irc connection
@@ -58,6 +64,16 @@ func (self *InternalManager) Run() {
 		go internalConn.Run()
 	}
 
+}
+
+// Set the nickname used on a network
+func (self *InternalManager) SetNick(network, nick string) {
+	self.nicks[network] = nick
+}
+
+// The nickname used on a given network
+func (self *InternalManager) GetNick(network string) string {
+	return self.nicks[network]
 }
 
 // Write a message to channel connection
