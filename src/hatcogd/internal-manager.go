@@ -28,6 +28,7 @@ func NewInternalManager(host, port string, fromUser chan Message) *InternalManag
 
 // Act as a server, forward data to irc connection
 func (self *InternalManager) Run() {
+	defer logPanic()
 
 	var listener net.Listener
 	var netConn net.Conn
@@ -93,13 +94,13 @@ func (self *InternalManager) WriteAll(network string, msg []byte) (int, error) {
 // matter which one it goes to. Used to open a private chat window.
 func (self *InternalManager) WriteFirst(network string, msg []byte) (int, error) {
 
-    var bytesWritten int
-    var err error
+	var bytesWritten int
+	var err error
 
 	for _, conn := range self.connections {
 		if conn.network == network {
-            bytesWritten, err = conn.netConn.Write(msg)
-            break
+			bytesWritten, err = conn.netConn.Write(msg)
+			break
 		}
 	}
 

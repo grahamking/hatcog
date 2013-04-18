@@ -14,11 +14,11 @@ var (
 )
 
 type Server struct {
-	nick           string
-	external       *ExternalManager
-	internal       *InternalManager
-	fromServer     chan *Line
-	fromUser       chan Message
+	nick       string
+	external   *ExternalManager
+	internal   *InternalManager
+	fromServer chan *Line
+	fromUser   chan Message
 }
 
 func NewServer(host, port string) *Server {
@@ -44,6 +44,8 @@ func NewServer(host, port string) *Server {
 
 // Main loop
 func (self *Server) Run() {
+
+	defer logPanic()
 
 	go self.internal.Run()
 

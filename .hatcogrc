@@ -5,31 +5,41 @@
 
 ### Connection details ###
 # The format is:
-# network_name = address nick Your Name
+# network_name = host:port,username,password,Your Name
 # Where:
-#   network_name -> Whatever you want to call that network. It's just for you.
-#   address -> IRC server and port to connect to. Example: irc.example.com:6667.
-#     The Format is anything Go's net.Dial understands: http://golang.org/pkg/net/#Dial.
-#     If the port is 6697, it's a secure connection using TLS.
-#     You must always include a port.
-#   nick -> Nickname to use on that network
-#   You Name -> Name to use on that network. Anything after the address and nick is considered your name.
 #
-# Freenode, over TLS
-freenode = chat.freenode.net:6697 hatcog_user Hatcog User
+#   network_name -> Whatever you want to call that network. It's just for you.
+#
+#   address -> IRC server, port, and optional password to connect to.
+#   Example: irc.example.com:6667
+#   Example: irc.mycompany.net:6697:serverpass
+#     The Format is anything Go's net.Dial understands: http://golang.org/pkg/net/#Dial.
+#     followed by an option server password (PASS command).
+#     You must always include a port.
+#     hatcogd will try connecting using SSL/TLS, and fall back to clear text
+#
+#   nick -> Nickname to use on that network
+#
+#   password -> To identify with NickServ.
+#     If you wrap the password in $( and ), we run it and the output is your password
+#     If you are not registered with NickServ, leave the password blank
+#
+#   You Name -> Name to use on that network.
+#
+# Freenode, over TLS. Password in gpg encrypted file.
+freenode = chat.freenode.net:6697,hatcog_user,$(gpg -d pw_file.asc),Hatcog User
 
-# OFTC, over TLS
-oftc = irc.oftc.net:6697 hatcog_user Hatcog User
+# OFTC, over TLS.
+oftc = irc.oftc.net:6697,hatcog_user,$(gpg -d pw_file.asc),Hatcog User
 
-# Local unsecured
-local = 127.0.0.1:6667 hatcog_user Hatcog User
+# Mozilla. No password, nick not registered.
+mozilla = irc.mozilla.org:6697,hatcog_user,,Hatcog User
 
-### password ###
-# Your password, if you have registered a nick with NickServ, otherwise blank.
-# If you wrap the value in $( and ), we run it and the output is your password
-# e.g. password = $(gpg -d /home/bob/password.gpg)
-# password = "S3cret"
-password = $(gpg -d /home/graham/SpiderOak/.ircpw.asc)
+# Local unsecured. Cleartext password.
+local = 127.0.0.1:6667,hatcog_user,plain0lPass,Hatcog User
+
+# With a server password, no NickServ
+mycompany = irc.example.com:6697:s3rverp@ss,corp_user,,Corp User
 
 ### daemon_host ###
 # Address hatcogd binds to. Must be on local machine.

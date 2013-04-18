@@ -6,17 +6,12 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
 	"time"
 	"unicode/utf8"
 )
 
 const (
 	ONE_SECOND_NS = 1000 * 1000 * 1000 // One second in nanoseconds
-
-	// Standard IRC SSL port
-	// http://blog.freenode.net/2011/02/port-6697-irc-via-tlsssl/
-	SSL_PORT = "6697"
 )
 
 /*******************
@@ -34,27 +29,49 @@ func NewExternalManager(fromServer chan *Line) *ExternalManager {
 
 func (self *ExternalManager) Connect(addr string) {
 
-	if self.connections[addr] == nil {
-		self.connections[addr] = NewExternal(addr, self.fromServer)
-		log.Println("Connected to IRC server", addr)
-		go self.connections[addr].Consume()
+	server, pass := splitNetPass(addr)
+
+	if self.connections[server] == nil {
+		self.connections[server] = NewExternal(server, pass, self.fromServer)
+		log.Println("Connected to IRC server", server)
+		go self.connections[server].Consume()
 	}
 }
 
 func (self *ExternalManager) Identify(network, password string) {
-	self.connections[network].Identify(password)
+	ext := self.connections[network]
+	if ext == nil {
+		log.Println("Error: no network for ", network)
+		return
+	}
+	ext.Identify(password)
 }
 
 func (self *ExternalManager) SendMessage(network, channel, msg string) {
-	self.connections[network].SendMessage(channel, msg)
+	ext := self.connections[network]
+	if ext == nil {
+		log.Println("Error: no network for ", network)
+		return
+	}
+	ext.SendMessage(channel, msg)
 }
 
 func (self *ExternalManager) SendAction(network, channel, msg string) {
-	self.connections[network].SendAction(channel, msg)
+	ext := self.connections[network]
+	if ext == nil {
+		log.Println("Error: no network for ", network)
+		return
+	}
+	ext.SendAction(channel, msg)
 }
 
 func (self *ExternalManager) doCommand(network, content string) {
-	self.connections[network].doCommand(content)
+	ext := self.connections[network]
+	if ext == nil {
+		log.Println("Error: no network for ", network)
+		return
+	}
+	ext.doCommand(content)
 }
 
 func (self *ExternalManager) Close() error {
@@ -77,7 +94,7 @@ type External struct {
 	isIdentified bool
 }
 
-func NewExternal(server string, fromServer chan *Line) *External {
+func NewExternal(server string, pass string, fromServer chan *Line) *External {
 
 	logFilename := *logdir + "/server_raw.log"
 	logFile := openLogFile(logFilename)
@@ -87,9 +104,8 @@ func NewExternal(server string, fromServer chan *Line) *External {
 	var socket net.Conn
 	var err error
 
-	if strings.HasSuffix(server, SSL_PORT) {
-		socket, err = tls.Dial("tcp", server, nil)
-	} else {
+	socket, err = tls.Dial("tcp", server, nil) // Always try TLS first
+	if err != nil {
 		socket, err = net.Dial("tcp", server)
 	}
 
@@ -98,14 +114,18 @@ func NewExternal(server string, fromServer chan *Line) *External {
 	}
 	time.Sleep(ONE_SECOND_NS)
 
-	conn := External{
+	conn := &External{
 		network:    server,
 		socket:     socket,
 		fromServer: fromServer,
 		rawLog:     rawLog,
 	}
 
-	return &conn
+	if pass != "" {
+		conn.SendRaw("PASS " + pass)
+	}
+
+	return conn
 }
 
 // Identify with NickServ. Must of already sent NICK.
@@ -152,6 +172,7 @@ func (self *External) doCommand(content string) {
 
 // Read IRC messages from the connection and act on them
 func (self *External) Consume() {
+	defer logPanic()
 
 	var contentData []byte
 	var content string

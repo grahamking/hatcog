@@ -88,7 +88,6 @@ def main(argv=None):
         channel = "#" + channel
 
     conf = load_config(os.getenv("HOME"))
-    password = get_password(conf)
 
     host = conf.get("daemon_host", DAEMON_HOST)
     port = conf.get("daemon_port", DAEMON_PORT)
@@ -97,13 +96,12 @@ def main(argv=None):
         client = Client(
                 network,
                 channel,
-                password,
-                conf.get("daemon_host", DAEMON_HOST),
-                conf.get("daemon_port", DAEMON_PORT),
+                host,
+                port,
                 conf)
 
         if len(sys.argv) == 3 and sys.argv[2] == "--logger":
-            client = Logger(channel, password, host, port, conf)
+            client = Logger(channel, host, port, conf)
 
         client.init()
         client.run()
@@ -130,20 +128,18 @@ class Client(object):
     def __init__(self,
             network,
             channel,
-            password,
             daemon_addr,
             daemon_port,
             conf):
 
         self.channel = channel
-        self.password = password
         self.daemon_addr = daemon_addr
         self.daemon_port = daemon_port
 
         self.conf = conf
         self.network = network
         try:
-            ident_parts = conf[network].split(" ")
+            ident_parts = conf[network].split(",")
         except KeyError:
             print("Network '{}' not found.")
             print("It must be a key in the configuration file.")
@@ -152,7 +148,8 @@ class Client(object):
 
         self.server_addr = ident_parts[0]
         self.nick = ident_parts[1]
-        self.name = " ".join(ident_parts[2:])
+        self.password = get_password(ident_parts[2])
+        self.name = ",".join(ident_parts[3:])
 
         self.users = UserManager()
 
@@ -538,13 +535,10 @@ def load_config(home):
     return conf
 
 
-def get_password(conf):
-    """Get password from config file"""
+def get_password(password):
+    """Get password from string, running it through shell if needed"""
 
-    if not "password" in conf:
-        return None
-
-    password = conf["password"].strip()
+    password = password.strip()
 
     if password.startswith("$("):
         pwd_cmd = password[2:len(password) - 1]
@@ -574,7 +568,7 @@ def notify(conf, obj):
     channel = obj["channel"]
 
     title = user
-    if channel != user:    #Private messages have channel == user
+    if channel != user:    # Private messages have channel == user
         title += " " + channel
 
     cmdline = "{cmd} '{title}' '{content}'".format(

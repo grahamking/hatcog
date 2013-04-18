@@ -6,12 +6,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"syscall"
 )
 
 const (
-	VERSION        = "hatcog v0.9 (github.com/grahamking/hatcog)"
+	VERSION = "hatcog v0.10 (github.com/grahamking/hatcog)"
 )
 
 var (
@@ -57,6 +58,17 @@ func main() {
 	log.Println("END")
 }
 
+// Record panic in log file - run this from defer
+func logPanic() {
+
+	if r := recover(); r != nil {
+		log.Println("PANIC: ")
+		log.Println(r)
+		log.Println(string(debug.Stack()))
+		panic(r) // Keep right on panicking
+	}
+}
+
 // Open a file to log to
 func openLogFile(logFilename string) *os.File {
 	os.Mkdir(*logdir, 0750)
@@ -84,4 +96,17 @@ func openLogFile(logFilename string) *os.File {
 func sane(data string) string {
 	parts := strings.SplitN(data, "\n", 2)
 	return strings.Trim(parts[0], " \n\r\001\000")
+}
+
+// Network string has an optional password. Format is either host:port or host:port:password.
+// Split into host:port and password
+func splitNetPass(full string) (server, pass string) {
+
+	if strings.Count(full, ":") == 2 {
+		parts := strings.Split(full, ":")
+		server = strings.Join(parts[0:2], ":")
+		pass = parts[2]
+	}
+
+	return server, pass
 }

@@ -18,6 +18,7 @@ type Internal struct {
 }
 
 func (self *Internal) Run() {
+	defer logPanic()
 
 	// Send NICK msg to new client connections
 	self.sendNick()
@@ -62,7 +63,8 @@ func (self *Internal) Special(content string) bool {
 	if self.network == "" && strings.HasPrefix(content, "/connect") {
 		parts = strings.Split(content, " ")
 		if len(parts) == 2 {
-			self.network = parts[1]
+			log.Println("parts1: ", parts[1])
+			self.network, _ = splitNetPass(parts[1])
 			log.Println("Network is", self.network)
 		}
 	}

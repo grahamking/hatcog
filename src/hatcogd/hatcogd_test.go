@@ -90,3 +90,44 @@ func TestParseLine_away(t *testing.T) {
 		t.Error("User incorrect. Got", line.User)
 	}
 }
+
+func TestParseLine_andbang(t *testing.T) {
+	line1 := ":alan!223@irc.andbang.com PRIVMSG #ll :hello @graham"
+	line, err := ParseLine(line1)
+
+	if err != nil {
+		t.Error("ParseLine error: ", err)
+	}
+
+	if line.Command != "PRIVMSG" {
+		t.Error("Command incorrect. Got", line.Command)
+	}
+	if line.Channel != "#ll" {
+		t.Error("Channel incorrect. Got", line.Channel)
+	}
+	if line.User != "alan" {
+		t.Error("User incorrect. Got", line.User)
+	}
+}
+
+func testSplitNetPass_withPass(t *testing.T) {
+
+	s1, p1 := splitNetPass(" 127.0.0.1:8080:s3cret")
+	if s1 != "127.0.0.1:8080" {
+		t.Error("Server part incorrect. Got: ", s1)
+	}
+	if p1 != "s3cret" {
+		t.Error("Password part incorrect. Got: ", p1)
+	}
+}
+
+func testSplitNetPass_noPass(t *testing.T) {
+
+	s1, p1 := splitNetPass(" 127.0.0.1:8080  ")
+	if s1 != "127.0.0.1:8080" {
+		t.Error("Server part incorrect. Got: ", s1)
+	}
+	if p1 != "" {
+		t.Error("Password part incorrect. Got: ", p1)
+	}
+}
