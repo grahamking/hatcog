@@ -102,6 +102,8 @@ func sane(data string) string {
 // Split into host:port and password
 func splitNetPass(full string) (server, pass string) {
 
+	server = full
+
 	if strings.Count(full, ":") == 2 {
 		parts := strings.Split(full, ":")
 		server = strings.Join(parts[0:2], ":")
