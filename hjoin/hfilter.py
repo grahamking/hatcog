@@ -68,7 +68,6 @@ IGNORE = [
     '255',  # Num clients and servers
     '323',  # End of LIST
     '366',  # End of NAMES
-    '376',  # End of MOTD
 ]
 
 DEFAULT = [

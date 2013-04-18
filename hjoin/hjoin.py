@@ -158,6 +158,7 @@ class Client(object):
         self.server = None
         self.is_created = None
         self.is_private = False
+        self.is_registered = False
 
         # Support custom /notify command
         self.is_notify = False
@@ -194,7 +195,6 @@ class Client(object):
 
     def join(self):
         """Join channel or private message"""
-
         if self.channel.startswith("#"):
             self.server.write("/join " + self.channel)
             time.sleep(1)
@@ -206,12 +206,17 @@ class Client(object):
     def register(self):
         """Register ourselves with the server"""
 
+        if self.is_registered:
+            return
+
         self.server.write("/nick {}".format(self.nick))
         time.sleep(1)
         self.server.write("/user {nick} 0 * {name}".format(
             nick=self.nick,
             name=self.name))
         time.sleep(1)
+
+        self.is_registered = True
 
         if self.password:
             self.server.write("/pw " + self.password)
@@ -221,7 +226,6 @@ class Client(object):
 
     def run(self):
         """Main loop"""
-
         while 1:
 
             try:
@@ -294,6 +298,7 @@ class Client(object):
 
     def act_server(self, msg):
         """Act on server data"""
+
         display = translate_in(msg, self)
         if display:
             self.terminal.write(display)
@@ -419,6 +424,13 @@ class Client(object):
 
     def on_451(self, obj):
         """Server demands that we register"""
+        self.register()
+        return -1
+
+    def on_376(self, obj):
+        """End of MOTD. Not all servers ask us to register,
+        so we register after message-of-the-day ends.
+        """
         self.register()
         return -1
 
