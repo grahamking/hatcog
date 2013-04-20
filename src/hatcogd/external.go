@@ -33,7 +33,6 @@ func (self *ExternalManager) Connect(addr string) {
 
 	if self.connections[server] == nil {
 		self.connections[server] = NewExternal(server, pass, self.fromServer)
-		log.Println("Connected to IRC server", server)
 		go self.connections[server].Consume()
 	}
 }
@@ -88,6 +87,7 @@ func (self *ExternalManager) Close() error {
 
 type External struct {
 	network      string
+	pass         string
 	socket       net.Conn
 	fromServer   chan *Line
 	rawLog       *log.Logger
@@ -101,31 +101,60 @@ func NewExternal(server string, pass string, fromServer chan *Line) *External {
 	rawLog := log.New(logFile, "", log.LstdFlags)
 	log.Println("Logging raw IRC messages to:", logFilename)
 
-	var socket net.Conn
-	var err error
-
-	socket, err = tls.Dial("tcp", server, nil) // Always try TLS first
-	if err != nil {
-		socket, err = net.Dial("tcp", server)
-	}
-
-	if err != nil {
-		log.Fatal("Error connecting to IRC server:", err)
-	}
-	time.Sleep(ONE_SECOND_NS)
-
 	conn := &External{
 		network:    server,
-		socket:     socket,
+		pass:       pass,
 		fromServer: fromServer,
 		rawLog:     rawLog,
 	}
-
-	if pass != "" {
-		conn.SendRaw("PASS " + pass)
-	}
+	conn.connect()
 
 	return conn
+}
+
+func (self *External) connect() {
+
+	var err error
+
+	self.socket, err = sock(self.network, 5)
+	if err != nil {
+		log.Fatal("Error connecting to IRC server: ", err)
+	}
+
+	time.Sleep(ONE_SECOND_NS)
+
+	if self.pass != "" {
+		self.SendRaw("PASS " + self.pass)
+	}
+}
+
+/* A socket connection to give network (ip:port). */
+func sock(network string, tries int) (net.Conn, error) {
+
+	var socket net.Conn
+	var err error
+
+	for tries > 0 {
+
+		socket, err = tls.Dial("tcp", network, nil) // Always try TLS first
+		if err == nil {
+			log.Println("Secure TLS connection to", network)
+			return socket, nil
+		}
+
+		socket, err = net.Dial("tcp", network)
+		if err == nil {
+			log.Println("Insecure connection to", network)
+			return socket, nil
+		}
+
+		log.Println("Connection attempt failed:", err)
+		time.Sleep(ONE_SECOND_NS)
+
+		tries--
+	}
+
+	return socket, err
 }
 
 // Identify with NickServ. Must of already sent NICK.
@@ -158,8 +187,11 @@ func (self *External) SendRaw(msg string) {
 	self.rawLog.Print(" -->", msg)
 
 	_, err = self.socket.Write([]byte(msg))
-	if err != nil {
-		log.Fatal("Error writing to socket", err)
+	if err == io.EOF {
+		log.Println("SendRaw: IRC server closed connection.")
+		self.Close()
+	} else if err != nil {
+		log.Fatal("Error writing to socket: ", err)
 	}
 }
 
@@ -189,9 +221,15 @@ func (self *External) Consume() {
 			if ok && netErr.Timeout() == true {
 				continue
 			} else if err == io.EOF {
-				log.Println("IRC server closed connection.")
+				log.Println("Consume: IRC server closed connection.")
 				self.Close()
-				return // Exit main loop, quit working this connection
+
+				// Reconnect
+				log.Println("Attempting to reconnect")
+				self.connect()
+				bufRead = bufio.NewReader(self.socket)
+				continue
+
 			} else {
 				log.Fatal("Consume Error:", err)
 			}
