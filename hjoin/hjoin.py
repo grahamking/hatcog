@@ -31,6 +31,8 @@ CMD_STOP_DAEMON = "start-stop-daemon --stop --exec {daemon}"
 
 USAGE = """
 Usage: hjoin [network.channel|-private=network.nick] [--logger]
+       hjoin --list   # List the defined networks
+       hjoin --stop   # Stop the daemon, disconnect from all IRC networks
 
 Network is one of the keys in the config file: "freenode", "oftc", etc.
 There's no # in front of the channel
@@ -73,6 +75,14 @@ def main(argv=None):
     if arg == "--stop":
         print("Closing all connections")
         stop_daemon()
+        return 0
+
+    if arg == "--list" or arg == "-l":
+        conf = load_config(os.getenv("HOME"))
+        print("Networks: ")
+        for key in conf.keys():
+            if not key.startswith('cmd_'):
+                print("\t"+key)
         return 0
 
     if "." not in arg:  # Argument must be <network_name>.<channel_name>
